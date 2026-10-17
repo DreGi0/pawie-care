@@ -8,6 +8,9 @@ build/
 coverage/
 *.tsbuildinfo
 
+# Prisma Client, generated from apps/api/prisma/schema.prisma by `prisma generate`
+apps/api/src/generated/
+
 # Environment
 .env
 .env.*

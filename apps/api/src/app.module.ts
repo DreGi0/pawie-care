@@ -10,6 +10,7 @@ import { AppService } from './app.service.js';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
 import { ApiValidationPipe } from './common/errors/api-validation.pipe.js';
 import { type Environment, NodeEnv, validateEnvironment } from './config/environment.js';
+import { PrismaModule } from './prisma/prisma.module.js';
 
 const REQUEST_ID_HEADER = 'x-request-id';
 const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
@@ -68,6 +69,7 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
       }),
     }),
     ThrottlerModule.forRoot([{ ttl: minutes(1), limit: 100 }]),
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [

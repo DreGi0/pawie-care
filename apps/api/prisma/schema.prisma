@@ -1,0 +1,11 @@
+// Data model of the Pawie Care API. The business rules it implements are in
+// docs/reglas-de-negocio.md; cite their IDs (RN-XXX-00) next to the models.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
