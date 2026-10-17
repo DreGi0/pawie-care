@@ -7,8 +7,9 @@ import type { Environment } from './config/environment.js';
 import { setupSwaggerUi } from './openapi/openapi.js';
 
 /**
- * HTTP setup of the app. Global pipes, guards and filters are registered in
- * AppModule instead.
+ * HTTP setup shared by main.ts and the integration tests, so tests exercise the
+ * same app that runs in production. Global pipes, guards and filters are
+ * registered in AppModule instead.
  */
 export function configureApp(app: NestExpressApplication): NestExpressApplication {
   const config = app.get<ConfigService<Environment, true>>(ConfigService);
