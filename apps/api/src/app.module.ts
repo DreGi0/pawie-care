@@ -10,6 +10,7 @@ import { ApiValidationPipe } from './common/errors/api-validation.pipe.js';
 import { type Environment, NodeEnv, validateEnvironment } from './config/environment.js';
 import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { SettingsModule } from './settings/settings.module.js';
 
 const REQUEST_ID_HEADER = 'x-request-id';
 const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
@@ -70,6 +71,7 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
     ThrottlerModule.forRoot([{ ttl: minutes(1), limit: 100 }]),
     PrismaModule,
     HealthModule,
+    SettingsModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ApiValidationPipe },
