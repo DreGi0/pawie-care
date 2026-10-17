@@ -2,11 +2,13 @@ import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { minutes, ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
+import { ApiValidationPipe } from './common/errors/api-validation.pipe.js';
 import { type Environment, NodeEnv, validateEnvironment } from './config/environment.js';
 
 const REQUEST_ID_HEADER = 'x-request-id';
@@ -68,6 +70,11 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
     ThrottlerModule.forRoot([{ ttl: minutes(1), limit: 100 }]),
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    AppService,
+    { provide: APP_PIPE, useClass: ApiValidationPipe },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}
