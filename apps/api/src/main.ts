@@ -1,11 +1,12 @@
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { Logger } from 'nestjs-pino';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module.js';
+import { configureApp } from './app.setup.js';
 import type { Environment } from './config/environment.js';
 
-const app = await NestFactory.create(AppModule, { bufferLogs: true });
-app.useLogger(app.get(Logger));
+const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+configureApp(app);
 app.enableShutdownHooks();
 
 const config = app.get<ConfigService<Environment, true>>(ConfigService);
