@@ -1,0 +1,7 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+allowBuilds:
+  # Its native binding ships as a per-platform optional dependency, so the postinstall fallback isn't needed
+  unrs-resolver: false
