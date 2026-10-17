@@ -20,7 +20,8 @@
     "test:watch": "vitest --project unit",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
-    "openapi:generate": "nest build && node dist/openapi/export-openapi.js"
+    "openapi:generate": "nest build && node dist/openapi/export-openapi.js",
+    "settings:set": "nest build && node dist/settings/set-setting.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

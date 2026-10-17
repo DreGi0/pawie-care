@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { minutes, ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
 import { ApiValidationPipe } from './common/errors/api-validation.pipe.js';
-import { type Environment, NodeEnv, validateEnvironment } from './config/environment.js';
+import { AppConfigModule } from './config/config.module.js';
+import { type Environment, NodeEnv } from './config/environment.js';
 import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SettingsModule } from './settings/settings.module.js';
@@ -17,13 +18,7 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      cache: true,
-      validate: validateEnvironment,
-      // Tests set their variables explicitly, so a developer's .env can't change them.
-      ignoreEnvFile: process.env.NODE_ENV === NodeEnv.Test,
-    }),
+    AppConfigModule,
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Environment, true>) => ({
