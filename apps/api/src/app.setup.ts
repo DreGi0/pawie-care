@@ -4,6 +4,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import type { Environment } from './config/environment.js';
+import { setupSwaggerUi } from './openapi/openapi.js';
 
 /**
  * HTTP setup of the app. Global pipes, guards and filters are registered in
@@ -18,6 +19,7 @@ export function configureApp(app: NestExpressApplication): NestExpressApplicatio
   // Native apps don't use CORS; this only lets the future web client call the API.
   app.enableCors({ origin: config.get('CORS_ORIGINS', { infer: true }), credentials: true });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
+  setupSwaggerUi(app);
 
   return app;
 }
