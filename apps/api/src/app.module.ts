@@ -5,11 +5,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { minutes, ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
 import { ApiValidationPipe } from './common/errors/api-validation.pipe.js';
 import { type Environment, NodeEnv, validateEnvironment } from './config/environment.js';
+import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 
 const REQUEST_ID_HEADER = 'x-request-id';
@@ -70,10 +69,9 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
     }),
     ThrottlerModule.forRoot([{ ttl: minutes(1), limit: 100 }]),
     PrismaModule,
+    HealthModule,
   ],
-  controllers: [AppController],
   providers: [
-    AppService,
     { provide: APP_PIPE, useClass: ApiValidationPipe },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
