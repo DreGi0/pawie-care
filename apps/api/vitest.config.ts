@@ -8,5 +8,8 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.spec.ts'],
+    // Decorators from class-validator and class-transformer need it; in the
+    // app, @nestjs/core loads it.
+    setupFiles: ['reflect-metadata'],
   },
 });
