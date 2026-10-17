@@ -1,3 +1,4 @@
+import { VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
@@ -16,6 +17,7 @@ export function configureApp(app: NestExpressApplication): NestExpressApplicatio
   app.use(helmet());
   // Native apps don't use CORS; this only lets the future web client call the API.
   app.enableCors({ origin: config.get('CORS_ORIGINS', { infer: true }), credentials: true });
+  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
   return app;
 }
