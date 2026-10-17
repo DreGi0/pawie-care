@@ -11,6 +11,9 @@ export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
+    // Runs from the compiled output, because Node can't run the generated client
+    // from TypeScript. `pnpm db:seed` compiles first.
+    seed: 'node dist/seed/seed.js',
   },
   datasource: {
     // Read through process.env instead of env() so commands that don't touch the
