@@ -1,6 +1,6 @@
 # Pawie Care: reglas de negocio
 
-**Versión:** 0.1 · **Fecha:** 2026-10-17 · **Estado:** borrador aprobado para empezar el backend
+**Versión:** 0.2 · **Fecha:** 2026-10-17 · **Estado:** borrador aprobado para empezar el backend
 
 ## Cómo leer este documento
 
@@ -78,15 +78,17 @@ Lo que la demo resuelve de otra forma:
 
 ### 4.4 Qué puede y qué no puede hacer un cuidador
 
-- **RN-CUI-12** Un cuidador **⭐** puede hacer lo siguiente, siempre con indicación escrita del veterinario:
-  - Dar medicamentos orales (pastillas, jarabes) y tópicos (cremas, gotas para ojos y oídos).
-  - Curar heridas y suturas: limpiar con la solución indicada, aplicar crema y cambiar vendajes simples.
-  - Manejar el collar isabelino o el traje post-operatorio para que la mascota no se lama.
-  - Vigilar y registrar apetito, agua, orina, heces, vómitos, señales de dolor y estado de la herida, con foto.
-  - Ayudar con la movilidad: levantarla, usar un arnés de soporte o cambiarla de posición si no se mueve.
-  - Dar una alimentación especial: la dieta indicada, comida blanda o con jeringa sin aguja.
-  - Higiene: incontinencia, pañales, limpieza de ojos y oídos.
-  - Mantener el reposo indicado en un espacio reducido.
+- **RN-CUI-12** Un cuidador **⭐** puede hacer las tareas de cuidado especial (RN-MAS-06), que son de dos grupos:
+  - **Clínicas**, siempre con indicaciones escritas del veterinario:
+    - Medicación: dar medicamentos orales (pastillas, jarabes) y tópicos (cremas, gotas y limpiezas de ojos y oídos).
+    - Curación de heridas y suturas: limpiar con la solución indicada, aplicar crema y cambiar vendajes simples.
+    - Recuperación post-operatoria: manejar el collar isabelino o el traje post-operatorio para que la mascota no se lama, y vigilar el estado de la herida, con foto.
+    - Alimentación con jeringa sin aguja, con la dieta o la comida blanda indicada.
+    - Reposo indicado: mantenerla en un espacio reducido.
+    - Vigilancia de una condición crónica: registrar apetito, agua, orina, heces, vómitos y señales de dolor.
+  - **De asistencia**, con instrucciones escritas del dueño:
+    - Ayuda para moverse: levantarla, usar un arnés de soporte o cambiarla de posición si no se mueve.
+    - Higiene por incontinencia: pañales y limpieza.
 - **RN-CUI-13** **Ningún cuidador** puede:
   - Poner inyecciones de ningún tipo, insulina incluida.
   - Poner sueros.
@@ -98,7 +100,7 @@ Lo que la demo resuelve de otra forma:
 
 ### 4.5 Capacidad y reservas
 
-- **RN-CUI-15** Un cuidador no puede tener reservas que se crucen en el tiempo. Puede tener **una sola pernocta a la vez**, y durante una **pernocta especial** no puede tomar visitas.
+- **RN-CUI-15** Un cuidador no puede tener tramos que se crucen. Cada tramo (una visita o una noche, ver sección 8.1) bloquea solo su propio horario, sea una pernocta normal o especial.
 - **RN-CUI-16** Si el cuidador activa la **Reserva inmediata**, las solicitudes se confirman sin esperar su aprobación.
 - **RN-CUI-17** El cuidador fija su precio para cada servicio y nivel **dentro del rango** que define Pawie (ver sección 7). Si no lo cambia, se usa el precio sugerido.
 
@@ -113,11 +115,13 @@ Lo que la demo resuelve de otra forma:
 ### 5.1 Nivel de cuidado
 
 - **RN-MAS-04** El nivel de cuidado (**Normal** o **Especial**) lo **calcula el sistema** a partir de las respuestas del dueño. El dueño no lo elige, para que nadie lo baje para pagar menos.
-- **RN-MAS-05** El nivel se calcula **para cada reserva**, según el estado de la mascota en las fechas del servicio. Por ejemplo, una recuperación post-operatoria deja de contar cuando terminan las fechas de las indicaciones.
-- **RN-MAS-06** Una mascota es **Especial** si en las fechas de la reserva tiene al menos una tarea activa: medicación que el cuidador debe dar, curación de heridas o suturas, recuperación post-operatoria, ayuda para moverse, o una condición crónica que requiere vigilancia diaria.
+- **RN-MAS-05** El nivel se calcula **para cada reserva**, según el estado de la mascota en las fechas del servicio. Por ejemplo, una recuperación post-operatoria deja de contar cuando pasa su fecha de fin.
+- **RN-MAS-06** Una mascota es **Especial** si en las fechas de la reserva tiene al menos una tarea de cuidado especial activa. Las tareas son de dos grupos:
+  - **Clínicas:** medicación que el cuidador debe dar, curación de heridas o suturas, recuperación post-operatoria, alimentación con jeringa, reposo indicado y vigilancia de una condición crónica.
+  - **De asistencia:** ayuda para moverse e higiene por incontinencia.
 - **RN-MAS-07** La edad, por sí sola, **no** hace Especial a una mascota. Una mascota mayor y sana es Normal.
-- **RN-MAS-08** Para que una mascota sea Especial, el dueño debe subir las **indicaciones escritas del veterinario** (receta o instrucciones post-operatorias), con sus fechas de inicio y fin.
-- **RN-MAS-09** Si la mascota necesita algo prohibido por RN-CUI-13 (por ejemplo, insulina o sueros), el sistema **no permite reservar** y le explica el motivo al dueño.
+- **RN-MAS-08** Cada tarea se registra con sus fechas de inicio y fin. Para una tarea **clínica**, el dueño debe subir las **indicaciones escritas del veterinario** (receta o instrucciones post-operatorias); para una de **asistencia** bastan las **instrucciones escritas del dueño**. La fecha de fin es opcional para la vigilancia de una condición crónica y para la ayuda para moverse.
+- **RN-MAS-09** Si la mascota necesita algo prohibido por RN-CUI-13 (por ejemplo, insulina o sueros), el sistema **no permite reservar** mientras esa necesidad esté activa y le explica el motivo al dueño. Estas necesidades no piden indicaciones ni instrucciones, y su fecha de fin es opcional: sin ella, la mascota no se puede reservar hasta que el dueño la cierre.
 - **RN-MAS-10** Si un cuidador descubre una condición que el dueño no declaró, la reporta. La mascota se reclasifica y se le cobra al dueño la diferencia; si se repite, hay sanción. Si el cuidador no tiene ⭐, Pawie decide si continúa o se busca un reemplazo. `Fase 2`
 
 ## 6. Servicios
@@ -126,7 +130,7 @@ Lo que la demo resuelve de otra forma:
 
 - **RN-SER-01** **Visita a domicilio:** hasta **[60 min]** en la casa del dueño (alimentación, limpieza, compañía, medicación y, si es un perro, una caminata corta). Se cobra por visita y se pueden agendar varias en un día.
 - **RN-SER-02** **Pernocta en casa del dueño:** el cuidador duerme en la casa, de **[19:00]** a **[08:00]** del día siguiente, e incluye los cuidados de la noche y de la mañana. Se cobra por noche.
-- **RN-SER-03** En estadías de varios días, la mascota queda sola entre las 08:00 y las 19:00, así que el dueño puede sumar visitas durante el día.
+- **RN-SER-03** En estadías de varios días, la mascota queda sola entre las 08:00 y las 19:00, así que el dueño puede sumar visitas durante el día. Van como tramos de visita dentro de la misma reserva, al precio de visita del nivel de la reserva.
 - **RN-SER-04** Fuera del alcance por ahora: paseos sueltos y hospedaje en la casa del cuidador.
 
 ## 7. Precios y comisiones
@@ -157,9 +161,11 @@ Lo que la demo resuelve de otra forma:
 
 ### 8.1 Búsqueda y solicitud
 
+Una reserva es con un cuidador y un servicio, para una o varias mascotas. Tiene uno o varios **tramos**, que son cada visita o cada noche, y se paga una sola vez.
+
 - **RN-RES-01** El dueño busca por mascota(s), servicio, fechas y distrito. Solo aparecen los cuidadores que están aprobados y activos, cubren el distrito, tienen disponibilidad en esas fechas y tienen ⭐ si la reserva es Especial.
 - **RN-RES-02** El perfil del cuidador muestra la ⭐, la insignia de estudiante, la calificación, la cantidad de servicios en Pawie, los precios, los distritos y si tiene Reserva inmediata.
-- **RN-RES-03** Al solicitar, el dueño elige las mascotas, el servicio, las fechas y horas, y deja instrucciones. Si la reserva es Especial, se adjuntan automáticamente las indicaciones del veterinario que están en el perfil de la mascota.
+- **RN-RES-03** Al solicitar, el dueño elige las mascotas (hasta **[3]** por reserva), el servicio, las fechas y horas, y deja instrucciones. Si la reserva es Especial, se adjuntan automáticamente las indicaciones del veterinario que están en el perfil de la mascota.
 - **RN-RES-04** Al solicitar, el dueño también deja sus **datos de emergencia**: veterinario de cabecera, un contacto de emergencia, un **monto preautorizado para emergencias** y su consentimiento para que lleven a la mascota a una clínica.
 - **RN-RES-05** Una solicitud debe hacerse con al menos **[2 h]** de anticipación al inicio del servicio.
 
@@ -262,6 +268,7 @@ Se guardan en la base de datos, no en el código. En la demo se cambian con un s
 | Comisión de la pasarela                              | 3.5%                                | RN-PAG-01 |
 | Duración máxima de una visita                        | 60 min                              | RN-SER-01 |
 | Horario de pernocta                                  | 19:00–08:00                         | RN-SER-02 |
+| Máximo de mascotas por reserva                       | 3                                   | RN-RES-03 |
 | Anticipación mínima para solicitar                   | 2 h                                 | RN-RES-05 |
 | Plazo de respuesta del cuidador                      | 24 h / 6 h / 1 h                    | RN-RES-06 |
 | Plazo de pago                                        | 2 h                                 | RN-RES-07 |
@@ -276,6 +283,7 @@ Se guardan en la base de datos, no en el código. En la demo se cambian con un s
 | Umbral de revisión por calificación                  | 4.0 después de 5 servicios          | RN-RSE-03 |
 | Nota mínima del curso ⭐                             | 80%                                 | RN-CUI-08 |
 | Vigencia de la ⭐                                    | 12 meses                            | RN-CUI-09 |
+| Calificación mínima para conservar la ⭐             | 4.0 en servicios especiales         | RN-CUI-10 |
 | Plazo para resolver disputas                         | 5 días hábiles                      | RN-DIS-02 |
 
 ## 16. Garantía Pawie y fidelización

@@ -115,14 +115,22 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 3. **La API tiene versión desde el día uno (`/v1`).** Una app instalada no se puede obligar a actualizar, así que un cambio incompatible va en `/v2` y `/v1` sigue funcionando.
 4. **La autenticación sirve a dos tipos de cliente.** El móvil manda el token en el header `Authorization` y guarda el refresh token en secure-store. La web usa cookies `httpOnly`. Los endpoints son los mismos.
 5. **El dinero se guarda en centavos enteros**, nunca con decimales flotantes. Los porcentajes van en puntos básicos (1500 = 15%).
-6. **Las fechas se guardan en UTC** (`timestamptz`) y se muestran en `America/El_Salvador`.
+6. **Los instantes se guardan en UTC** (`timestamptz`) y se muestran en `America/El_Salvador`. Las fechas de calendario, como un nacimiento o el fin de una receta, van en `date`. Las horas del día, como las del horario semanal, van en minutos desde la medianoche en hora de El Salvador, que no tiene horario de verano.
 7. **Las reservas tienen una máquina de estados explícita**, con una tabla de transiciones permitidas basada en la sección 8.2 de las reglas y un test para cada transición. Cualquier otra transición se rechaza.
-8. **La base de datos impide las reservas dobles** con una restricción de exclusión de PostgreSQL (`btree_gist`) sobre cuidador y rango de horario. Prisma no puede expresar esta restricción, así que va en una migración SQL escrita a mano (RN-CUI-15).
-9. **Cada reserva guarda una copia de los precios y comisiones** del momento en que se confirmó (RN-PRE-07). Los parámetros viven en una tabla, y cada cambio registra quién lo hizo, cuándo y qué valor tenía antes.
+8. **La base de datos impide las reservas dobles** con una restricción de exclusión de PostgreSQL (`btree_gist`) sobre los **tramos**: dos tramos del mismo cuidador no se pueden cruzar mientras sus reservas bloqueen el horario (RN-CUI-15).
+   - Una reserva bloquea el horario desde que se solicita (`REQUESTED`) y deja de bloquearlo cuando se rechaza, vence o se cancela.
+   - Lo marca la columna `blocks_calendar` de la reserva, que un `CHECK` ata a su estado. La llave foránea de los tramos copia ese valor a cada tramo, que es donde lo lee la restricción.
+   - Si un pago se aprueba tarde, volver a confirmar la reserva enciende otra vez `blocks_calendar`. Si el horario ya se tomó, la restricción lo rechaza.
+   - Prisma no puede expresar esta restricción, ni los `CHECK` ni los índices únicos parciales, así que van en una migración SQL escrita a mano. Una prueba de integración comprueba que `prisma migrate diff` entre la base migrada y el esquema sale vacío, es decir, que Prisma no intentaría borrarlos.
+9. **Cada reserva guarda una copia de los precios y comisiones** del momento en que se confirmó (RN-PRE-07). Los parámetros viven en una tabla, y cada cambio registra quién lo hizo, cuándo y qué valor tenía antes. Un registro tipado en el código (`src/settings/settings.registry.ts`) define cada clave con su validador, su valor inicial y la regla que implementa, y los valores siempre se leen validados.
 10. **Los plazos se manejan con tareas diferidas de BullMQ.** Por ejemplo, cuando una reserva pasa a `PENDIENTE_DE_PAGO` se agenda una tarea que la vence si no se paga en el plazo. Antes de actuar, la tarea vuelve a revisar el estado, para que una reserva ya pagada no se venza por error.
 11. **Los archivos médicos van en un bucket privado.** Se suben y se abren con URLs firmadas de vida corta.
 12. **El código se escribe en inglés y la documentación en español.** Ver el glosario de la sección 8.
 13. **Todos los errores de la API tienen la misma forma:** `{ statusCode, errorCode, message, details? }`. `errorCode` es estable y en inglés, y el cliente decide qué hacer según ese valor. `message` va en español, porque el cliente se lo muestra al usuario. Un error que no trae `errorCode` sale con un mensaje genérico, para que los detalles internos no lleguen al cliente. `errorCode` es el campo que NestJS 12 ya agrega a sus excepciones.
+14. **Una reserva es un cuidador, un servicio, sus mascotas y uno o varios tramos**, y se paga una sola vez. Cada tramo es una visita o una noche, con su propio servicio y su precio unitario, así que una pernocta puede llevar tramos de visita para el día (RN-SER-03).
+15. **La disponibilidad de un cuidador es su horario semanal menos sus tramos que bloquean.** En la demo el seed carga el horario.
+    - Cada ventana del horario guarda el día de la semana (ISO: 1 es lunes) y sus minutos de inicio y de fin desde la medianoche.
+    - Una ventana que cruza la medianoche es una sola fila con un fin mayor que 1440. Por ejemplo, una pernocta de 19:00 a 08:00 va de 1140 a 1920.
 
 ## 5. Módulos del backend
 
@@ -173,6 +181,7 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 - Lint: oxlint en la API y ESLint en la app móvil, cada uno con la configuración por defecto de su framework.
 - Commits con formato convencional (`feat:`, `fix:`, `docs:`…).
 - Los secretos van en variables de entorno y nunca se suben al repositorio. Cada paquete tiene un `.env.example`.
+- **Base de datos:** los modelos de Prisma van en PascalCase, y las tablas, las columnas y los tipos enum en snake_case. Los IDs son UUIDv7 y los genera PostgreSQL 18 con `uuidv7()`.
 - **Idioma:** el código (identificadores, tablas, endpoints) va en inglés; la documentación y los textos de la app, en español. Glosario:
 
 | Español (docs y app)                                                                                                                                                                  | Inglés (código)                                                                                                                                                      |
@@ -190,6 +199,11 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 | Bitácora                                                                                                                                                                              | Care log                                                                                                                                                             |
 | Garantía Pawie                                                                                                                                                                        | Pawie Guarantee                                                                                                                                                      |
 | Distrito                                                                                                                                                                              | District                                                                                                                                                             |
+| Tramo (cada visita o cada noche de una reserva)                                                                                                                                       | Booking slot                                                                                                                                                         |
+| Horario semanal                                                                                                                                                                       | Availability                                                                                                                                                         |
+| Tarea de cuidado: clínica, de asistencia o prohibida                                                                                                                                  | Care task: clinical, assistance or prohibited                                                                                                                        |
+| Insignia "Estudiante de veterinaria"                                                                                                                                                  | Vet student badge                                                                                                                                                    |
+| Parámetro configurable                                                                                                                                                                | Setting                                                                                                                                                              |
 | Estados: `SOLICITADA`, `PENDIENTE_DE_PAGO`, `CONFIRMADA`, `EN_CURSO`, `FINALIZADA`, `CERRADA`, `RECHAZADA`, `EXPIRADA`, `CANCELADA_POR_DUENO`, `CANCELADA_POR_CUIDADOR`, `EN_DISPUTA` | `REQUESTED`, `PENDING_PAYMENT`, `CONFIRMED`, `IN_PROGRESS`, `COMPLETED`, `CLOSED`, `REJECTED`, `EXPIRED`, `CANCELLED_BY_OWNER`, `CANCELLED_BY_CAREGIVER`, `DISPUTED` |
 
 ## 9. Pendientes técnicos
