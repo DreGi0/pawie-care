@@ -52,21 +52,21 @@ Versiones estables al 2026-10-17. Al crear cada proyecto se fijan en sus archivo
 
 ### 3.1 Backend
 
-| Necesidad                | Elección                                    | Notas                                                                                           |
-| ------------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Entorno de ejecución     | Node.js 24 LTS                              |                                                                                                 |
-| Framework                | NestJS 12                                   | Organiza el código por módulos con inyección de dependencias                                    |
-| Base de datos            | PostgreSQL 18                               |                                                                                                 |
-| ORM y migraciones        | Prisma 7.10                                 | **No usar la 8**: su etiqueta `latest` en npm apunta a una versión candidata (`8.0.0-rc`)       |
-| Colas y tareas diferidas | BullMQ + Redis 8                            | Para los plazos de las reservas (RN-RES-06, RN-RES-07) y la liberación de pagos (RN-PAG-03)     |
-| Autenticación            | Passport + JWT, contraseñas con argon2id    | Token de acceso de vida corta y refresh token que cambia en cada uso                            |
-| Validación               | class-validator + class-transformer         | Los mismos DTO generan el esquema OpenAPI                                                       |
-| Contrato de la API       | @nestjs/swagger, que exporta `openapi.json` | De ese archivo se genera `packages/api-client`                                                  |
-| Seguridad HTTP           | helmet, @nestjs/throttler, CORS restringido | Límite de intentos en el inicio de sesión                                                       |
-| Logs                     | pino (nestjs-pino)                          | En formato JSON y sin datos sensibles                                                           |
-| Errores                  | Sentry                                      |                                                                                                 |
-| Lint                     | oxlint con reglas que usan los tipos        | Viene con NestJS 12                                                                             |
-| Pruebas                  | Vitest, Supertest y Testcontainers          | NestJS 12 ya trae Vitest. Las pruebas de integración corren contra un PostgreSQL real en Docker |
+| Necesidad                | Elección                                    | Notas                                                                                                                                                                                    |
+| ------------------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Entorno de ejecución     | Node.js 24 LTS                              |                                                                                                                                                                                          |
+| Framework                | NestJS 12                                   | Organiza el código por módulos con inyección de dependencias                                                                                                                             |
+| Base de datos            | PostgreSQL 18                               |                                                                                                                                                                                          |
+| ORM y migraciones        | Prisma 7.10.1                               | Fijado en versión exacta en `prisma`, `@prisma/client` y `@prisma/adapter-pg`. **No usar la 8**: la etiqueta `latest` de `prisma` en npm apunta a una versión candidata (`8.0.0-rc`)     |
+| Colas y tareas diferidas | BullMQ + Redis 8                            | Para los plazos de las reservas (RN-RES-06, RN-RES-07) y la liberación de pagos (RN-PAG-03)                                                                                              |
+| Autenticación            | Passport + JWT, contraseñas con argon2id    | Token de acceso de vida corta y refresh token que cambia en cada uso                                                                                                                     |
+| Validación               | class-validator + class-transformer         | Los mismos DTO generan el esquema OpenAPI                                                                                                                                                |
+| Contrato de la API       | @nestjs/swagger, que exporta `openapi.json` | De ese archivo se genera `packages/api-client`. Va en git, se genera sin levantar el servidor y el CI falla si quedó desactualizado                                                      |
+| Seguridad HTTP           | helmet, @nestjs/throttler, CORS restringido | Límite de intentos en el inicio de sesión                                                                                                                                                |
+| Logs                     | pino (nestjs-pino)                          | En formato JSON y sin datos sensibles                                                                                                                                                    |
+| Errores                  | Sentry                                      |                                                                                                                                                                                          |
+| Lint                     | oxlint con reglas que usan los tipos        | Viene con NestJS 12                                                                                                                                                                      |
+| Pruebas                  | Vitest, Supertest y Testcontainers          | NestJS 12 ya trae Vitest. Las pruebas de integración corren contra un PostgreSQL real en Docker, la misma imagen de `docker-compose.yml`, y forman parte de `pnpm test` también en el CI |
 
 ### 3.2 App móvil (demo)
 
@@ -122,6 +122,7 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 10. **Los plazos se manejan con tareas diferidas de BullMQ.** Por ejemplo, cuando una reserva pasa a `PENDIENTE_DE_PAGO` se agenda una tarea que la vence si no se paga en el plazo. Antes de actuar, la tarea vuelve a revisar el estado, para que una reserva ya pagada no se venza por error.
 11. **Los archivos médicos van en un bucket privado.** Se suben y se abren con URLs firmadas de vida corta.
 12. **El código se escribe en inglés y la documentación en español.** Ver el glosario de la sección 8.
+13. **Todos los errores de la API tienen la misma forma:** `{ statusCode, errorCode, message, details? }`. `errorCode` es estable y en inglés, y el cliente decide qué hacer según ese valor. `message` va en español, porque el cliente se lo muestra al usuario. Un error que no trae `errorCode` sale con un mensaje genérico, para que los detalles internos no lleguen al cliente. `errorCode` es el campo que NestJS 12 ya agrega a sus excepciones.
 
 ## 5. Módulos del backend
 

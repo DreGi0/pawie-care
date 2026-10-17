@@ -21,7 +21,7 @@ docs/           Reglas de negocio y arquitectura
 
 - **Node.js 24.** La versión está en `.node-version`; con fnm basta con `fnm use`.
 - **pnpm**, que se activa con `corepack enable`. La versión exacta está en `package.json`.
-- **Docker**, para PostgreSQL, Redis y Mailpit.
+- **Docker**, para PostgreSQL, Redis y Mailpit, y para las pruebas de integración de la API.
 - **Android Studio** para el emulador de Android, o **Xcode** en macOS para el simulador de iOS.
 
 ## Primeros pasos
@@ -31,7 +31,7 @@ corepack enable
 pnpm install
 pnpm infra:up                         # PostgreSQL, Redis y Mailpit
 cp apps/api/.env.example apps/api/.env
-pnpm --filter @pawie/api dev          # API en http://localhost:3000
+pnpm --filter @pawie/api dev          # API en http://localhost:3000 y documentación en /docs
 pnpm --filter @pawie/mobile android   # o "ios" en macOS
 ```
 
@@ -42,9 +42,9 @@ pnpm --filter @pawie/mobile android   # o "ios" en macOS
 | `pnpm dev`                          | Levanta la API y la app móvil en modo desarrollo |
 | `pnpm lint`                         | Revisa el código de todos los paquetes           |
 | `pnpm typecheck`                    | Revisa los tipos de TypeScript                   |
-| `pnpm test`                         | Corre los tests                                  |
+| `pnpm test`                         | Corre los tests (los de la API necesitan Docker) |
 | `pnpm build`                        | Compila lo que se despliega                      |
 | `pnpm format`                       | Formatea todo el repositorio con Prettier        |
 | `pnpm infra:up` / `pnpm infra:down` | Levanta o detiene la infraestructura local       |
 
-Antes de cada commit, un hook formatea los archivos modificados. GitHub Actions corre formato, lint, tipos, tests y build en cada push y en cada pull request.
+Antes de cada commit, un hook formatea los archivos modificados. GitHub Actions corre formato, lint, tipos, tests y build en cada push y en cada pull request, y revisa que el contrato `apps/api/openapi.json` esté al día.
