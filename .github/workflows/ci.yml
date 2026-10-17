@@ -27,4 +27,13 @@ jobs:
 
       - run: pnpm format:check
 
+      # The API's integration tests start PostgreSQL with Testcontainers, using the runner's Docker
       - run: pnpm turbo run lint typecheck test build
+
+      - name: Check that apps/api/openapi.json is up to date
+        run: |
+          pnpm --filter @pawie/api openapi:generate
+          git diff --exit-code -- apps/api/openapi.json || {
+            echo "::error file=apps/api/openapi.json::Out of date. Run 'pnpm --filter @pawie/api openapi:generate' and commit the result."
+            exit 1
+          }

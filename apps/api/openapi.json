@@ -1,0 +1,124 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "description": "Revisa la conexión con la base de datos. Lo usan el hosting y el monitoreo.",
+        "operationId": "Health_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "La API y la base de datos responden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Alguna dependencia no responde. `details.checks` dice cuál.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Estado de la API",
+        "tags": [
+          "health"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Pawie Care API",
+    "description": "API REST de Pawie Care. Las reglas de negocio están en docs/reglas-de-negocio.md y el diseño en docs/arquitectura.md. Los errores siempre tienen la forma de `ErrorResponse`.",
+    "version": "1",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "HealthChecks": {
+        "type": "object",
+        "properties": {
+          "database": {
+            "enum": [
+              "up"
+            ],
+            "type": "string",
+            "description": "Conexión con PostgreSQL."
+          }
+        },
+        "required": [
+          "database"
+        ]
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "ok"
+            ],
+            "type": "string",
+            "description": "La API y sus dependencias responden."
+          },
+          "checks": {
+            "description": "Resultado de cada dependencia.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HealthChecks"
+              }
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "checks"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "description": "Código de estado HTTP.",
+            "example": 404
+          },
+          "errorCode": {
+            "type": "string",
+            "description": "Código estable del error, en inglés. El cliente decide qué hacer según este valor, no según el mensaje.",
+            "example": "NOT_FOUND"
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensaje en español para mostrarle al usuario.",
+            "example": "No encontramos lo que buscas."
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Información adicional. En los errores de validación trae los mensajes de cada campo.",
+            "example": {
+              "email": [
+                "email must be an email"
+              ]
+            }
+          }
+        },
+        "required": [
+          "statusCode",
+          "errorCode",
+          "message"
+        ]
+      }
+    }
+  }
+}
