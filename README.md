@@ -31,6 +31,8 @@ corepack enable
 pnpm install
 pnpm infra:up                         # PostgreSQL, Redis y Mailpit
 cp apps/api/.env.example apps/api/.env
+pnpm --filter @pawie/api db:deploy    # crea las tablas
+pnpm --filter @pawie/api db:seed      # catálogo, parámetros y cuidadores de demo
 pnpm --filter @pawie/api dev          # API en http://localhost:3000 y documentación en /docs
 pnpm --filter @pawie/mobile android   # o "ios" en macOS
 ```
