@@ -5,3 +5,15 @@ packages:
 allowBuilds:
   # Its native binding ships as a per-platform optional dependency, so the postinstall fallback isn't needed
   unrs-resolver: false
+  # Downloads the schema engine binary that Prisma Migrate needs
+  '@prisma/engines': true
+  # The preinstall only checks the Node version, which .node-version and "engines" already pin
+  prisma: false
+  # Install telemetry from swagger-ui-dist (pulled in by @nestjs/swagger)
+  '@scarf/scarf': false
+  # The postinstall only warns about version schemes of dependents
+  protobufjs: false
+  # Optional native crypto binding with a pure JS fallback; Testcontainers only uses SSH for remote Docker hosts
+  ssh2: false
+  # Optional native dependency of ssh2, compiled with node-gyp
+  cpu-features: false
