@@ -192,11 +192,11 @@ La tabla de transiciones está en [src/bookings/booking-status.ts](src/bookings/
 | `REQUESTED`       | `PENDING_PAYMENT`    | El cuidador acepta                                                         |
 | `REQUESTED`       | `REJECTED`           | El cuidador rechaza                                                        |
 | `REQUESTED`       | `EXPIRED`            | El cuidador no responde a tiempo (RN-RES-06)                               |
-| `PENDING_PAYMENT` | `CONFIRMED`          | Wompi aprueba el pago (Etapa 6)                                            |
+| `PENDING_PAYMENT` | `CONFIRMED`          | Wompi aprueba el pago (RN-PAG-02, ver [Pagos](#pagos))                     |
 | `PENDING_PAYMENT` | `EXPIRED`            | El dueño no paga a tiempo (RN-RES-07)                                      |
 | `REQUESTED`       | `CANCELLED_BY_OWNER` | El dueño cancela sin costo (RN-CAN-07)                                     |
 | `PENDING_PAYMENT` | `CANCELLED_BY_OWNER` | El dueño cancela sin costo (RN-CAN-07)                                     |
-| `EXPIRED`         | `CONFIRMED`          | Un pago aprobado tarde, si el horario sigue libre (Etapa 6)                |
+| `EXPIRED`         | `CONFIRMED`          | Un pago aprobado tarde, si el horario sigue libre (RN-PAG-06)              |
 
 - `BookingStateMachine` aplica cada cambio en una transacción: `status` y `blocks_calendar` juntos y un `BookingStatusChange`. Solo cambia una reserva que sigue en el estado que se leyó; si no, responde 409 `BOOKING_STATUS_CHANGED`.
 - `REQUESTED` ya bloquea el horario. `REJECTED`, `EXPIRED` y las cancelaciones lo liberan.
@@ -213,6 +213,78 @@ La tabla de transiciones está en [src/bookings/booking-status.ts](src/bookings/
 
 La respuesta trae `responseDueAt` mientras está `REQUESTED` y `paymentDueAt` mientras está `PENDING_PAYMENT`. Cómo se vencen está en [Colas y tareas](#colas-y-tareas).
 
+## Pagos
+
+[src/payments/](src/payments) cobra las reservas con Wompi en modo de prueba (RN-PAG, arquitectura §6). Sin `WOMPI_APP_ID`, `WOMPI_API_SECRET` y `PUBLIC_API_URL`, los pagos responden 503 `PAYMENTS_UNAVAILABLE` y el resto de la API funciona igual.
+
+### Cómo se paga
+
+1. **La app pide el pago:** `POST /v1/bookings/:id/payments`. Solo el dueño puede pedirlo, mientras la reserva está `PENDING_PAYMENT` y antes de `paymentDueAt`. Devuelve el pago con `checkoutUrl`, la página de Wompi.
+   - Cada intento es un `Payment`, y su ID es el `identificadorEnlaceComercio` del enlace.
+   - El enlace cobra el `totalCents` de la reserva con tarjeta, acepta un solo pago y vence en `paymentDueAt` (RN-PAG-08).
+   - Si ya hay un pago `PENDING`, devuelve el mismo enlace, también a dos toques a la vez.
+2. **El dueño paga:** la app abre la página con `WebBrowser.openAuthSessionAsync(checkoutUrl, 'pawie://payment/result')`.
+3. **Wompi avisa:** manda el webhook a `POST /v1/payments/webhook`, que confirma la reserva (ver abajo).
+4. **El dueño vuelve a la app:** Wompi lo manda a `GET /v1/payments/return`, que responde 302 a `pawie://payment/result?bookingId=…&paymentId=…`. Esa ruta no cambia nada.
+5. **La app espera la confirmación:** consulta `GET /v1/bookings/:id` hasta que la reserva está `CONFIRMED`. Su campo `payment` dice en qué va el pago:
+
+| `payment.status` | Qué significa                                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `PENDING`        | El enlace espera el pago, o Wompi todavía no avisó que se pagó                                                            |
+| `APPROVED`       | Pagado: la reserva quedó confirmada y muestra el teléfono del cuidador (RN-CTA-04)                                        |
+| `REFUND_PENDING` | Wompi cobró, pero la reserva no se pudo confirmar (RN-PAG-06, RN-PAG-07). Se devuelve desde el panel de Wompi (RN-PAG-05) |
+| `REFUNDED`       | Ya se devolvió. Lo registra el panel de administración, después de la demo                                                |
+
+- **Errores:**
+  - `BOOKING_NOT_FOUND` (404);
+  - `BOOKING_NOT_PAYABLE` (409): la reserva no espera un pago o venció el plazo, con su estado en `details.status`;
+  - `PAYMENT_GATEWAY_ERROR` (502): Wompi no respondió, y no queda ningún pago a medias;
+  - `PAYMENTS_UNAVAILABLE` (503).
+- **Cliente de Wompi:** [src/payments/wompi.client.ts](src/payments/wompi.client.ts) usa el `fetch` de Node. Pide el token OAuth2 y lo reutiliza hasta un minuto antes de que venza.
+
+### El webhook
+
+`POST /v1/payments/webhook` es la única forma de confirmar una reserva (RN-PAG-02). Es `@Public()` y no va en el documento OpenAPI, porque lo llama Wompi y no la app. [src/payments/payment-webhooks.ts](src/payments/payment-webhooks.ts) lo procesa así:
+
+1. Revisa la firma: el header `wompi_hash` tiene que ser el HMAC-SHA256 del cuerpo tal como llegó, con el API Secret. Por eso la app se crea con `rawBody: true` (`APP_OPTIONS` en [src/app.setup.ts](src/app.setup.ts)). Si no coincide, responde 401 `INVALID_WEBHOOK_SIGNATURE` y no guarda nada.
+2. Guarda el evento en `webhook_events`, una sola vez por `IdTransaccion`. Un webhook repetido no hace nada.
+3. Consulta la transacción en Wompi, y solo sigue si está aprobada. Guarda `esReal` en `Payment.isLive`.
+4. En una sola transacción, cambia el pago y la reserva:
+   - Si la reserva espera el pago, o venció pero el horario sigue libre, pasa a `CONFIRMED` y el pago a `APPROVED` (RN-PAG-06).
+   - En otro caso, el pago pasa a `REFUND_PENDING`: el horario ya se tomó, la reserva ya estaba pagada o el dueño la canceló (RN-PAG-07). La API lo deja en los logs como `Approved payment to refund from the Wompi panel`.
+
+Wompi recibe 200 en cuanto el evento queda guardado. Si no se pudo aplicar, el evento guarda el motivo en `error`, y la cola `payments` lo reintenta (ver [Colas y tareas](#colas-y-tareas)).
+
+### Probar el webhook en local con cloudflared
+
+Wompi necesita una URL pública para mandar el webhook. [cloudflared](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/) la da sin cuenta:
+
+1. Instálalo: `winget install --id Cloudflare.cloudflared` en Windows, o `brew install cloudflared` en macOS.
+2. Con la API corriendo, abre el túnel: `cloudflared tunnel --url http://localhost:3000`. Imprime una URL como `https://palabras-al-azar.trycloudflare.com`.
+3. Configura `apps/api/.env` y reinicia `pnpm dev`:
+   - **`WOMPI_APP_ID` y `WOMPI_API_SECRET`:** en el [panel de Wompi](https://panel.wompi.sv), entra al listado de negocios, edita el negocio y copia el App ID y el API Secret. El negocio tiene que estar **en desarrollo**, para que los pagos sean de prueba.
+   - **`PUBLIC_API_URL`:** la URL del túnel.
+   - **`DEMO_CAREGIVER_PHONE`:** un número del equipo. Después corre `pnpm db:seed`, para que la reserva confirmada muestre el teléfono.
+4. Reserva y pide el pago como el dueño de demo. Los cuerpos están en [Cómo se reserva](#cómo-se-reserva) y en [Búsqueda de cuidadores](#búsqueda-de-cuidadores):
+
+   ```bash
+   API=http://localhost:3000
+   TOKEN=…   # el accessToken de POST /v1/auth/login con demo@example.com
+   curl -s $API/v1/pets -H "authorization: Bearer $TOKEN"        # el id de Toby
+   curl -s $API/v1/addresses -H "authorization: Bearer $TOKEN"   # el id de la casa y de su distrito
+   curl -s -X POST $API/v1/caregivers/search -H "authorization: Bearer $TOKEN" \
+     -H 'content-type: application/json' -d '{"petIds":["…"],"districtId":"…","serviceCode":"HOME_VISIT","visits":["…T10:00:00-06:00"]}'
+   curl -s -X POST $API/v1/bookings -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{…}'
+   curl -s -X POST $API/v1/bookings/<id>/payments -H "authorization: Bearer $TOKEN"   # devuelve checkoutUrl
+   ```
+
+5. Abre `checkoutUrl` en el navegador y paga con una tarjeta de prueba, por ejemplo `4111 1111 1111 1111`, con cualquier fecha futura. En desarrollo, Wompi aprueba todos los pagos; con CVV `111` los rechaza.
+6. En los logs de la API llega `POST /v1/payments/webhook` con 200, y `GET /v1/bookings/<id>` muestra la reserva `CONFIRMED`, el pago `APPROVED` y el teléfono del cuidador. Al final, el navegador intenta abrir `pawie://payment/result`: en la computadora no hay app que lo abra, y no importa.
+
+- La URL del túnel cambia cada vez que lo abres. Actualiza `PUBLIC_API_URL` y reinicia la API; los enlaces creados antes siguen apuntando a la URL vieja.
+- Si el webhook responde 401, el `WOMPI_API_SECRET` no es el del negocio que cobró. Si no llega, revisa que el túnel siga abierto. Si llegó pero no se aplicó, la columna `error` de `webhook_events` dice por qué.
+- Sin credenciales, el flujo completo está cubierto por [test/payments.e2e-spec.ts](test/payments.e2e-spec.ts), que reemplaza a Wompi por [test/fake-wompi.ts](test/fake-wompi.ts).
+
 ## Colas y tareas
 
 BullMQ corre sobre el Redis de `REDIS_URL` (arquitectura §4.10), con los workers dentro de la API. Las claves de Redis empiezan con `pawie:`.
@@ -222,12 +294,15 @@ BullMQ corre sobre el Redis de `REDIS_URL` (arquitectura §4.10), con los worker
   - antes de actuar, la tarea vuelve a leer la reserva, y solo la vence si sigue esperando en ese estado y el plazo ya pasó;
   - si Redis no responde en 2 segundos al agendarla, la reserva se crea igual; cada 5 minutos una tarea periódica vence las reservas con el plazo pasado, también las que Redis haya perdido.
 - **`maintenance`** ([src/maintenance/maintenance.service.ts](src/maintenance/maintenance.service.ts)): cada hora borra los refresh tokens vencidos, y los archivos que nunca se terminaron de subir o que nadie usó en un día, con su objeto en el bucket.
+- **`payments`** ([src/payments/payments.processor.ts](src/payments/payments.processor.ts)): cada 5 minutos vuelve a aplicar los webhooks de Wompi que no se pudieron aplicar cuando llegaron, porque Wompi no respondió la consulta o todavía no reportaba la transacción aprobada. Cada uno se reintenta durante un día, desde un minuto después de llegar; después queda con su `error`, para revisarlo.
 
 Las tareas terminadas se borran de Redis, y las fallidas se quedan una semana. La API arranca aunque Redis no esté; `/v1/health` responde 503 y las tareas corren cuando vuelve.
 
 ## Contrato OpenAPI
 
-[openapi.json](openapi.json) va en git porque es el contrato del que se genera el cliente de las apps. Después de cambiar un controlador o un DTO, corre `pnpm openapi:generate` y haz commit del resultado. El script compila la API y escribe el documento sin levantar el servidor ni conectarse a la base de datos. El CI lo vuelve a generar y falla si quedó desactualizado.
+[openapi.json](openapi.json) va en git porque es el contrato del que se genera el cliente de las apps, [packages/api-client](../../packages/api-client/README.md). Después de cambiar un controlador o un DTO, corre `pnpm openapi:generate` y después `pnpm --filter @pawie/api-client generate`, y haz commit de los dos. El script compila la API y escribe el documento sin levantar el servidor ni conectarse a la base de datos. El CI vuelve a generar los dos y falla si alguno quedó desactualizado.
+
+Las rutas que llama Wompi y no la app, el webhook y la vuelta a la app, no van en el documento (`@ApiExcludeEndpoint()`).
 
 ## Base de datos
 
@@ -313,6 +388,7 @@ Para agregar un parámetro, súmalo al registro y a la tabla de la sección 15. 
   - [test/factories.ts](test/factories.ts) crea las filas mínimas válidas: usuarios, cuidadores, mascotas y reservas con sus tramos.
   - [test/use-api.ts](test/use-api.ts) arranca la API contra la base de un archivo y firma tokens de acceso sin pasar por el inicio de sesión. [test/uploads.ts](test/uploads.ts) sube un archivo como lo hace la app.
   - Cada app de prueba usa su propio prefijo de colas en Redis ([test/create-test-app.ts](test/create-test-app.ts)), así que sus workers no toman las tareas de otra. [test/test-clock.ts](test/test-clock.ts) reemplaza el `Clock` para detener y adelantar el tiempo de los plazos.
+  - El CI no llega a Wompi: [test/fake-wompi.ts](test/fake-wompi.ts) reemplaza su cliente, guarda los enlaces que crea la API y arma los webhooks firmados como los manda Wompi. `setup-env.ts` le da a la API credenciales de prueba.
 
 ## Comandos
 

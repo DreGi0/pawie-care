@@ -38,7 +38,7 @@ export const BOOKING_TRANSITIONS: Readonly<Record<BookingStatus, readonly Bookin
   ],
   // A payment approved after the deadline still confirms the booking if its slots are
   // free; if they were taken, the exclusion constraint refuses and the payment is
-  // refunded (Etapa 6).
+  // refunded (RN-PAG-06).
   [EXPIRED]: [CONFIRMED],
   [CONFIRMED]: [],
   [BookingStatus.IN_PROGRESS]: [],
