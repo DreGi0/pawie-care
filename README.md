@@ -19,7 +19,7 @@ docs/           Reglas de negocio y arquitectura
 
 ## Requisitos
 
-- **Node.js 24.** La versión está en `.node-version`; con fnm basta con `fnm use`.
+- **Node.js 24.7 o más** (la API usa `crypto.argon2`). La versión está en `.node-version`; con fnm basta con `fnm use`.
 - **pnpm**, que se activa con `corepack enable`. La versión exacta está en `package.json`.
 - **Docker**, para PostgreSQL, Redis y Mailpit, y para las pruebas de integración de la API.
 - **Android Studio** para el emulador de Android, o **Xcode** en macOS para el simulador de iOS.
