@@ -2,7 +2,14 @@ import { NodeEnv, validateEnvironment } from './environment.js';
 
 const DATABASE_URL = 'postgresql://pawie:pawie@localhost:5432/pawie';
 const JWT_ACCESS_SECRET = 'a-secret-for-the-unit-tests-of-environment';
-const REQUIRED = { DATABASE_URL, JWT_ACCESS_SECRET };
+const REQUIRED = {
+  DATABASE_URL,
+  JWT_ACCESS_SECRET,
+  S3_ENDPOINT: 'http://localhost:8333',
+  S3_BUCKET: 'pawie-files',
+  S3_ACCESS_KEY_ID: 'pawie',
+  S3_SECRET_ACCESS_KEY: 'secret',
+};
 
 describe('validateEnvironment', () => {
   it('applies defaults when only the required variables are set', () => {
