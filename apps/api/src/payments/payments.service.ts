@@ -7,6 +7,7 @@ import {
   type OnModuleInit,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { isUUID } from 'class-validator';
 import { bookingNotFound } from '../bookings/booking-errors.js';
 import { caregiverDisplayName } from '../caregivers/caregivers.service.js';
 import { Clock } from '../common/time/clock.js';
@@ -21,6 +22,9 @@ import { WOMPI_SETTINGS } from './wompi-settings.js';
 /** Routes Wompi calls, under the API's public URL (PUBLIC_API_URL). */
 export const PAYMENT_WEBHOOK_PATH = 'payments/webhook';
 export const PAYMENT_RETURN_PATH = 'payments/return';
+
+/** The app's screen after paying. expo-web-browser closes the payment page when it gets here. */
+export const APP_PAYMENT_RESULT_URL = 'pawie://payment/result';
 
 /**
  * Creating the link holds a lock on the booking while it calls Wompi, which can take a
@@ -129,6 +133,27 @@ export class PaymentsService implements OnModuleInit {
       }
       throw error;
     }
+  }
+
+  /**
+   * Where Wompi's redirect sends the owner: the app, with the booking and the payment
+   * when the reference is one of ours. It changes nothing: only the webhook confirms a
+   * booking (RN-PAG-02), so the app waits for it by reading the booking.
+   */
+  async appReturnUrl(reference: string | undefined): Promise<string> {
+    const payment =
+      reference && isUUID(reference)
+        ? await this.prisma.payment.findUnique({
+            where: { id: reference },
+            select: { id: true, bookingId: true },
+          })
+        : null;
+    const url = new URL(APP_PAYMENT_RESULT_URL);
+    if (payment) {
+      url.searchParams.set('bookingId', payment.bookingId);
+      url.searchParams.set('paymentId', payment.id);
+    }
+    return url.toString();
   }
 }
 

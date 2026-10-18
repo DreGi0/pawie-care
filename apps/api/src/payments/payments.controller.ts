@@ -1,12 +1,15 @@
 import {
   Controller,
+  Get,
   Headers,
   HttpCode,
   HttpStatus,
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   type RawBodyRequest,
+  Redirect,
   Req,
 } from '@nestjs/common';
 import {
@@ -27,7 +30,7 @@ import { Public } from '../auth/public.decorator.js';
 import { ErrorResponse } from '../common/errors/error-response.dto.js';
 import { PaymentWebhooks } from './payment-webhooks.js';
 import { BookingPayment } from './payments.dto.js';
-import { PAYMENT_WEBHOOK_PATH, PaymentsService } from './payments.service.js';
+import { PAYMENT_RETURN_PATH, PAYMENT_WEBHOOK_PATH, PaymentsService } from './payments.service.js';
 
 @ApiTags('payments')
 @Controller()
@@ -50,6 +53,21 @@ export class PaymentsController {
     @Headers('wompi_hash') signature: string | undefined,
   ): Promise<void> {
     await this.webhooks.receive(request.rawBody, signature);
+  }
+
+  /**
+   * Wompi sends the owner here after paying, and this sends them on to the app
+   * (pawie://payment/result). It changes nothing (RN-PAG-02). Wompi adds its own
+   * parameters; only identificadorEnlaceComercio is read.
+   */
+  @Get(PAYMENT_RETURN_PATH)
+  @Public()
+  @Redirect()
+  @ApiExcludeEndpoint()
+  async returnToApp(
+    @Query('identificadorEnlaceComercio') reference: string | undefined,
+  ): Promise<{ url: string; statusCode: number }> {
+    return { url: await this.payments.appReturnUrl(reference), statusCode: HttpStatus.FOUND };
   }
 
   @Post('bookings/:bookingId/payments')

@@ -526,6 +526,44 @@ describe('payments (RN-PAG)', () => {
     });
   });
 
+  describe('GET /v1/payments/return', () => {
+    it('sends the owner back to the app with the booking, and changes nothing (RN-PAG-02)', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+      const link = await checkout(daniela, booking.id);
+      const before = await bookingRow(booking.id);
+
+      // The parameters of a payment link redirect (docs.wompi.sv, "Parámetros de URL de Redirect").
+      const { headers } = await api
+        .http()
+        .get('/v1/payments/return')
+        .query({
+          identificadorEnlaceComercio: link.reference,
+          idTransaccion: randomUUID(),
+          idEnlace: link.id,
+          monto: (link.amountCents / 100).toFixed(2),
+          hash: 'f'.repeat(64),
+        })
+        .expect(302);
+
+      expect(headers.location).toBe(
+        `pawie://payment/result?bookingId=${booking.id}&paymentId=${link.reference}`,
+      );
+      expect(await bookingRow(booking.id)).toEqual(before);
+    });
+
+    it('still opens the app when the payment is unknown', async () => {
+      for (const query of [
+        {},
+        { identificadorEnlaceComercio: randomUUID() },
+        { identificadorEnlaceComercio: 'x' },
+      ]) {
+        const { headers } = await api.http().get('/v1/payments/return').query(query).expect(302);
+        expect(headers.location).toBe('pawie://payment/result');
+      }
+    });
+  });
+
   describe('without Wompi credentials', () => {
     const offline = useApi(() => db, {
       override: (builder) => builder.overrideProvider(WOMPI_SETTINGS).useValue(null),
