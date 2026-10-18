@@ -5,7 +5,7 @@ API REST de Pawie Care, hecha con NestJS 12. Las reglas de negocio que implement
 ## Desarrollo
 
 ```bash
-pnpm infra:up              # desde la raíz: PostgreSQL, Redis y Mailpit
+pnpm infra:up              # desde la raíz: PostgreSQL, Redis, Mailpit y SeaweedFS
 cp .env.example .env
 pnpm db:deploy             # aplica las migraciones
 pnpm db:seed               # carga el catálogo, los parámetros y los cuidadores de demo
@@ -19,18 +19,22 @@ pnpm dev                   # genera el cliente de Prisma y levanta http://localh
 
 Las variables de entorno se validan al arrancar, en [src/config/environment.ts](src/config/environment.ts). Si falta una o tiene un valor inválido, la API no arranca y dice cuál es. Están todas en [.env.example](.env.example).
 
-| Variable                 | Para qué                                                                                    | Por defecto   |
-| ------------------------ | ------------------------------------------------------------------------------------------- | ------------- |
-| `NODE_ENV`               | `development`, `test` o `production`. En `development` los logs son legibles                | `development` |
-| `PORT`                   | Puerto HTTP                                                                                 | `3000`        |
-| `DATABASE_URL`           | Conexión con PostgreSQL                                                                     | Obligatoria   |
-| `CORS_ORIGINS`           | Orígenes del navegador permitidos, separados por comas. La app nativa no usa CORS           | Ninguno       |
-| `LOG_LEVEL`              | Nivel de los logs de pino                                                                   | `info`        |
-| `TRUST_PROXY`            | Cantidad de proxies delante de la API (1 en Railway o Render)                               | `0`           |
-| `JWT_ACCESS_SECRET`      | Firma los tokens de acceso. Mínimo 32 caracteres, y uno distinto en cada entorno desplegado | Obligatoria   |
-| `JWT_ACCESS_TTL_SECONDS` | Duración del token de acceso, en segundos                                                   | `900`         |
-| `REFRESH_TOKEN_TTL_DAYS` | Duración del refresh token, en días                                                         | `30`          |
-| `DEMO_OWNER_PASSWORD`    | Contraseña del dueño de demo que crea el seed. Sin ella, el seed no lo crea                 | Ninguna       |
+| Variable                                                | Para qué                                                                                                              | Por defecto   |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `NODE_ENV`                                              | `development`, `test` o `production`. En `development` los logs son legibles                                          | `development` |
+| `PORT`                                                  | Puerto HTTP                                                                                                           | `3000`        |
+| `DATABASE_URL`                                          | Conexión con PostgreSQL                                                                                               | Obligatoria   |
+| `CORS_ORIGINS`                                          | Orígenes del navegador permitidos, separados por comas. La app nativa no usa CORS                                     | Ninguno       |
+| `LOG_LEVEL`                                             | Nivel de los logs de pino                                                                                             | `info`        |
+| `TRUST_PROXY`                                           | Cantidad de proxies delante de la API (1 en Railway o Render)                                                         | `0`           |
+| `JWT_ACCESS_SECRET`                                     | Firma los tokens de acceso. Mínimo 32 caracteres, y uno distinto en cada entorno desplegado                           | Obligatoria   |
+| `JWT_ACCESS_TTL_SECONDS`                                | Duración del token de acceso, en segundos                                                                             | `900`         |
+| `REFRESH_TOKEN_TTL_DAYS`                                | Duración del refresh token, en días                                                                                   | `30`          |
+| `DEMO_OWNER_PASSWORD`                                   | Contraseña del dueño de demo que crea el seed. Sin ella, el seed no lo crea                                           | Ninguna       |
+| `S3_ENDPOINT`                                           | Almacenamiento compatible con S3: el SeaweedFS de `docker-compose.yml` en local y Cloudflare R2 en la demo desplegada | Obligatoria   |
+| `S3_PUBLIC_ENDPOINT`                                    | Host de las URLs firmadas que usan las apps. En el emulador de Android es `http://10.0.2.2:8333`                      | `S3_ENDPOINT` |
+| `S3_REGION`                                             | Región. R2 usa `auto` y SeaweedFS acepta cualquiera                                                                   | `auto`        |
+| `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Bucket privado y su llave de acceso                                                                                   | Obligatorias  |
 
 ## Convenciones
 
@@ -75,6 +79,57 @@ curl -s -X POST localhost:3000/v1/auth/login -H 'content-type: application/json'
   -d '{"email":"demo@example.com","password":"pawie-demo-local"}'
 curl -s localhost:3000/v1/users/me -H "authorization: Bearer <accessToken>"
 ```
+
+## Archivos
+
+Las fotos y los documentos van en un bucket privado (arquitectura §4.11). La app los sube directo al bucket, sin pasar por la API:
+
+1. `POST /v1/files` con `purpose`, `contentType` y `sizeBytes` exacto. Devuelve `uploadUrl` y `uploadHeaders`.
+2. `PUT` del archivo a `uploadUrl` con esos headers. El tipo y el tamaño van firmados: si no coinciden, el bucket responde 403.
+3. `POST /v1/files/:id/complete`. A partir de ahí el archivo se puede asignar a una mascota, una vacuna o unas indicaciones.
+
+- **Límites:** las fotos (`PET_PHOTO`) aceptan JPEG, PNG, WebP o HEIC de hasta 10 MB. Las recetas (`VET_INSTRUCTION`) y los carnés de vacunas (`VACCINATION_RECORD`) aceptan además PDF, hasta 15 MB.
+- **Descargas:** las URLs que devuelve la API vencen en 10 minutos. `GET /v1/files/:id` da una nueva.
+- **Emulador de Android:** pon `S3_PUBLIC_ENDPOINT=http://10.0.2.2:8333`. Si no, las URLs apuntan a `localhost`, que dentro del emulador es el propio emulador.
+
+## Mascotas
+
+`/v1/pets` implementa RN-MAS. Cada dueño solo ve sus mascotas; para las de otros, y para las archivadas, responde 404 `PET_NOT_FOUND`.
+
+- `PUT /v1/pets/:id` reemplaza la mascota completa: un campo opcional que no se manda queda vacío. `DELETE` la archiva.
+- Las vacunas, las indicaciones del veterinario y las tareas de cuidado van en subrutas.
+- **Tareas de cuidado:** los grupos están en [src/pets/care-tasks.ts](src/pets/care-tasks.ts). Las reglas se validan con estos errores claros, antes de llegar a los `CHECK` de la base:
+  - las clínicas piden `vetInstructionId` (`VET_INSTRUCTIONS_REQUIRED`);
+  - las de asistencia piden `ownerInstructions` (`OWNER_INSTRUCTIONS_REQUIRED`);
+  - solo pueden quedar sin fecha de fin las que lo permiten (`END_DATE_REQUIRED`).
+- [src/pets/care-level.ts](src/pets/care-level.ts) calcula si una mascota es Normal o Especial en ciertas fechas (RN-MAS-04 a 07), y qué tareas prohibidas tiene activas (RN-MAS-09).
+
+## Búsqueda de cuidadores
+
+`POST /v1/caregivers/search` (RN-RES-01) recibe `petIds`, `districtId`, `serviceCode` y el horario:
+
+- **Pernocta:** `nights` es la fecha en que empieza cada noche, de 19:00 a 08:00 del día siguiente. Puede llevar `visits` durante la estadía (RN-SER-03).
+- **Visita:** `visits` es la hora en que empieza cada una, con zona horaria. Cada visita dura 60 min.
+
+[src/bookings/slot-plan.ts](src/bookings/slot-plan.ts) convierte eso en tramos, y la Etapa 5 usará los mismos para reservar.
+
+La respuesta trae el nivel de la reserva, los tramos y los cuidadores disponibles. Un cuidador aparece si:
+
+- está aprobado, activo y sin suspensión;
+- cubre el distrito;
+- ofrece cada servicio en ese nivel, y si la reserva es Especial, tiene la ⭐ vigente hasta el último día;
+- tiene ventanas en su horario semanal para todos los tramos y no tiene otro tramo que se cruce.
+
+Los resultados van ordenados por calificación y después por servicios completados.
+
+- **Errores:**
+  - `TOO_MANY_PETS` (RN-RES-03);
+  - `INVALID_SCHEDULE`;
+  - `TOO_SOON` (RN-RES-05);
+  - `PET_NOT_BOOKABLE` (RN-MAS-09), con un mensaje que explica el motivo y las mascotas y tareas en `details`;
+  - `UNKNOWN_DISTRICT`.
+- **Precios:** son por una mascota. Si el cuidador no fijó uno, se usa el sugerido, y siempre se ajustan al rango vigente. El recargo por mascota adicional y la tarifa de servicio se calculan en la Etapa 5.
+- **Perfil:** `GET /v1/caregivers/:id` (RN-RES-02) muestra la ⭐, la insignia de estudiante, la calificación, los distritos y los precios. Los de nivel Especial solo aparecen si el cuidador tiene la ⭐.
 
 ## Contrato OpenAPI
 
@@ -124,7 +179,8 @@ Otros comandos:
 - los 14 distritos del AMSS, perro y gato, los dos servicios y el tipo de certificación ⭐;
 - todos los parámetros de la sección 15 que falten, con su valor inicial;
 - 10 cuidadores aprobados y con Reserva inmediata. Hay de los cuatro tipos (⭐, estudiantes, ambos y ninguno), y Gabriela, Diego y Sofía no hacen pernoctas. Sus correos son de `example.com` y no tienen contraseña, así que no pueden iniciar sesión;
-- el dueño de demo, `demo@example.com`, con una dirección en San Salvador. Su contraseña es la de `DEMO_OWNER_PASSWORD`, que en local es `pawie-demo-local`. Sin esa variable, el seed no lo crea. En la demo desplegada, que tiene URL pública, usa otra contraseña.
+- el dueño de demo, `demo@example.com`, con una dirección en San Salvador. Su contraseña es la de `DEMO_OWNER_PASSWORD`, que en local es `pawie-demo-local`. Sin esa variable, el seed no lo crea. En la demo desplegada, que tiene URL pública, usa otra contraseña. Tiene tres mascotas, una por cada caso de la demo: Toby es Normal; Nala es Especial porque necesita ayuda para moverse; y Rocky necesita insulina, así que no se puede reservar (RN-MAS-09);
+- las fotos que haya en [seed-media/](seed-media/README.md), que se suben al bucket. La carpeta explica cómo nombrarlas.
 
 Se puede correr las veces que quieras:
 
@@ -158,9 +214,10 @@ Para agregar un parámetro, súmalo al registro y a la tabla de la sección 15. 
 ## Pruebas
 
 - **Unitarias:** `src/**/*.spec.ts`.
-- **De integración:** `test/**/*.e2e-spec.ts`. Levantan un PostgreSQL 18 real con Testcontainers, así que **necesitan Docker**. Aplican las migraciones y arrancan el `AppModule` completo con la misma configuración HTTP que `main.ts` (ver `test/create-test-app.ts`).
+- **De integración:** `test/**/*.e2e-spec.ts`. Levantan con Testcontainers un PostgreSQL 18 y un SeaweedFS reales, así que **necesitan Docker**. Aplican las migraciones y arrancan el `AppModule` completo con la misma configuración HTTP que `main.ts` (ver `test/create-test-app.ts`).
   - Cada archivo que escribe datos pide su propia base con `createTestDatabase()` ([test/database.ts](test/database.ts)), que es una copia vacía de la base ya migrada. Así los archivos corren en paralelo sin ver los datos de los otros.
   - [test/factories.ts](test/factories.ts) crea las filas mínimas válidas: usuarios, cuidadores, mascotas y reservas con sus tramos.
+  - [test/use-api.ts](test/use-api.ts) arranca la API contra la base de un archivo y firma tokens de acceso sin pasar por el inicio de sesión. [test/uploads.ts](test/uploads.ts) sube un archivo como lo hace la app.
 
 ## Comandos
 

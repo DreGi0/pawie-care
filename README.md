@@ -21,7 +21,7 @@ docs/           Reglas de negocio y arquitectura
 
 - **Node.js 24.7 o más** (la API usa `crypto.argon2`). La versión está en `.node-version`; con fnm basta con `fnm use`.
 - **pnpm**, que se activa con `corepack enable`. La versión exacta está en `package.json`.
-- **Docker**, para PostgreSQL, Redis y Mailpit, y para las pruebas de integración de la API.
+- **Docker**, para PostgreSQL, Redis, Mailpit y SeaweedFS (los archivos), y para las pruebas de integración de la API.
 - **Android Studio** para el emulador de Android, o **Xcode** en macOS para el simulador de iOS.
 
 ## Primeros pasos
@@ -29,7 +29,7 @@ docs/           Reglas de negocio y arquitectura
 ```bash
 corepack enable
 pnpm install
-pnpm infra:up                         # PostgreSQL, Redis y Mailpit
+pnpm infra:up                         # PostgreSQL, Redis, Mailpit y SeaweedFS
 cp apps/api/.env.example apps/api/.env
 pnpm --filter @pawie/api db:deploy    # crea las tablas
 pnpm --filter @pawie/api db:seed      # catálogo, parámetros y cuidadores de demo

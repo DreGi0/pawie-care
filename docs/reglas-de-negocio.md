@@ -128,7 +128,7 @@ Lo que la demo resuelve de otra forma:
 
 **En la demo:** los dos servicios.
 
-- **RN-SER-01** **Visita a domicilio:** hasta **[60 min]** en la casa del dueño (alimentación, limpieza, compañía, medicación y, si es un perro, una caminata corta). Se cobra por visita y se pueden agendar varias en un día.
+- **RN-SER-01** **Visita a domicilio:** hasta **[60 min]** en la casa del dueño (alimentación, limpieza, compañía, medicación y, si es un perro, una caminata corta). Se cobra por visita y se pueden agendar varias en un día. Cada visita ocupa los [60 min] completos en el calendario del cuidador, sin tiempo aparte para el traslado.
 - **RN-SER-02** **Pernocta en casa del dueño:** el cuidador duerme en la casa, de **[19:00]** a **[08:00]** del día siguiente, e incluye los cuidados de la noche y de la mañana. Se cobra por noche.
 - **RN-SER-03** En estadías de varios días, la mascota queda sola entre las 08:00 y las 19:00, así que el dueño puede sumar visitas durante el día. Van como tramos de visita dentro de la misma reserva, al precio de visita del nivel de la reserva.
 - **RN-SER-04** Fuera del alcance por ahora: paseos sueltos y hospedaje en la casa del cuidador.
@@ -163,7 +163,7 @@ Lo que la demo resuelve de otra forma:
 
 Una reserva es con un cuidador y un servicio, para una o varias mascotas. Tiene uno o varios **tramos**, que son cada visita o cada noche, y se paga una sola vez.
 
-- **RN-RES-01** El dueño busca por mascota(s), servicio, fechas y distrito. Solo aparecen los cuidadores que están aprobados y activos, cubren el distrito, tienen disponibilidad en esas fechas y tienen ⭐ si la reserva es Especial.
+- **RN-RES-01** El dueño busca por mascota(s), servicio, fechas y distrito. Solo aparecen los cuidadores que están aprobados y activos, cubren el distrito, tienen disponibilidad en esas fechas y, si la reserva es Especial, tienen la ⭐ vigente hasta el último día del servicio. Los resultados se ordenan por calificación y, después, por la cantidad de servicios en Pawie.
 - **RN-RES-02** El perfil del cuidador muestra la ⭐, la insignia de estudiante, la calificación, la cantidad de servicios en Pawie, los precios, los distritos y si tiene Reserva inmediata.
 - **RN-RES-03** Al solicitar, el dueño elige las mascotas (hasta **[3]** por reserva), el servicio, las fechas y horas, y deja instrucciones. Si la reserva es Especial, se adjuntan automáticamente las indicaciones del veterinario que están en el perfil de la mascota.
 - **RN-RES-04** Al solicitar, el dueño también deja sus **datos de emergencia**: veterinario de cabecera, un contacto de emergencia, un **monto preautorizado para emergencias** y su consentimiento para que lleven a la mascota a una clínica.

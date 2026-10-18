@@ -99,14 +99,14 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 
 ### 3.5 Infraestructura
 
-| Necesidad            | Elección                                                                                                                                                                                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Entorno local        | Docker Compose con PostgreSQL 18, Redis 8 y Mailpit (para ver los correos). El almacenamiento compatible con S3 se agrega junto con el módulo de archivos; será SeaweedFS u otro equivalente, porque MinIO archivó su edición comunitaria en 2026 |
-| Webhooks en local    | Túnel con cloudflared, para que Wompi pueda llegar a la máquina de quien desarrolla                                                                                                                                                               |
-| Backend de la demo   | Railway o Render, con la API, PostgreSQL y Redis administrados                                                                                                                                                                                    |
-| Archivos             | Cloudflare R2 (compatible con S3)                                                                                                                                                                                                                 |
-| Correo               | Resend                                                                                                                                                                                                                                            |
-| Integración continua | GitHub Actions: lint, revisión de tipos, pruebas y build                                                                                                                                                                                          |
+| Necesidad            | Elección                                                                                                                                                                                                                                                                      |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Entorno local        | Docker Compose con PostgreSQL 18, Redis 8, Mailpit (para ver los correos) y SeaweedFS 4.48 como almacenamiento compatible con S3. SeaweedFS corre en modo `weed mini`, que crea la llave de acceso y el bucket. Se eligió porque MinIO archivó su edición comunitaria en 2026 |
+| Webhooks en local    | Túnel con cloudflared, para que Wompi pueda llegar a la máquina de quien desarrolla                                                                                                                                                                                           |
+| Backend de la demo   | Railway o Render, con la API, PostgreSQL y Redis administrados                                                                                                                                                                                                                |
+| Archivos             | Cloudflare R2 (compatible con S3)                                                                                                                                                                                                                                             |
+| Correo               | Resend                                                                                                                                                                                                                                                                        |
+| Integración continua | GitHub Actions: lint, revisión de tipos, pruebas y build                                                                                                                                                                                                                      |
 
 ## 4. Decisiones de arquitectura
 
@@ -127,7 +127,11 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
    - Prisma no puede expresar esta restricción, ni los `CHECK` ni los índices únicos parciales, así que van en una migración SQL escrita a mano. Una prueba de integración comprueba que `prisma migrate diff` entre la base migrada y el esquema sale vacío, es decir, que Prisma no intentaría borrarlos.
 9. **Cada reserva guarda una copia de los precios y comisiones** del momento en que se confirmó (RN-PRE-07). Los parámetros viven en una tabla, y cada cambio registra quién lo hizo, cuándo y qué valor tenía antes. Un registro tipado en el código (`src/settings/settings.registry.ts`) define cada clave con su validador, su valor inicial y la regla que implementa, y los valores siempre se leen validados.
 10. **Los plazos se manejan con tareas diferidas de BullMQ.** Por ejemplo, cuando una reserva pasa a `PENDIENTE_DE_PAGO` se agenda una tarea que la vence si no se paga en el plazo. Antes de actuar, la tarea vuelve a revisar el estado, para que una reserva ya pagada no se venza por error.
-11. **Los archivos médicos van en un bucket privado.** Se suben y se abren con URLs firmadas de vida corta.
+11. **Los archivos van en un bucket privado**, las fotos y también los documentos médicos. Se suben y se abren con URLs firmadas de vida corta.
+    - La app pide la subida diciendo el propósito, el tipo y el tamaño exacto, sube el archivo con `PUT` directo al bucket y después la confirma. La API nunca recibe los bytes.
+    - El tipo y el tamaño van firmados en la URL, así que el bucket rechaza cualquier otro archivo. Por eso los límites se cumplen aunque la API no vea el archivo.
+    - Las URLs vencen en 10 minutos. Las firma un cliente apuntado a `S3_PUBLIC_ENDPOINT`, porque el emulador de Android llega a la computadora por `10.0.2.2` y no por `localhost`.
+    - El SDK de AWS se configura sin los checksums que agrega por defecto, que romperían las URLs firmadas. Cloudflare R2 pide lo mismo.
 12. **El código se escribe en inglés y la documentación en español.** Ver el glosario de la sección 8.
 13. **Todos los errores de la API tienen la misma forma:** `{ statusCode, errorCode, message, details? }`. `errorCode` es estable y en inglés, y el cliente decide qué hacer según ese valor. `message` va en español, porque el cliente se lo muestra al usuario. Un error que no trae `errorCode` sale con un mensaje genérico, para que los detalles internos no lleguen al cliente. `errorCode` es el campo que NestJS 12 ya agrega a sus excepciones.
 14. **Una reserva es un cuidador, un servicio, sus mascotas y uno o varios tramos**, y se paga una sola vez. Cada tramo es una visita o una noche, con su propio servicio y su precio unitario, así que una pernocta puede llevar tramos de visita para el día (RN-SER-03).
@@ -137,19 +141,19 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 
 ## 5. Módulos del backend
 
-| Módulo          | Responsabilidad                                                             | Reglas                   |
-| --------------- | --------------------------------------------------------------------------- | ------------------------ |
-| `auth`          | Registro, inicio de sesión y tokens                                         | RN-CTA-01, RN-CTA-02     |
-| `users`         | Cuentas y roles                                                             | RN-CTA                   |
-| `caregivers`    | Perfil, certificaciones, distritos, disponibilidad y Reserva inmediata      | RN-CUI                   |
-| `pets`          | Mascotas, indicaciones del veterinario y clasificación del nivel de cuidado | RN-MAS                   |
-| `catalog`       | Especies, servicios y distritos                                             | RN-MAS-01, RN-SER        |
-| `settings`      | Parámetros configurables y su historial de cambios                          | Sección 15 de las reglas |
-| `pricing`       | Cálculo del precio de una reserva                                           | RN-PRE                   |
-| `bookings`      | Búsqueda de cuidadores, solicitudes, estados y plazos                       | RN-RES                   |
-| `payments`      | Integración con Wompi y webhooks                                            | RN-PAG                   |
-| `files`         | Subida y acceso a archivos                                                  | RN-MAS-08                |
-| `notifications` | Correos y, más adelante, notificaciones push                                |                          |
+| Módulo          | Responsabilidad                                                                                | Reglas                       |
+| --------------- | ---------------------------------------------------------------------------------------------- | ---------------------------- |
+| `auth`          | Registro, inicio de sesión y tokens                                                            | RN-CTA-01, RN-CTA-02         |
+| `users`         | Cuentas y roles                                                                                | RN-CTA                       |
+| `caregivers`    | Perfil, certificaciones, distritos, disponibilidad, Reserva inmediata y búsqueda de cuidadores | RN-CUI, RN-RES-01, RN-RES-02 |
+| `pets`          | Mascotas, indicaciones del veterinario y clasificación del nivel de cuidado                    | RN-MAS                       |
+| `catalog`       | Especies, servicios y distritos                                                                | RN-MAS-01, RN-SER            |
+| `settings`      | Parámetros configurables y su historial de cambios                                             | Sección 15 de las reglas     |
+| `pricing`       | Cálculo del precio de una reserva                                                              | RN-PRE                       |
+| `bookings`      | Solicitudes, estados y plazos, y el plan de tramos que también usa la búsqueda                 | RN-RES                       |
+| `payments`      | Integración con Wompi y webhooks                                                               | RN-PAG                       |
+| `files`         | Subida y acceso a archivos                                                                     | RN-MAS-02, RN-MAS-08         |
+| `notifications` | Correos y, más adelante, notificaciones push                                                   |                              |
 
 ## 6. Integración con Wompi
 
