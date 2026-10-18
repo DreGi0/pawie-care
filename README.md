@@ -13,7 +13,8 @@ Marketplace que conecta a dueños de mascotas con cuidadores en San Salvador, El
 apps/
   api/          API REST (NestJS)
   mobile/       App iOS y Android (Expo)
-packages/       Código compartido (el cliente de la API se agrega aquí)
+packages/
+  api-client/   Cliente de la API para las apps, generado con Orval desde el contrato OpenAPI
 docs/           Reglas de negocio y arquitectura
 ```
 
@@ -49,4 +50,4 @@ pnpm --filter @pawie/mobile android   # o "ios" en macOS
 | `pnpm format`                       | Formatea todo el repositorio con Prettier        |
 | `pnpm infra:up` / `pnpm infra:down` | Levanta o detiene la infraestructura local       |
 
-Antes de cada commit, un hook formatea los archivos modificados. GitHub Actions corre formato, lint, tipos, tests y build en cada push y en cada pull request, y revisa que el contrato `apps/api/openapi.json` esté al día.
+Antes de cada commit, un hook formatea los archivos modificados. GitHub Actions corre formato, lint, tipos, tests y build en cada push y en cada pull request, y revisa que el contrato `apps/api/openapi.json` y el cliente generado `packages/api-client` estén al día.

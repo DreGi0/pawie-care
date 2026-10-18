@@ -1,0 +1,11 @@
+{
+  "$schema": "../../node_modules/turbo/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "generate": {
+      // Orval reads the contract, its config and the mutator, whose exports it inspects.
+      "inputs": ["$TURBO_ROOT$/apps/api/openapi.json", "orval.config.ts", "src/fetcher.ts"],
+      "outputs": ["src/generated/**"]
+    }
+  }
+}

@@ -20,3 +20,6 @@ allowBuilds:
   # Optional native speed-up of msgpackr (used by BullMQ). Its binaries ship as per-platform optional
   # dependencies and msgpackr falls back to plain JS, so the node-gyp compile fallback isn't needed
   msgpackr-extract: false
+  # Used by Orval (@orval/core). Its binary ships as a per-platform optional dependency
+  # (@esbuild/<platform>), so the postinstall that installs or checks it isn't needed
+  esbuild: false
