@@ -10,6 +10,7 @@ import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
 import { ApiValidationPipe } from './common/errors/api-validation.pipe.js';
 import { AppConfigModule } from './config/config.module.js';
 import { type Environment, NodeEnv } from './config/environment.js';
+import { FilesModule } from './files/files.module.js';
 import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SettingsModule } from './settings/settings.module.js';
@@ -71,6 +72,7 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
     SettingsModule,
     UsersModule,
     AuthModule,
+    FilesModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ApiValidationPipe },

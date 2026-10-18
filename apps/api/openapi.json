@@ -315,6 +315,168 @@
           "auth"
         ]
       }
+    },
+    "/v1/files": {
+      "post": {
+        "description": "Devuelve una URL firmada para subir el archivo con PUT, directo al almacenamiento. Después hay que llamar a `complete`.",
+        "operationId": "Files_createUpload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUploadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileUpload"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`FILE_NOT_FOUND`: no existe o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`UNSUPPORTED_FILE_TYPE` o `FILE_TOO_LARGE`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pedir una subida",
+        "tags": [
+          "files"
+        ]
+      }
+    },
+    "/v1/files/{id}/complete": {
+      "post": {
+        "description": "Se llama después del PUT.",
+        "operationId": "Files_complete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`FILE_NOT_FOUND`: no existe o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`FILE_NOT_UPLOADED`: el PUT no llegó.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirmar una subida",
+        "tags": [
+          "files"
+        ]
+      }
+    },
+    "/v1/files/{id}": {
+      "get": {
+        "description": "Sirve para pedir otra URL de descarga cuando la anterior venció.",
+        "operationId": "Files_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`FILE_NOT_FOUND`: no existe o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver un archivo",
+        "tags": [
+          "files"
+        ]
+      }
     }
   },
   "info": {
@@ -577,6 +739,134 @@
         },
         "required": [
           "refreshToken"
+        ]
+      },
+      "UploadPurpose": {
+        "type": "string",
+        "enum": [
+          "PET_PHOTO",
+          "VET_INSTRUCTION",
+          "VACCINATION_RECORD"
+        ]
+      },
+      "CreateUploadRequest": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UploadPurpose"
+              }
+            ]
+          },
+          "contentType": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "image/jpeg",
+            "description": "Fotos: JPEG, PNG, WebP o HEIC, hasta 10 MB. Recetas y carnés de vacunas: también PDF, hasta 15 MB."
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 245000,
+            "description": "Tamaño exacto del archivo en bytes. La subida tiene que coincidir."
+          }
+        },
+        "required": [
+          "purpose",
+          "contentType",
+          "sizeBytes"
+        ]
+      },
+      "FilePurpose": {
+        "type": "string",
+        "enum": [
+          "PET_PHOTO",
+          "CAREGIVER_PHOTO",
+          "VET_INSTRUCTION",
+          "VACCINATION_RECORD"
+        ]
+      },
+      "FileResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "purpose": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FilePurpose"
+              }
+            ]
+          },
+          "contentType": {
+            "type": "string",
+            "example": "image/jpeg"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Null hasta que se sube."
+          },
+          "uploadedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "url": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL firmada para descargarlo, que vence en 10 minutos. Null hasta que se sube."
+          }
+        },
+        "required": [
+          "id",
+          "purpose",
+          "contentType",
+          "sizeBytes",
+          "uploadedAt",
+          "url"
+        ]
+      },
+      "FileUpload": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/FileResponse"
+          },
+          "uploadUrl": {
+            "type": "string",
+            "description": "Hay que subir el archivo con PUT a esta URL, que vence en 10 minutos."
+          },
+          "uploadMethod": {
+            "enum": [
+              "PUT"
+            ],
+            "type": "string"
+          },
+          "uploadHeaders": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "example": {
+              "Content-Type": "image/jpeg"
+            },
+            "description": "Headers que tiene que llevar el PUT, tal cual."
+          },
+          "uploadExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "file",
+          "uploadUrl",
+          "uploadMethod",
+          "uploadHeaders",
+          "uploadExpiresAt"
         ]
       }
     }
