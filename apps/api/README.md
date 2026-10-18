@@ -19,14 +19,18 @@ pnpm dev                   # genera el cliente de Prisma y levanta http://localh
 
 Las variables de entorno se validan al arrancar, en [src/config/environment.ts](src/config/environment.ts). Si falta una o tiene un valor inválido, la API no arranca y dice cuál es. Están todas en [.env.example](.env.example).
 
-| Variable       | Para qué                                                                          | Por defecto   |
-| -------------- | --------------------------------------------------------------------------------- | ------------- |
-| `NODE_ENV`     | `development`, `test` o `production`. En `development` los logs son legibles      | `development` |
-| `PORT`         | Puerto HTTP                                                                       | `3000`        |
-| `DATABASE_URL` | Conexión con PostgreSQL                                                           | Obligatoria   |
-| `CORS_ORIGINS` | Orígenes del navegador permitidos, separados por comas. La app nativa no usa CORS | Ninguno       |
-| `LOG_LEVEL`    | Nivel de los logs de pino                                                         | `info`        |
-| `TRUST_PROXY`  | Cantidad de proxies delante de la API (1 en Railway o Render)                     | `0`           |
+| Variable                 | Para qué                                                                                    | Por defecto   |
+| ------------------------ | ------------------------------------------------------------------------------------------- | ------------- |
+| `NODE_ENV`               | `development`, `test` o `production`. En `development` los logs son legibles                | `development` |
+| `PORT`                   | Puerto HTTP                                                                                 | `3000`        |
+| `DATABASE_URL`           | Conexión con PostgreSQL                                                                     | Obligatoria   |
+| `CORS_ORIGINS`           | Orígenes del navegador permitidos, separados por comas. La app nativa no usa CORS           | Ninguno       |
+| `LOG_LEVEL`              | Nivel de los logs de pino                                                                   | `info`        |
+| `TRUST_PROXY`            | Cantidad de proxies delante de la API (1 en Railway o Render)                               | `0`           |
+| `JWT_ACCESS_SECRET`      | Firma los tokens de acceso. Mínimo 32 caracteres, y uno distinto en cada entorno desplegado | Obligatoria   |
+| `JWT_ACCESS_TTL_SECONDS` | Duración del token de acceso, en segundos                                                   | `900`         |
+| `REFRESH_TOKEN_TTL_DAYS` | Duración del refresh token, en días                                                         | `30`          |
+| `DEMO_OWNER_PASSWORD`    | Contraseña del dueño de demo que crea el seed. Sin ella, el seed no lo crea                 | Ninguna       |
 
 ## Convenciones
 
@@ -38,6 +42,39 @@ Las variables de entorno se validan al arrancar, en [src/config/environment.ts](
   - Cualquier error sin `errorCode` sale con un mensaje genérico, para que los detalles internos no lleguen al cliente.
 - **Validación:** los DTO usan class-validator y van en archivos `*.dto.ts`, para que el plugin de Swagger los documente. Se rechazan las propiedades que el DTO no declara, y los errores de cada campo llegan en `details`.
 - **Logs:** pino en JSON, legibles con pino-pretty en desarrollo. Cada petición registra solo su ID, método, URL y estado, y cada respuesta trae el encabezado `x-request-id`.
+- **Rutas protegidas por defecto:** toda ruta exige un token de acceso salvo las marcadas con `@Public()`. Si una ruta nueva debe ser pública, márcala; si no, documéntala con `@ApiBearerAuth()`. El usuario de la petición se lee con `@CurrentUser()`.
+
+## Autenticación
+
+Implementa RN-CTA-01 y RN-CTA-02, según §4.4 de la arquitectura. Por ahora solo existe el modo de la app móvil: el token va en `Authorization: Bearer`. Las cookies y la protección CSRF para la web llegan con la web.
+
+| Ruta                     | Qué hace                                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------------------------ |
+| `POST /v1/auth/register` | Crea una cuenta de dueño e inicia sesión. Solo mayores de 18 años, según la fecha en El Salvador |
+| `POST /v1/auth/login`    | Inicia sesión                                                                                    |
+| `POST /v1/auth/refresh`  | Cambia el refresh token por un par nuevo                                                         |
+| `POST /v1/auth/logout`   | Cierra la sesión de ese refresh token                                                            |
+| `GET /v1/users/me`       | Los datos de la cuenta que inició sesión                                                         |
+
+- **Contraseñas:** se guardan con argon2id de `node:crypto`, en formato PHC ([src/auth/passwords.ts](src/auth/passwords.ts)), y tienen entre 8 y 128 caracteres.
+- **Token de acceso:** es un JWT HS256 que dura `JWT_ACCESS_TTL_SECONDS`. Cuando una ruta responde 401 `UNAUTHORIZED`, la app tiene que renovarlo.
+- **Refresh token:** es opaco, dura `REFRESH_TOKEN_TTL_DAYS` y en la base solo queda su SHA-256.
+  - Sirve una vez: `refresh` devuelve uno nuevo y el anterior deja de servir.
+  - Si alguien usa otra vez uno ya cambiado, se revocan todos los tokens de esa sesión y responde `INVALID_REFRESH_TOKEN`. Por eso la app no debe pedir dos `refresh` a la vez con el mismo token.
+- **Errores:**
+  - `EMAIL_TAKEN` (409): ya hay una cuenta con ese correo.
+  - `UNDERAGE` (422): es menor de 18 años.
+  - `INVALID_CREDENTIALS` (401): el correo o la contraseña no son correctos. Responde igual si el correo no existe.
+  - `INVALID_REFRESH_TOKEN` (401): hay que iniciar sesión de nuevo.
+- **Límites por IP:** 5 registros, 10 inicios de sesión y 30 `refresh` por minuto.
+
+Para probarlo con el dueño de demo (ver [Seed](#seed)):
+
+```bash
+curl -s -X POST localhost:3000/v1/auth/login -H 'content-type: application/json' \
+  -d '{"email":"demo@example.com","password":"pawie-demo-local"}'
+curl -s localhost:3000/v1/users/me -H "authorization: Bearer <accessToken>"
+```
 
 ## Contrato OpenAPI
 
@@ -86,7 +123,8 @@ Otros comandos:
 
 - los 14 distritos del AMSS, perro y gato, los dos servicios y el tipo de certificación ⭐;
 - todos los parámetros de la sección 15 que falten, con su valor inicial;
-- 10 cuidadores aprobados y con Reserva inmediata. Hay de los cuatro tipos (⭐, estudiantes, ambos y ninguno), y Gabriela, Diego y Sofía no hacen pernoctas. Sus correos son de `example.com` y no tienen contraseña, así que no pueden iniciar sesión.
+- 10 cuidadores aprobados y con Reserva inmediata. Hay de los cuatro tipos (⭐, estudiantes, ambos y ninguno), y Gabriela, Diego y Sofía no hacen pernoctas. Sus correos son de `example.com` y no tienen contraseña, así que no pueden iniciar sesión;
+- el dueño de demo, `demo@example.com`, con una dirección en San Salvador. Su contraseña es la de `DEMO_OWNER_PASSWORD`, que en local es `pawie-demo-local`. Sin esa variable, el seed no lo crea. En la demo desplegada, que tiene URL pública, usa otra contraseña.
 
 Se puede correr las veces que quieras:
 
