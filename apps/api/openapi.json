@@ -315,6 +315,1031 @@
           "auth"
         ]
       }
+    },
+    "/v1/files": {
+      "post": {
+        "description": "Devuelve una URL firmada para subir el archivo con PUT, directo al almacenamiento. Después hay que llamar a `complete`.",
+        "operationId": "Files_createUpload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUploadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileUpload"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`FILE_NOT_FOUND`: no existe o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`UNSUPPORTED_FILE_TYPE` o `FILE_TOO_LARGE`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pedir una subida",
+        "tags": [
+          "files"
+        ]
+      }
+    },
+    "/v1/files/{id}/complete": {
+      "post": {
+        "description": "Se llama después del PUT.",
+        "operationId": "Files_complete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`FILE_NOT_FOUND`: no existe o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`FILE_NOT_UPLOADED`: el PUT no llegó.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirmar una subida",
+        "tags": [
+          "files"
+        ]
+      }
+    },
+    "/v1/files/{id}": {
+      "get": {
+        "description": "Sirve para pedir otra URL de descarga cuando la anterior venció.",
+        "operationId": "Files_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`FILE_NOT_FOUND`: no existe o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver un archivo",
+        "tags": [
+          "files"
+        ]
+      }
+    },
+    "/v1/catalog": {
+      "get": {
+        "description": "Distritos, especies, servicios y los límites para armar una reserva.",
+        "operationId": "Catalog_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Catálogo",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/v1/pets": {
+      "get": {
+        "description": "Sin las archivadas.",
+        "operationId": "Pets_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PetResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mis mascotas",
+        "tags": [
+          "pets"
+        ]
+      },
+      "post": {
+        "operationId": "Pets_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PetDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Registrar una mascota",
+        "tags": [
+          "pets"
+        ]
+      }
+    },
+    "/v1/pets/{petId}": {
+      "get": {
+        "description": "Con sus vacunas, indicaciones del veterinario y tareas de cuidado.",
+        "operationId": "Pets_get",
+        "parameters": [
+          {
+            "name": "petId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PetDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver una mascota",
+        "tags": [
+          "pets"
+        ]
+      },
+      "put": {
+        "description": "Reemplaza todos sus datos: un campo opcional que no se manda queda vacío.",
+        "operationId": "Pets_replace",
+        "parameters": [
+          {
+            "name": "petId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PetDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Editar una mascota",
+        "tags": [
+          "pets"
+        ]
+      },
+      "delete": {
+        "description": "Deja de aparecer y no se puede reservar, pero su historial se conserva.",
+        "operationId": "Pets_archive",
+        "parameters": [
+          {
+            "name": "petId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archivar una mascota",
+        "tags": [
+          "pets"
+        ]
+      }
+    },
+    "/v1/pets/{petId}/vaccinations": {
+      "post": {
+        "operationId": "Pets_addVaccination",
+        "parameters": [
+          {
+            "name": "petId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaccinationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaccinationResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Agregar una vacuna",
+        "tags": [
+          "pets"
+        ]
+      }
+    },
+    "/v1/pets/{petId}/vaccinations/{vaccinationId}": {
+      "delete": {
+        "operationId": "Pets_removeVaccination",
+        "parameters": [
+          {
+            "name": "petId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vaccinationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Borrar una vacuna",
+        "tags": [
+          "pets"
+        ]
+      }
+    },
+    "/v1/pets/{petId}/vet-instructions": {
+      "post": {
+        "description": "RN-MAS-08: la receta o las instrucciones post-operatorias, ya subidas.",
+        "operationId": "Pets_addVetInstruction",
+        "parameters": [
+          {
+            "name": "petId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VetInstructionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VetInstructionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Agregar indicaciones del veterinario",
+        "tags": [
+          "pets"
+        ]
+      }
+    },
+    "/v1/pets/{petId}/vet-instructions/{vetInstructionId}": {
+      "delete": {
+        "operationId": "Pets_removeVetInstruction",
+        "parameters": [
+          {
+            "name": "petId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vetInstructionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`VET_INSTRUCTION_IN_USE`: una tarea de cuidado o una reserva las usa.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Borrar indicaciones del veterinario",
+        "tags": [
+          "pets"
+        ]
+      }
+    },
+    "/v1/pets/{petId}/care-needs": {
+      "post": {
+        "description": "RN-MAS-06, RN-MAS-08 y RN-MAS-09. Errores: `VET_INSTRUCTIONS_REQUIRED`, `OWNER_INSTRUCTIONS_REQUIRED` o `END_DATE_REQUIRED`.",
+        "operationId": "Pets_addCareNeed",
+        "parameters": [
+          {
+            "name": "petId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CareNeedRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CareNeedResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Agregar una tarea de cuidado",
+        "tags": [
+          "pets"
+        ]
+      }
+    },
+    "/v1/pets/{petId}/care-needs/{careNeedId}": {
+      "put": {
+        "description": "También sirve para cerrarla, poniéndole fecha de fin.",
+        "operationId": "Pets_replaceCareNeed",
+        "parameters": [
+          {
+            "name": "petId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "careNeedId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CareNeedRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CareNeedResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Editar una tarea de cuidado",
+        "tags": [
+          "pets"
+        ]
+      },
+      "delete": {
+        "operationId": "Pets_removeCareNeed",
+        "parameters": [
+          {
+            "name": "petId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "careNeedId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Borrar una tarea de cuidado",
+        "tags": [
+          "pets"
+        ]
+      }
+    },
+    "/v1/caregivers/search": {
+      "post": {
+        "description": "RN-RES-01. Va por POST porque lleva las mascotas y los horarios; no cambia nada. Devuelve el nivel de la reserva, los tramos y los cuidadores disponibles.",
+        "operationId": "Caregivers_search",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchCaregiversRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverSearchResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`TOO_MANY_PETS` (RN-RES-03), `INVALID_SCHEDULE`, `TOO_SOON` (RN-RES-05), `PET_NOT_BOOKABLE` (RN-MAS-09, con las mascotas y tareas en `details`) o `UNKNOWN_DISTRICT`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Buscar cuidadores",
+        "tags": [
+          "caregivers"
+        ]
+      }
+    },
+    "/v1/caregivers/{caregiverId}": {
+      "get": {
+        "description": "RN-RES-02.",
+        "operationId": "Caregivers_profile",
+        "parameters": [
+          {
+            "name": "caregiverId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverProfileResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CAREGIVER_NOT_FOUND`: no existe, no está aprobado o no está activo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Perfil de un cuidador",
+        "tags": [
+          "caregivers"
+        ]
+      }
     }
   },
   "info": {
@@ -577,6 +1602,1139 @@
         },
         "required": [
           "refreshToken"
+        ]
+      },
+      "UploadPurpose": {
+        "type": "string",
+        "enum": [
+          "PET_PHOTO",
+          "VET_INSTRUCTION",
+          "VACCINATION_RECORD"
+        ]
+      },
+      "CreateUploadRequest": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UploadPurpose"
+              }
+            ]
+          },
+          "contentType": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "image/jpeg",
+            "description": "Fotos: JPEG, PNG, WebP o HEIC, hasta 10 MB. Recetas y carnés de vacunas: también PDF, hasta 15 MB."
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 245000,
+            "description": "Tamaño exacto del archivo en bytes. La subida tiene que coincidir."
+          }
+        },
+        "required": [
+          "purpose",
+          "contentType",
+          "sizeBytes"
+        ]
+      },
+      "FilePurpose": {
+        "type": "string",
+        "enum": [
+          "PET_PHOTO",
+          "CAREGIVER_PHOTO",
+          "VET_INSTRUCTION",
+          "VACCINATION_RECORD"
+        ]
+      },
+      "FileResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "purpose": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FilePurpose"
+              }
+            ]
+          },
+          "contentType": {
+            "type": "string",
+            "example": "image/jpeg"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Null hasta que se sube."
+          },
+          "uploadedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "url": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL firmada para descargarlo, que vence en 10 minutos. Null hasta que se sube."
+          }
+        },
+        "required": [
+          "id",
+          "purpose",
+          "contentType",
+          "sizeBytes",
+          "uploadedAt",
+          "url"
+        ]
+      },
+      "FileUpload": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/FileResponse"
+          },
+          "uploadUrl": {
+            "type": "string",
+            "description": "Hay que subir el archivo con PUT a esta URL, que vence en 10 minutos."
+          },
+          "uploadMethod": {
+            "enum": [
+              "PUT"
+            ],
+            "type": "string"
+          },
+          "uploadHeaders": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "example": {
+              "Content-Type": "image/jpeg"
+            },
+            "description": "Headers que tiene que llevar el PUT, tal cual."
+          },
+          "uploadExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "file",
+          "uploadUrl",
+          "uploadMethod",
+          "uploadHeaders",
+          "uploadExpiresAt"
+        ]
+      },
+      "DistrictOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "example": "santa-tecla"
+          },
+          "name": {
+            "type": "string",
+            "example": "Santa Tecla"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name"
+        ]
+      },
+      "SpeciesOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "example": "DOG"
+          },
+          "name": {
+            "type": "string",
+            "example": "Perro"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
+        ]
+      },
+      "ServiceCode": {
+        "type": "string",
+        "enum": [
+          "HOME_VISIT",
+          "OVERNIGHT_STAY"
+        ]
+      },
+      "ServiceOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "example": "Visita a domicilio"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "description"
+        ]
+      },
+      "BookingRules": {
+        "type": "object",
+        "properties": {
+          "maxPetsPerBooking": {
+            "type": "integer",
+            "example": 3,
+            "description": "RN-RES-03"
+          },
+          "minLeadTimeMinutes": {
+            "type": "integer",
+            "example": 120,
+            "description": "RN-RES-05: el primer tramo empieza al menos esto después de pedirlo."
+          },
+          "homeVisitMinutes": {
+            "type": "integer",
+            "example": 60,
+            "description": "RN-SER-01: cada visita ocupa este tiempo en el calendario del cuidador."
+          },
+          "overnightStartMinute": {
+            "type": "integer",
+            "example": 1140,
+            "description": "RN-SER-02: inicio de la pernocta, en minutos desde la medianoche."
+          },
+          "overnightEndMinute": {
+            "type": "integer",
+            "example": 480,
+            "description": "RN-SER-02: fin de la pernocta, al día siguiente."
+          }
+        },
+        "required": [
+          "maxPetsPerBooking",
+          "minLeadTimeMinutes",
+          "homeVisitMinutes",
+          "overnightStartMinute",
+          "overnightEndMinute"
+        ]
+      },
+      "CatalogResponse": {
+        "type": "object",
+        "properties": {
+          "districts": {
+            "description": "Ordenados por nombre.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DistrictOption"
+            }
+          },
+          "species": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpeciesOption"
+            }
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceOption"
+            }
+          },
+          "bookingRules": {
+            "$ref": "#/components/schemas/BookingRules"
+          }
+        },
+        "required": [
+          "districts",
+          "species",
+          "services",
+          "bookingRules"
+        ]
+      },
+      "PetSex": {
+        "type": "string",
+        "enum": [
+          "MALE",
+          "FEMALE"
+        ]
+      },
+      "PetResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "species": {
+            "$ref": "#/components/schemas/SpeciesOption"
+          },
+          "breed": {
+            "type": "string",
+            "nullable": true
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "birthDateIsApproximate": {
+            "type": "boolean"
+          },
+          "sex": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PetSex"
+              }
+            ]
+          },
+          "weightGrams": {
+            "type": "integer",
+            "nullable": true
+          },
+          "isSterilized": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "temperament": {
+            "type": "string",
+            "nullable": true
+          },
+          "handlingNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "vetName": {
+            "type": "string",
+            "nullable": true
+          },
+          "vetClinic": {
+            "type": "string",
+            "nullable": true
+          },
+          "vetPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "healthConditions": {
+            "type": "string",
+            "nullable": true
+          },
+          "medications": {
+            "type": "string",
+            "nullable": true
+          },
+          "photoFileId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL firmada que vence en 10 minutos."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "species",
+          "breed",
+          "birthDate",
+          "birthDateIsApproximate",
+          "sex",
+          "weightGrams",
+          "isSterilized",
+          "temperament",
+          "handlingNotes",
+          "vetName",
+          "vetClinic",
+          "vetPhone",
+          "healthConditions",
+          "medications",
+          "photoFileId",
+          "photoUrl"
+        ]
+      },
+      "PetRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60,
+            "example": "Luna"
+          },
+          "speciesId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Una de las especies de GET /v1/catalog."
+          },
+          "breed": {
+            "type": "string",
+            "maxLength": 80,
+            "example": "Beagle"
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2019-03-10"
+          },
+          "birthDateIsApproximate": {
+            "type": "boolean",
+            "default": false,
+            "description": "RN-MAS-02: la fecha puede ser aproximada."
+          },
+          "sex": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PetSex"
+              }
+            ]
+          },
+          "weightGrams": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 150000,
+            "example": 12500,
+            "description": "Peso en gramos."
+          },
+          "isSterilized": {
+            "type": "boolean"
+          },
+          "temperament": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "Juguetona y muy sociable"
+          },
+          "handlingNotes": {
+            "type": "string",
+            "maxLength": 1000,
+            "example": "Jala la correa al salir"
+          },
+          "vetName": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Veterinario de cabecera."
+          },
+          "vetClinic": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "vetPhone": {
+            "type": "string",
+            "example": "+503 2222 0000"
+          },
+          "healthConditions": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Texto libre para el perfil. Lo que el cuidador tiene que hacer va en las tareas de cuidado."
+          },
+          "medications": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "photoFileId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Un archivo PET_PHOTO ya subido (POST /v1/files)."
+          }
+        },
+        "required": [
+          "name",
+          "speciesId",
+          "birthDate",
+          "sex"
+        ]
+      },
+      "VaccinationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "administeredOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "nextDueOn": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "fileId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "fileUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL firmada que vence en 10 minutos."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "administeredOn",
+          "nextDueOn",
+          "fileId",
+          "fileUrl"
+        ]
+      },
+      "VetInstructionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "issuedOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "vetName": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "fileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL firmada que vence en 10 minutos."
+          },
+          "contentType": {
+            "type": "string",
+            "example": "application/pdf"
+          }
+        },
+        "required": [
+          "id",
+          "issuedOn",
+          "vetName",
+          "notes",
+          "fileId",
+          "fileUrl",
+          "contentType"
+        ]
+      },
+      "CareTask": {
+        "type": "string",
+        "enum": [
+          "MEDICATION",
+          "WOUND_CARE",
+          "POST_OPERATIVE_RECOVERY",
+          "SYRINGE_FEEDING",
+          "PRESCRIBED_REST",
+          "CHRONIC_CONDITION_MONITORING",
+          "MOBILITY_ASSISTANCE",
+          "INCONTINENCE_HYGIENE",
+          "INJECTION",
+          "IV_FLUIDS",
+          "STITCH_OR_DRAIN_REMOVAL",
+          "TUBE_PLACEMENT",
+          "SEDATION",
+          "DOSE_CHANGE",
+          "DIAGNOSIS_OR_PRESCRIPTION"
+        ]
+      },
+      "CareTaskGroup": {
+        "type": "string",
+        "enum": [
+          "CLINICAL",
+          "ASSISTANCE",
+          "PROHIBITED"
+        ]
+      },
+      "CareNeedResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "task": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CareTask"
+              }
+            ]
+          },
+          "group": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CareTaskGroup"
+              }
+            ]
+          },
+          "startsOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "endsOn": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "vetInstructionId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "ownerInstructions": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "task",
+          "group",
+          "startsOn",
+          "endsOn",
+          "vetInstructionId",
+          "ownerInstructions"
+        ]
+      },
+      "PetDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "species": {
+            "$ref": "#/components/schemas/SpeciesOption"
+          },
+          "breed": {
+            "type": "string",
+            "nullable": true
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "birthDateIsApproximate": {
+            "type": "boolean"
+          },
+          "sex": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PetSex"
+              }
+            ]
+          },
+          "weightGrams": {
+            "type": "integer",
+            "nullable": true
+          },
+          "isSterilized": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "temperament": {
+            "type": "string",
+            "nullable": true
+          },
+          "handlingNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "vetName": {
+            "type": "string",
+            "nullable": true
+          },
+          "vetClinic": {
+            "type": "string",
+            "nullable": true
+          },
+          "vetPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "healthConditions": {
+            "type": "string",
+            "nullable": true
+          },
+          "medications": {
+            "type": "string",
+            "nullable": true
+          },
+          "photoFileId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL firmada que vence en 10 minutos."
+          },
+          "vaccinations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VaccinationResponse"
+            }
+          },
+          "vetInstructions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VetInstructionResponse"
+            }
+          },
+          "careNeeds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CareNeedResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "species",
+          "breed",
+          "birthDate",
+          "birthDateIsApproximate",
+          "sex",
+          "weightGrams",
+          "isSterilized",
+          "temperament",
+          "handlingNotes",
+          "vetName",
+          "vetClinic",
+          "vetPhone",
+          "healthConditions",
+          "medications",
+          "photoFileId",
+          "photoUrl",
+          "vaccinations",
+          "vetInstructions",
+          "careNeeds"
+        ]
+      },
+      "VaccinationRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "example": "Antirrábica"
+          },
+          "administeredOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "nextDueOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Cuándo toca la siguiente dosis."
+          },
+          "fileId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Un archivo VACCINATION_RECORD ya subido."
+          }
+        },
+        "required": [
+          "name",
+          "administeredOn"
+        ]
+      },
+      "VetInstructionRequest": {
+        "type": "object",
+        "properties": {
+          "fileId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Un archivo VET_INSTRUCTION ya subido."
+          },
+          "issuedOn": {
+            "type": "string",
+            "format": "date",
+            "description": "La fecha que dice el documento."
+          },
+          "vetName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "fileId",
+          "issuedOn"
+        ]
+      },
+      "CareNeedRequest": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CareTask"
+              }
+            ]
+          },
+          "startsOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "endsOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Último día, incluido."
+          },
+          "vetInstructionId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Indicaciones del veterinario de esta mascota."
+          },
+          "ownerInstructions": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Cómo hacerlo, en palabras del dueño."
+          }
+        },
+        "required": [
+          "task",
+          "startsOn"
+        ]
+      },
+      "SearchCaregiversRequest": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "nights": {
+            "maxItems": 31,
+            "example": [
+              "2026-11-20",
+              "2026-11-21"
+            ],
+            "description": "Solo en pernocta: la fecha en que empieza cada noche.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "visits": {
+            "maxItems": 62,
+            "example": [
+              "2026-11-20T09:00:00-06:00"
+            ],
+            "description": "Cuándo empieza cada visita. En una pernocta son las visitas de día durante la estadía (RN-SER-03).",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "petIds": {
+            "minItems": 1,
+            "maxItems": 10,
+            "description": "Mascotas del dueño.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "districtId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Uno de los distritos de GET /v1/catalog."
+          }
+        },
+        "required": [
+          "serviceCode",
+          "petIds",
+          "districtId"
+        ]
+      },
+      "CareLevel": {
+        "type": "string",
+        "enum": [
+          "STANDARD",
+          "SPECIAL"
+        ],
+        "description": "RN-MAS-05, RN-PRE-02: Especial si alguna mascota lo es en esas fechas."
+      },
+      "SlotResponse": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "serviceCode",
+          "startsAt",
+          "endsAt"
+        ]
+      },
+      "CaregiverPrice": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "careLevel": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CareLevel"
+              }
+            ]
+          },
+          "priceCents": {
+            "type": "integer",
+            "example": 1300,
+            "description": "Precio del cuidador por una mascota, en centavos, sin la tarifa de servicio (RN-PRE-01)."
+          }
+        },
+        "required": [
+          "serviceCode",
+          "careLevel",
+          "priceCents"
+        ]
+      },
+      "CaregiverSearchResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Valeria M.",
+            "description": "Nombre e inicial del apellido."
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL firmada que vence en 10 minutos."
+          },
+          "hasSpecialCareCertification": {
+            "type": "boolean",
+            "description": "Tiene la ⭐ de cuidado especial vigente (RN-CUI-07)."
+          },
+          "isVetStudent": {
+            "type": "boolean",
+            "description": "Insignia \"Estudiante de veterinaria\" vigente (RN-CUI-05)."
+          },
+          "rating": {
+            "type": "number",
+            "nullable": true,
+            "example": 4.8,
+            "description": "Promedio de 1 a 5 con un decimal. Null si todavía no tiene calificaciones."
+          },
+          "ratingCount": {
+            "type": "integer"
+          },
+          "completedBookingCount": {
+            "type": "integer",
+            "description": "Servicios completados en Pawie."
+          },
+          "instantBooking": {
+            "type": "boolean",
+            "description": "RN-CUI-16: las solicitudes se confirman sin esperar al cuidador."
+          },
+          "prices": {
+            "description": "Sus precios para lo que se buscó, en el nivel de la reserva.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverPrice"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "photoUrl",
+          "hasSpecialCareCertification",
+          "isVetStudent",
+          "rating",
+          "ratingCount",
+          "completedBookingCount",
+          "instantBooking",
+          "prices"
+        ]
+      },
+      "CaregiverSearchResponse": {
+        "type": "object",
+        "properties": {
+          "careLevel": {
+            "description": "RN-MAS-05, RN-PRE-02: Especial si alguna mascota lo es en esas fechas.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CareLevel"
+              }
+            ]
+          },
+          "slots": {
+            "description": "Los tramos que se buscaron, en orden.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlotResponse"
+            }
+          },
+          "results": {
+            "description": "Ordenados por calificación y después por cantidad de servicios.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverSearchResult"
+            }
+          }
+        },
+        "required": [
+          "careLevel",
+          "slots",
+          "results"
+        ]
+      },
+      "CaregiverProfileResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Valeria M.",
+            "description": "Nombre e inicial del apellido."
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL firmada que vence en 10 minutos."
+          },
+          "hasSpecialCareCertification": {
+            "type": "boolean",
+            "description": "Tiene la ⭐ de cuidado especial vigente (RN-CUI-07)."
+          },
+          "isVetStudent": {
+            "type": "boolean",
+            "description": "Insignia \"Estudiante de veterinaria\" vigente (RN-CUI-05)."
+          },
+          "rating": {
+            "type": "number",
+            "nullable": true,
+            "example": 4.8,
+            "description": "Promedio de 1 a 5 con un decimal. Null si todavía no tiene calificaciones."
+          },
+          "ratingCount": {
+            "type": "integer"
+          },
+          "completedBookingCount": {
+            "type": "integer",
+            "description": "Servicios completados en Pawie."
+          },
+          "instantBooking": {
+            "type": "boolean",
+            "description": "RN-CUI-16: las solicitudes se confirman sin esperar al cuidador."
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true
+          },
+          "districts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DistrictOption"
+            }
+          },
+          "prices": {
+            "description": "Los servicios que ofrece. Los de nivel Especial solo aparecen si tiene la ⭐.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverPrice"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "photoUrl",
+          "hasSpecialCareCertification",
+          "isVetStudent",
+          "rating",
+          "ratingCount",
+          "completedBookingCount",
+          "instantBooking",
+          "bio",
+          "districts",
+          "prices"
         ]
       }
     }

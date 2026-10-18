@@ -31,6 +31,26 @@ services:
       timeout: 5s
       retries: 10
 
+  # S3-compatible storage for pet photos and vet instructions (docs/arquitectura.md §3.5).
+  # `weed mini` runs every SeaweedFS component in one container and, from these
+  # variables, creates the access key and the bucket.
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48
+    command: ['mini', '-dir=/data']
+    environment:
+      AWS_ACCESS_KEY_ID: pawie
+      AWS_SECRET_ACCESS_KEY: pawie-local-secret
+      S3_BUCKET: pawie-files
+    ports:
+      - '8333:8333' # S3 API
+    volumes:
+      - seaweedfs-data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-fs', 'http://localhost:8333/healthz']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   mailpit:
     image: axllent/mailpit:v1.31
     ports:
@@ -40,3 +60,4 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  seaweedfs-data:

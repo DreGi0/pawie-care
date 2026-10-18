@@ -1,4 +1,5 @@
 import { inject } from 'vitest';
+import { TEST_S3 } from './test-s3.js';
 
 // AppModule validates the environment when it is imported, so these must be set
 // before any test file imports it. With NODE_ENV=test the .env file is ignored.
@@ -7,3 +8,7 @@ process.env.DATABASE_URL = inject('databaseUrl');
 process.env.CORS_ORIGINS = 'https://web.pawie.test';
 process.env.LOG_LEVEL = 'silent';
 process.env.JWT_ACCESS_SECRET = 'integration-tests-secret-at-least-32-characters';
+process.env.S3_ENDPOINT = inject('s3Endpoint');
+process.env.S3_BUCKET = TEST_S3.bucket;
+process.env.S3_ACCESS_KEY_ID = TEST_S3.accessKeyId;
+process.env.S3_SECRET_ACCESS_KEY = TEST_S3.secretAccessKey;

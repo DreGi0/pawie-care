@@ -6,11 +6,15 @@ import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { minutes, ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './auth/auth.module.js';
+import { CaregiversModule } from './caregivers/caregivers.module.js';
+import { CatalogModule } from './catalog/catalog.module.js';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
 import { ApiValidationPipe } from './common/errors/api-validation.pipe.js';
 import { AppConfigModule } from './config/config.module.js';
 import { type Environment, NodeEnv } from './config/environment.js';
+import { FilesModule } from './files/files.module.js';
 import { HealthModule } from './health/health.module.js';
+import { PetsModule } from './pets/pets.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { UsersModule } from './users/users.module.js';
@@ -71,6 +75,10 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
     SettingsModule,
     UsersModule,
     AuthModule,
+    FilesModule,
+    CatalogModule,
+    PetsModule,
+    CaregiversModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ApiValidationPipe },

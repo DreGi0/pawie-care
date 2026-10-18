@@ -1,7 +1,9 @@
 // Entry point of `pnpm db:seed`, which compiles the API and runs this file from dist/
 // through `prisma db seed` (see prisma.config.ts). See seed-database.ts.
+import { fileURLToPath } from 'node:url';
 import { ConfigService } from '@nestjs/config';
 import type { Environment } from '../config/environment.js';
+import { StorageService } from '../files/storage.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { runScript } from '../scripts/run-script.js';
 import { SettingsService } from '../settings/settings.service.js';
@@ -11,6 +13,11 @@ await runScript(async (app) => {
   const config = app.get<ConfigService<Environment, true>>(ConfigService);
   const summary = await seedDatabase(app.get(PrismaService), app.get(SettingsService), {
     demoOwnerPassword: config.get('DEMO_OWNER_PASSWORD', { infer: true }),
+    // From dist/seed/ to apps/api/seed-media/.
+    media: {
+      storage: app.get(StorageService),
+      directory: fileURLToPath(new URL('../../seed-media/', import.meta.url)),
+    },
   });
   console.log(
     `Seed listo: ${summary.districts} distritos, ${summary.species} especies, ` +
@@ -21,6 +28,7 @@ await runScript(async (app) => {
       ? `Dueño de demo: ${summary.demoOwner}, con la contraseña de DEMO_OWNER_PASSWORD.`
       : 'No se creó el dueño de demo porque falta DEMO_OWNER_PASSWORD.',
   );
+  console.log(`Fotos subidas desde seed-media/: ${summary.photos}.`);
   console.log(
     summary.createdSettings.length > 0
       ? `Parámetros creados con su valor inicial: ${summary.createdSettings.join(', ')}.`

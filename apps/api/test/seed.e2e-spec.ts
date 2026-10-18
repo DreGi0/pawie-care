@@ -1,28 +1,53 @@
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { verifyPassword } from '../src/auth/passwords.js';
+import { formatDateOnly } from '../src/common/time/calendar.js';
 import { CareLevel, CertificationStatus, ServiceCode } from '../src/generated/prisma/client.js';
-import { seedDatabase } from '../src/seed/seed-database.js';
+import { careLevelOn } from '../src/pets/care-level.js';
+import { seedDatabase, type SeedSummary } from '../src/seed/seed-database.js';
 import { SETTING_KEYS } from '../src/settings/settings.registry.js';
 import { SettingsService } from '../src/settings/settings.service.js';
 import { createTestDatabase, type TestDatabase } from './database.js';
+import { storageForTests } from './storage.js';
 
 const NOW = new Date('2026-10-17T18:00:00Z');
 const TODAY = new Date('2026-10-17');
 const DEMO_OWNER_PASSWORD = 'contraseña-de-la-demo';
+const PHOTO = Buffer.from('una imagen genérica');
+
+/** A media directory with a photo for Valeria and one for Toby, as seed-media/README.md says. */
+async function mediaDirectory(): Promise<string> {
+  const directory = await mkdtemp(join(tmpdir(), 'pawie-seed-media-'));
+  await mkdir(join(directory, 'caregivers'));
+  await mkdir(join(directory, 'pets'));
+  await writeFile(join(directory, 'caregivers', 'valeria.martinez.png'), PHOTO);
+  await writeFile(join(directory, 'pets', 'Toby.JPG'), PHOTO);
+  return directory;
+}
 
 describe('seed', () => {
   let db: TestDatabase;
   let settings: SettingsService;
   let firstRun: Snapshot;
+  let secondRun: SeedSummary;
+  const storage = storageForTests();
 
   beforeAll(async () => {
     db = await createTestDatabase();
     settings = new SettingsService(db.prisma);
 
-    await seedDatabase(db.prisma, settings, { now: NOW, demoOwnerPassword: DEMO_OWNER_PASSWORD });
+    const options = {
+      now: NOW,
+      demoOwnerPassword: DEMO_OWNER_PASSWORD,
+      media: { storage, directory: await mediaDirectory() },
+    };
+
+    await seedDatabase(db.prisma, settings, options);
     firstRun = await snapshot();
     // A change made with settings:set between two runs must survive the second one.
     await settings.set('pricing.ownerServiceFeeBp', 1100, { changedBy: 'test' });
-    await seedDatabase(db.prisma, settings, { now: NOW, demoOwnerPassword: DEMO_OWNER_PASSWORD });
+    secondRun = await seedDatabase(db.prisma, settings, options);
   });
 
   afterAll(async () => {
@@ -51,6 +76,15 @@ describe('seed', () => {
           details: true,
           districtId: true,
         },
+      }),
+      db.prisma.pet.findMany({
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, photoFileId: true },
+      }),
+      db.prisma.petCareNeed.count(),
+      db.prisma.file.findMany({
+        orderBy: { storageKey: 'asc' },
+        select: { id: true, storageKey: true },
       }),
       db.prisma.caregiverServicePrice.count(),
       db.prisma.caregiverAvailability.count(),
@@ -98,6 +132,51 @@ describe('seed', () => {
     } finally {
       await empty.close();
     }
+  });
+
+  it('uploads the photos it finds in the media directory, and only those', async () => {
+    const withPhoto = await db.prisma.caregiverProfile.findMany({
+      where: { photoFileId: { not: null } },
+      include: { user: true, photoFile: true },
+    });
+    const toby = await db.prisma.pet.findFirstOrThrow({
+      where: { name: 'Toby' },
+      include: { photoFile: true },
+    });
+
+    expect(secondRun.photos).toBe(2);
+    expect(withPhoto.map(({ user }) => user.firstName)).toEqual(['Valeria']);
+    expect(withPhoto[0].photoFile).toMatchObject({
+      purpose: 'CAREGIVER_PHOTO',
+      contentType: 'image/png',
+      sizeBytes: PHOTO.length,
+      uploadedAt: expect.any(Date),
+    });
+    expect(toby.photoFile).toMatchObject({ purpose: 'PET_PHOTO', contentType: 'image/jpeg' });
+    expect(await storage.head(withPhoto[0].photoFile?.storageKey ?? '')).toEqual({
+      sizeBytes: PHOTO.length,
+      contentType: 'image/png',
+    });
+  });
+
+  it('gives the demo owner a standard, a special and a pet that cannot be booked', async () => {
+    const pets = await db.prisma.pet.findMany({
+      where: { owner: { email: 'demo@example.com' } },
+      include: { careNeeds: true, species: true },
+      orderBy: { name: 'asc' },
+    });
+
+    expect(
+      pets.map((pet) => {
+        const { careLevel, prohibitedTasks } = careLevelOn(pet.careNeeds, TODAY, TODAY);
+        return [pet.name, pet.species.code, careLevel, prohibitedTasks];
+      }),
+    ).toEqual([
+      ['Nala', 'CAT', 'SPECIAL', []],
+      ['Rocky', 'DOG', 'STANDARD', ['INJECTION']],
+      ['Toby', 'DOG', 'STANDARD', []],
+    ]);
+    expect(formatDateOnly(pets[0].careNeeds[0].startsOn)).toBe('2026-04-17');
   });
 
   it('keeps the settings that were changed after the first run', async () => {

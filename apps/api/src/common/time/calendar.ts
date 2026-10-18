@@ -30,3 +30,23 @@ export function ageOn(birthDate: Date, today: Date): number {
       today.getUTCDate() >= birthDate.getUTCDate());
   return birthdayPassed ? years : years - 1;
 }
+
+/** "2026-10-17" to the Date Prisma uses for a `date` column. */
+export function parseDateOnly(date: string): Date {
+  return new Date(`${date}T00:00:00Z`);
+}
+
+/** A `date` column back to "2026-10-17". */
+export function formatDateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+/** The instant of a time of day, in minutes since midnight, on a date in El Salvador. */
+export function atMinuteInElSalvador(date: Date, minute: number): Date {
+  return new Date(date.getTime() - EL_SALVADOR_UTC_OFFSET_MS + minute * 60_000);
+}
+
+/** ISO day of the week of a date: 1 is Monday and 7 is Sunday. */
+export function isoWeekday(date: Date): number {
+  return ((date.getUTCDay() + 6) % 7) + 1;
+}

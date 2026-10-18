@@ -82,6 +82,35 @@ export class Environment {
   @Max(365)
   REFRESH_TOKEN_TTL_DAYS = 30;
 
+  /** S3-compatible storage the API talks to: SeaweedFS locally, Cloudflare R2 deployed. */
+  @IsUrl({ protocols: ['http', 'https'], require_tld: false, require_protocol: true })
+  S3_ENDPOINT: string;
+
+  /**
+   * Host the apps download and upload from, used to sign the URLs. Defaults to
+   * S3_ENDPOINT; the Android emulator needs http://10.0.2.2:8333 instead of localhost.
+   */
+  @Transform(({ value }: { value: unknown }) => (value === '' ? undefined : value))
+  @IsOptional()
+  @IsUrl({ protocols: ['http', 'https'], require_tld: false, require_protocol: true })
+  S3_PUBLIC_ENDPOINT?: string;
+
+  /** R2 uses "auto"; SeaweedFS takes any region. */
+  @IsString()
+  S3_REGION = 'auto';
+
+  @IsString()
+  @MinLength(3)
+  S3_BUCKET: string;
+
+  @IsString()
+  @MinLength(1)
+  S3_ACCESS_KEY_ID: string;
+
+  @IsString()
+  @MinLength(1)
+  S3_SECRET_ACCESS_KEY: string;
+
   /** Password of the demo owner that the seed creates. Without it, the seed skips the owner. */
   @Transform(({ value }: { value: unknown }) => (value === '' ? undefined : value))
   @IsOptional()
