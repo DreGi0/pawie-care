@@ -45,9 +45,3 @@ export const SERVICES = [
       'El cuidador duerme en la casa del dueño y se encarga de los cuidados de la noche y de la mañana.',
   },
 ] as const;
-
-/** RN-CUI-11: the ⭐, the only certification type of the demo. */
-export const SPECIAL_CARE_CERTIFICATION = {
-  code: 'SPECIAL_CARE',
-  name: 'Cuidado especial',
-} as const;

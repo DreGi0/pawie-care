@@ -1,4 +1,5 @@
 import { hashPassword, verifyPassword } from '../auth/passwords.js';
+import { SPECIAL_CARE_CERTIFICATION } from '../caregivers/special-care.js';
 import { addDays, addMonths, dateInElSalvador } from '../common/time/calendar.js';
 import {
   CaregiverStatus,
@@ -11,7 +12,7 @@ import {
 import type { SettingKey } from '../settings/settings.registry.js';
 import type { SettingsService } from '../settings/settings.service.js';
 import { DEMO_CAREGIVERS, type DemoCaregiver } from './caregivers.js';
-import { DISTRICTS, SERVICES, SPECIAL_CARE_CERTIFICATION, SPECIES } from './catalog.js';
+import { DISTRICTS, SERVICES, SPECIES } from './catalog.js';
 import { DEMO_OWNER } from './demo-owner.js';
 
 export interface SeedOptions {
