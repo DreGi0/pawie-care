@@ -19,6 +19,8 @@ pnpm dev                   # genera el cliente de Prisma y levanta http://localh
 
 Las variables de entorno se validan al arrancar, en [src/config/environment.ts](src/config/environment.ts). Si falta una o tiene un valor inválido, la API no arranca y dice cuál es. Están todas en [.env.example](.env.example).
 
+Las tres de Wompi van juntas: si falta una, la API no arranca. Sin ninguna, los pagos quedan apagados y el resto funciona igual.
+
 | Variable                                                | Para qué                                                                                                              | Por defecto   |
 | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------- |
 | `NODE_ENV`                                              | `development`, `test` o `production`. En `development` los logs son legibles                                          | `development` |
@@ -36,6 +38,8 @@ Las variables de entorno se validan al arrancar, en [src/config/environment.ts](
 | `S3_PUBLIC_ENDPOINT`                                    | Host de las URLs firmadas que usan las apps. En el emulador de Android es `http://10.0.2.2:8333`                      | `S3_ENDPOINT` |
 | `S3_REGION`                                             | Región. R2 usa `auto` y SeaweedFS acepta cualquiera                                                                   | `auto`        |
 | `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Bucket privado y su llave de acceso                                                                                   | Obligatorias  |
+| `WOMPI_APP_ID`, `WOMPI_API_SECRET`                      | App ID y API Secret del negocio en Wompi. El secreto también firma los webhooks                                       | Ninguno       |
+| `PUBLIC_API_URL`                                        | URL HTTPS pública de la API, a la que Wompi manda el webhook y devuelve al dueño. En local, el túnel de cloudflared   | Ninguna       |
 
 ## Convenciones
 

@@ -1,4 +1,4 @@
-import { addDays, addMonths, ageOn, dateInElSalvador } from './calendar.js';
+import { addDays, addMonths, ageOn, dateInElSalvador, isoInElSalvador } from './calendar.js';
 
 const date = (value: string) => new Date(`${value}T00:00:00Z`);
 
@@ -7,6 +7,17 @@ describe('calendar', () => {
     it('is still the previous day in El Salvador until 06:00 UTC', () => {
       expect(dateInElSalvador(new Date('2026-10-18T05:59:59Z'))).toEqual(date('2026-10-17'));
       expect(dateInElSalvador(new Date('2026-10-18T06:00:00Z'))).toEqual(date('2026-10-18'));
+    });
+  });
+
+  describe('isoInElSalvador', () => {
+    it('writes the instant in El Salvador time, dropping the milliseconds', () => {
+      expect(isoInElSalvador(new Date('2026-10-18T05:30:59.999Z'))).toBe(
+        '2026-10-17T23:30:59-06:00',
+      );
+      expect(new Date(isoInElSalvador(new Date('2026-10-18T21:00:00Z')))).toEqual(
+        new Date('2026-10-18T21:00:00Z'),
+      );
     });
   });
 
