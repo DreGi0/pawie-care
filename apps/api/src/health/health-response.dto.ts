@@ -1,8 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class HealthChecks {
-  @ApiProperty({ description: 'Conexión con PostgreSQL.', enum: ['up'] })
-  database: 'up';
+  @ApiProperty({ description: 'Conexión con PostgreSQL.', enum: ['up', 'down'] })
+  database: 'up' | 'down';
+
+  @ApiProperty({
+    description: 'Conexión con Redis, donde están las colas de tareas.',
+    enum: ['up', 'down'],
+  })
+  redis: 'up' | 'down';
 }
 
 export class HealthResponse {

@@ -82,6 +82,10 @@ export class Environment {
   @Max(365)
   REFRESH_TOKEN_TTL_DAYS = 30;
 
+  /** Redis for the BullMQ queues: booking deadlines and maintenance (docs/arquitectura.md §4.10). */
+  @IsUrl({ protocols: ['redis', 'rediss'], require_tld: false, require_protocol: true })
+  REDIS_URL: string;
+
   /** S3-compatible storage the API talks to: SeaweedFS locally, Cloudflare R2 deployed. */
   @IsUrl({ protocols: ['http', 'https'], require_tld: false, require_protocol: true })
   S3_ENDPOINT: string;

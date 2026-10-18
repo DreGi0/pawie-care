@@ -12,7 +12,7 @@ pnpm db:seed               # carga el catálogo, los parámetros y los cuidadore
 pnpm dev                   # genera el cliente de Prisma y levanta http://localhost:3000
 ```
 
-- **Estado:** <http://localhost:3000/v1/health> revisa la conexión con la base de datos y responde 200, o 503 si algo falla.
+- **Estado:** <http://localhost:3000/v1/health> revisa la conexión con la base de datos y con Redis, y responde 200, o 503 si algo falla.
 - **Documentación:** Swagger UI en <http://localhost:3000/docs>, y el documento OpenAPI en <http://localhost:3000/docs/openapi.json>.
 
 ## Configuración
@@ -30,6 +30,7 @@ Las variables de entorno se validan al arrancar, en [src/config/environment.ts](
 | `JWT_ACCESS_SECRET`                                     | Firma los tokens de acceso. Mínimo 32 caracteres, y uno distinto en cada entorno desplegado                           | Obligatoria   |
 | `JWT_ACCESS_TTL_SECONDS`                                | Duración del token de acceso, en segundos                                                                             | `900`         |
 | `REFRESH_TOKEN_TTL_DAYS`                                | Duración del refresh token, en días                                                                                   | `30`          |
+| `REDIS_URL`                                             | Redis de las colas de BullMQ: los plazos de las reservas y la limpieza                                                | Obligatoria   |
 | `DEMO_OWNER_PASSWORD`                                   | Contraseña del dueño de demo que crea el seed. Sin ella, el seed no lo crea                                           | Ninguna       |
 | `S3_ENDPOINT`                                           | Almacenamiento compatible con S3: el SeaweedFS de `docker-compose.yml` en local y Cloudflare R2 en la demo desplegada | Obligatoria   |
 | `S3_PUBLIC_ENDPOINT`                                    | Host de las URLs firmadas que usan las apps. En el emulador de Android es `http://10.0.2.2:8333`                      | `S3_ENDPOINT` |
@@ -214,7 +215,7 @@ Para agregar un parámetro, súmalo al registro y a la tabla de la sección 15. 
 ## Pruebas
 
 - **Unitarias:** `src/**/*.spec.ts`.
-- **De integración:** `test/**/*.e2e-spec.ts`. Levantan con Testcontainers un PostgreSQL 18 y un SeaweedFS reales, así que **necesitan Docker**. Aplican las migraciones y arrancan el `AppModule` completo con la misma configuración HTTP que `main.ts` (ver `test/create-test-app.ts`).
+- **De integración:** `test/**/*.e2e-spec.ts`. Levantan con Testcontainers un PostgreSQL 18, un SeaweedFS y un Redis 8 reales, así que **necesitan Docker**. Aplican las migraciones y arrancan el `AppModule` completo con la misma configuración HTTP que `main.ts` (ver `test/create-test-app.ts`).
   - Cada archivo que escribe datos pide su propia base con `createTestDatabase()` ([test/database.ts](test/database.ts)), que es una copia vacía de la base ya migrada. Así los archivos corren en paralelo sin ver los datos de los otros.
   - [test/factories.ts](test/factories.ts) crea las filas mínimas válidas: usuarios, cuidadores, mascotas y reservas con sus tramos.
   - [test/use-api.ts](test/use-api.ts) arranca la API contra la base de un archivo y firma tokens de acceso sin pasar por el inicio de sesión. [test/uploads.ts](test/uploads.ts) sube un archivo como lo hace la app.

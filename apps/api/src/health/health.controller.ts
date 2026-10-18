@@ -10,9 +10,10 @@ import { Public } from '../auth/public.decorator.js';
 import { setTimeout } from 'node:timers/promises';
 import { ErrorResponse } from '../common/errors/error-response.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { HealthResponse } from './health-response.dto.js';
+import { RedisHealth } from '../queues/redis-health.js';
+import { type HealthChecks, HealthResponse } from './health-response.dto.js';
 
-const DATABASE_TIMEOUT_MS = 3_000;
+const CHECK_TIMEOUT_MS = 3_000;
 
 @ApiTags('health')
 @Public()
@@ -21,42 +22,52 @@ const DATABASE_TIMEOUT_MS = 3_000;
 export class HealthController {
   private readonly logger = new Logger(HealthController.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisHealth,
+  ) {}
 
   @Get()
   @ApiOperation({
     summary: 'Estado de la API',
-    description: 'Revisa la conexión con la base de datos. Lo usan el hosting y el monitoreo.',
+    description:
+      'Revisa la conexión con la base de datos y con Redis. Lo usan el hosting y el monitoreo.',
   })
-  @ApiOkResponse({ type: HealthResponse, description: 'La API y la base de datos responden.' })
+  @ApiOkResponse({ type: HealthResponse, description: 'La API y sus dependencias responden.' })
   @ApiServiceUnavailableResponse({
     type: ErrorResponse,
     description: 'Alguna dependencia no responde. `details.checks` dice cuál.',
   })
   async check(): Promise<HealthResponse> {
-    if (!(await this.isDatabaseUp())) {
+    const [database, redis] = await Promise.all([
+      this.probe('database', () => this.prisma.$queryRaw`SELECT 1`),
+      this.probe('redis', () => this.redis.ping()),
+    ]);
+    const checks = { database, redis } satisfies HealthChecks;
+    if (database === 'down' || redis === 'down') {
       throw new ServiceUnavailableException({
         errorCode: 'HEALTH_CHECK_FAILED',
         message: 'El servicio no está disponible en este momento. Intenta de nuevo más tarde.',
-        details: { checks: { database: 'down' } },
+        details: { checks },
       });
     }
-    return { status: 'ok', checks: { database: 'up' } };
+    return { status: 'ok', checks };
   }
 
-  private async isDatabaseUp(): Promise<boolean> {
+  /** Whether the dependency answers within CHECK_TIMEOUT_MS. */
+  private async probe(name: string, query: () => Promise<unknown>): Promise<'up' | 'down'> {
     const timeout = new AbortController();
     try {
       await Promise.race([
-        this.prisma.$queryRaw`SELECT 1`,
-        setTimeout(DATABASE_TIMEOUT_MS, undefined, { signal: timeout.signal }).then(() => {
-          throw new Error(`Database did not answer within ${DATABASE_TIMEOUT_MS} ms`);
+        query(),
+        setTimeout(CHECK_TIMEOUT_MS, undefined, { signal: timeout.signal }).then(() => {
+          throw new Error(`No answer within ${CHECK_TIMEOUT_MS} ms`);
         }),
       ]);
-      return true;
+      return 'up';
     } catch (error) {
-      this.logger.warn('Database health check failed', { error: String(error) });
-      return false;
+      this.logger.warn(`Health check of ${name} failed`, { error: String(error) });
+      return 'down';
     } finally {
       timeout.abort();
     }
