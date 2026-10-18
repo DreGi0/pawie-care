@@ -1562,7 +1562,7 @@
     },
     "/v1/bookings/{bookingId}/cancel": {
       "post": {
-        "description": "Sin costo mientras está REQUESTED o PENDING_PAYMENT; pasa a CANCELLED_BY_OWNER y libera el horario. Cancelar una reserva confirmada llega después de la demo.",
+        "description": "RN-CAN-07: sin costo mientras está REQUESTED o PENDING_PAYMENT; pasa a CANCELLED_BY_OWNER y libera el horario. Cancelar una reserva confirmada llega después de la demo.",
         "operationId": "Bookings_cancel",
         "parameters": [
           {

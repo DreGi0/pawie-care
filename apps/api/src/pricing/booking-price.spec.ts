@@ -41,7 +41,7 @@ describe('priceBooking', () => {
     ]);
   });
 
-  it('rounds half up, once per amount', () => {
+  it('rounds half up, once per amount (RN-PRE-08)', () => {
     // Each slot: 1235 × 1.5 = 1852.5 → 1853. The fee comes from the subtotal, 3706 ×
     // 10% = 370.6 → 371, not from adding up the fee of each slot (185 + 185).
     const { slots, amounts } = priceBooking([visit(1235), visit(1235)], 2, RATES);

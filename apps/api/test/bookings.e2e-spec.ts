@@ -510,7 +510,7 @@ describe('bookings', () => {
   });
 
   describe('POST /v1/bookings/:id/cancel', () => {
-    it('cancels at no cost while waiting for payment, and frees the time', async () => {
+    it('cancels at no cost while waiting for payment, and frees the time (RN-CAN-07)', async () => {
       const { user, as, book } = await owner();
       const { body: booking } = await book({ visits: [at(day(11), '10:00')] }).expect(201);
 

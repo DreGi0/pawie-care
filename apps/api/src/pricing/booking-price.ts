@@ -58,7 +58,7 @@ export interface BookingAmounts {
 }
 
 /**
- * The amounts of a booking (RN-PRE-02 to RN-PRE-04), rounding half up once per amount:
+ * The amounts of a booking (RN-PRE-02 to RN-PRE-04), rounding half up once per amount (RN-PRE-08):
  * - each slot: the caregiver's price for one pet, plus the surcharge for each
  *   additional pet;
  * - the subtotal: the sum of the slots;

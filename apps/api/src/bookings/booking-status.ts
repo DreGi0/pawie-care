@@ -26,7 +26,7 @@ export const BOOKING_TRANSITIONS: Readonly<Record<BookingStatus, readonly Bookin
     REJECTED,
     // RN-RES-06: the caregiver didn't answer in time.
     EXPIRED,
-    // The owner cancels at no cost before paying.
+    // RN-CAN-07: the owner cancels at no cost before paying.
     CANCELLED_BY_OWNER,
   ],
   [PENDING_PAYMENT]: [

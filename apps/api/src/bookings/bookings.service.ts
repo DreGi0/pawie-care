@@ -197,7 +197,7 @@ export class BookingsService {
   }
 
   /**
-   * The owner cancels at no cost while the booking is requested or waiting for payment.
+   * RN-CAN-07: the owner cancels at no cost while the booking is requested or waiting for payment.
    * Cancelling a confirmed booking (§10) comes after the demo.
    */
   async cancel(ownerId: string, bookingId: string, reason?: string): Promise<BookingResponse> {

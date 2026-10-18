@@ -83,7 +83,7 @@ export class BookingsController {
   @ApiOperation({
     summary: 'Cancelar una reserva',
     description:
-      'Sin costo mientras está REQUESTED o PENDING_PAYMENT; pasa a CANCELLED_BY_OWNER y libera el horario. Cancelar una reserva confirmada llega después de la demo.',
+      'RN-CAN-07: sin costo mientras está REQUESTED o PENDING_PAYMENT; pasa a CANCELLED_BY_OWNER y libera el horario. Cancelar una reserva confirmada llega después de la demo.',
   })
   @ApiOkResponse({ type: BookingResponse })
   @ApiNotFoundResponse({ type: ErrorResponse, description: '`BOOKING_NOT_FOUND`.' })

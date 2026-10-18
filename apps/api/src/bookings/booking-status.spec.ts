@@ -16,10 +16,10 @@ const ALLOWED = [
   [REQUESTED, PENDING_PAYMENT, 'the caregiver accepts (§8.2)'],
   [REQUESTED, REJECTED, 'the caregiver rejects (§8.2)'],
   [REQUESTED, EXPIRED, 'the caregiver did not answer in time (RN-RES-06)'],
-  [REQUESTED, CANCELLED_BY_OWNER, 'the owner cancels at no cost'],
+  [REQUESTED, CANCELLED_BY_OWNER, 'the owner cancels at no cost (RN-CAN-07)'],
   [PENDING_PAYMENT, CONFIRMED, 'the gateway approved the payment (RN-PAG-02)'],
   [PENDING_PAYMENT, EXPIRED, 'the owner did not pay in time (RN-RES-07)'],
-  [PENDING_PAYMENT, CANCELLED_BY_OWNER, 'the owner cancels at no cost'],
+  [PENDING_PAYMENT, CANCELLED_BY_OWNER, 'the owner cancels at no cost (RN-CAN-07)'],
   [EXPIRED, CONFIRMED, 'a late payment, if the slots are still free'],
 ] as const;
 
