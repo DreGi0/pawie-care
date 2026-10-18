@@ -1,3 +1,4 @@
+import { verifyPassword } from '../src/auth/passwords.js';
 import { CareLevel, CertificationStatus, ServiceCode } from '../src/generated/prisma/client.js';
 import { seedDatabase } from '../src/seed/seed-database.js';
 import { SETTING_KEYS } from '../src/settings/settings.registry.js';
@@ -6,6 +7,7 @@ import { createTestDatabase, type TestDatabase } from './database.js';
 
 const NOW = new Date('2026-10-17T18:00:00Z');
 const TODAY = new Date('2026-10-17');
+const DEMO_OWNER_PASSWORD = 'contraseña-de-la-demo';
 
 describe('seed', () => {
   let db: TestDatabase;
@@ -16,11 +18,11 @@ describe('seed', () => {
     db = await createTestDatabase();
     settings = new SettingsService(db.prisma);
 
-    await seedDatabase(db.prisma, settings, NOW);
+    await seedDatabase(db.prisma, settings, { now: NOW, demoOwnerPassword: DEMO_OWNER_PASSWORD });
     firstRun = await snapshot();
     // A change made with settings:set between two runs must survive the second one.
     await settings.set('pricing.ownerServiceFeeBp', 1100, { changedBy: 'test' });
-    await seedDatabase(db.prisma, settings, NOW);
+    await seedDatabase(db.prisma, settings, { now: NOW, demoOwnerPassword: DEMO_OWNER_PASSWORD });
   });
 
   afterAll(async () => {
@@ -34,7 +36,22 @@ describe('seed', () => {
       db.prisma.district.findMany({ orderBy: { slug: 'asc' } }),
       db.prisma.species.findMany({ orderBy: { code: 'asc' } }),
       db.prisma.service.findMany({ orderBy: { code: 'asc' } }),
-      db.prisma.user.findMany({ orderBy: { email: 'asc' }, select: { id: true, email: true } }),
+      db.prisma.user.findMany({
+        orderBy: { email: 'asc' },
+        select: { id: true, email: true, passwordHash: true },
+      }),
+      // Without timestamps: updatedAt moves even when nothing changes.
+      db.prisma.address.findMany({
+        orderBy: { id: 'asc' },
+        select: {
+          id: true,
+          userId: true,
+          label: true,
+          street: true,
+          details: true,
+          districtId: true,
+        },
+      }),
       db.prisma.caregiverServicePrice.count(),
       db.prisma.caregiverAvailability.count(),
       db.prisma.caregiverCertification.count(),
@@ -56,6 +73,31 @@ describe('seed', () => {
 
   it('can run again without duplicating or replacing anything', async () => {
     expect(await snapshot()).toEqual(firstRun);
+  });
+
+  it('creates the demo owner, who signs in with DEMO_OWNER_PASSWORD', async () => {
+    const owner = await db.prisma.user.findUniqueOrThrow({
+      where: { email: 'demo@example.com' },
+      include: { addresses: { include: { district: true } } },
+    });
+
+    expect(owner.roles).toEqual(['OWNER']);
+    expect(await verifyPassword(DEMO_OWNER_PASSWORD, owner.passwordHash ?? '')).toBe(true);
+    expect(owner.addresses).toMatchObject([{ label: 'Casa', district: { slug: 'san-salvador' } }]);
+  });
+
+  it('skips the demo owner when there is no password for it', async () => {
+    const empty = await createTestDatabase();
+    try {
+      const summary = await seedDatabase(empty.prisma, new SettingsService(empty.prisma), {
+        now: NOW,
+      });
+
+      expect(summary.demoOwner).toBeNull();
+      expect(await empty.prisma.user.count({ where: { email: 'demo@example.com' } })).toBe(0);
+    } finally {
+      await empty.close();
+    }
   });
 
   it('keeps the settings that were changed after the first run', async () => {

@@ -1,3 +1,5 @@
+import { hashPassword, verifyPassword } from '../auth/passwords.js';
+import { addDays, addMonths, dateInElSalvador } from '../common/time/calendar.js';
 import {
   CaregiverStatus,
   CareLevel,
@@ -6,17 +8,26 @@ import {
   Role,
   type ServiceCode,
 } from '../generated/prisma/client.js';
-import { addDays, addMonths, dateInElSalvador } from '../common/time/calendar.js';
 import type { SettingKey } from '../settings/settings.registry.js';
 import type { SettingsService } from '../settings/settings.service.js';
 import { DEMO_CAREGIVERS, type DemoCaregiver } from './caregivers.js';
 import { DISTRICTS, SERVICES, SPECIAL_CARE_CERTIFICATION, SPECIES } from './catalog.js';
+import { DEMO_OWNER } from './demo-owner.js';
+
+export interface SeedOptions {
+  /** Dates such as the ⭐ validity are relative to it. */
+  now?: Date;
+  /** DEMO_OWNER_PASSWORD. Without it, the demo owner isn't created. */
+  demoOwnerPassword?: string;
+}
 
 export interface SeedSummary {
   districts: number;
   species: number;
   services: number;
   caregivers: number;
+  /** Email of the demo owner, or null when there was no password for it. */
+  demoOwner: string | null;
   /** Settings that didn't exist and got their initial value. */
   createdSettings: SettingKey[];
 }
@@ -28,9 +39,9 @@ interface CatalogIds {
 }
 
 /**
- * Loads what the demo needs: the catalog, every setting of §15 and the demo caregivers.
- * It can run any number of times:
- * - the catalog and the caregivers are upserted by their natural keys (slug, code,
+ * Loads what the demo needs: the catalog, every setting of §15, the demo caregivers
+ * and the demo owner. It can run any number of times:
+ * - the catalog and the accounts are upserted by their natural keys (slug, code,
  *   email), and each caregiver's districts, prices, schedule and ⭐ are replaced;
  * - settings that already exist keep their value, so it never undoes a settings:set.
  * Dates such as the ⭐ validity are relative to `now`, so the demo data stays current.
@@ -38,7 +49,7 @@ interface CatalogIds {
 export async function seedDatabase(
   prisma: PrismaClient,
   settings: SettingsService,
-  now = new Date(),
+  { now = new Date(), demoOwnerPassword }: SeedOptions = {},
 ): Promise<SeedSummary> {
   const catalog = await seedCatalog(prisma);
   const createdSettings = await settings.createMissing({
@@ -51,14 +62,59 @@ export async function seedDatabase(
   for (const caregiver of DEMO_CAREGIVERS) {
     await seedCaregiver(prisma, caregiver, catalog, { today, validityMonths });
   }
+  if (demoOwnerPassword !== undefined) {
+    await seedDemoOwner(prisma, demoOwnerPassword, catalog);
+  }
 
   return {
     districts: DISTRICTS.length,
     species: SPECIES.length,
     services: SERVICES.length,
     caregivers: DEMO_CAREGIVERS.length,
+    demoOwner: demoOwnerPassword === undefined ? null : DEMO_OWNER.email,
     createdSettings,
   };
+}
+
+async function seedDemoOwner(
+  prisma: PrismaClient,
+  password: string,
+  { districtIds }: CatalogIds,
+): Promise<void> {
+  const { email, address, ...owner } = DEMO_OWNER;
+  const existing = await prisma.user.findUnique({ where: { email } });
+  // Keeps the hash while the password stays the same, so another run changes nothing.
+  const passwordHash =
+    existing?.passwordHash && (await verifyPassword(password, existing.passwordHash))
+      ? existing.passwordHash
+      : await hashPassword(password);
+  const account = {
+    firstName: owner.firstName,
+    lastName: owner.lastName,
+    birthDate: new Date(owner.birthDate),
+    roles: [Role.OWNER],
+    passwordHash,
+  };
+  const home = {
+    label: address.label,
+    street: address.street,
+    details: address.details,
+    districtId: required(districtIds.get(address.district), address.district),
+  };
+
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.upsert({
+      where: { email },
+      create: { email, ...account },
+      update: account,
+    });
+    const current = await tx.address.findFirst({
+      where: { userId: user.id, label: address.label },
+    });
+    await (current
+      ? tx.address.update({ where: { id: current.id }, data: home })
+      : tx.address.create({ data: { userId: user.id, ...home } }));
+  });
 }
 
 async function seedCatalog(prisma: PrismaClient): Promise<CatalogIds> {
