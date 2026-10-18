@@ -477,6 +477,34 @@
           "files"
         ]
       }
+    },
+    "/v1/catalog": {
+      "get": {
+        "description": "Distritos, especies, servicios y los límites para armar una reserva.",
+        "operationId": "Catalog_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Catálogo",
+        "tags": [
+          "catalog"
+        ]
+      }
     }
   },
   "info": {
@@ -867,6 +895,156 @@
           "uploadMethod",
           "uploadHeaders",
           "uploadExpiresAt"
+        ]
+      },
+      "DistrictOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "example": "santa-tecla"
+          },
+          "name": {
+            "type": "string",
+            "example": "Santa Tecla"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name"
+        ]
+      },
+      "SpeciesOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "example": "DOG"
+          },
+          "name": {
+            "type": "string",
+            "example": "Perro"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
+        ]
+      },
+      "ServiceCode": {
+        "type": "string",
+        "enum": [
+          "HOME_VISIT",
+          "OVERNIGHT_STAY"
+        ]
+      },
+      "ServiceOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "example": "Visita a domicilio"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "description"
+        ]
+      },
+      "BookingRules": {
+        "type": "object",
+        "properties": {
+          "maxPetsPerBooking": {
+            "type": "integer",
+            "example": 3,
+            "description": "RN-RES-03"
+          },
+          "minLeadTimeMinutes": {
+            "type": "integer",
+            "example": 120,
+            "description": "RN-RES-05: el primer tramo empieza al menos esto después de pedirlo."
+          },
+          "homeVisitMinutes": {
+            "type": "integer",
+            "example": 60,
+            "description": "RN-SER-01: cada visita ocupa este tiempo en el calendario del cuidador."
+          },
+          "overnightStartMinute": {
+            "type": "integer",
+            "example": 1140,
+            "description": "RN-SER-02: inicio de la pernocta, en minutos desde la medianoche."
+          },
+          "overnightEndMinute": {
+            "type": "integer",
+            "example": 480,
+            "description": "RN-SER-02: fin de la pernocta, al día siguiente."
+          }
+        },
+        "required": [
+          "maxPetsPerBooking",
+          "minLeadTimeMinutes",
+          "homeVisitMinutes",
+          "overnightStartMinute",
+          "overnightEndMinute"
+        ]
+      },
+      "CatalogResponse": {
+        "type": "object",
+        "properties": {
+          "districts": {
+            "description": "Ordenados por nombre.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DistrictOption"
+            }
+          },
+          "species": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpeciesOption"
+            }
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceOption"
+            }
+          },
+          "bookingRules": {
+            "$ref": "#/components/schemas/BookingRules"
+          }
+        },
+        "required": [
+          "districts",
+          "species",
+          "services",
+          "bookingRules"
         ]
       }
     }
