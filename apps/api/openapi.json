@@ -209,7 +209,7 @@
     },
     "/v1/auth/refresh": {
       "post": {
-        "description": "Cambia el refresh token por un par nuevo. El anterior deja de servir.",
+        "description": "Cambia el refresh token por un par nuevo. El anterior sigue sirviendo 30 segundos, para reintentar si se pierde la respuesta; después, usarlo otra vez cierra la sesión.",
         "operationId": "Auth_refresh",
         "parameters": [],
         "requestBody": {
@@ -244,7 +244,7 @@
             }
           },
           "401": {
-            "description": "`INVALID_REFRESH_TOKEN`: venció, se cerró la sesión o ya se usó. Hay que iniciar sesión de nuevo.",
+            "description": "`INVALID_REFRESH_TOKEN`: venció, se cerró la sesión o se volvió a usar después de los 30 segundos. Hay que iniciar sesión de nuevo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -529,7 +529,7 @@
           },
           "refreshToken": {
             "type": "string",
-            "description": "Sirve una sola vez: POST /v1/auth/refresh lo cambia por uno nuevo. Hay que guardarlo en el almacenamiento seguro del teléfono."
+            "description": "POST /v1/auth/refresh lo cambia por uno nuevo, y este deja de servir 30 segundos después. Hay que guardarlo en el almacenamiento seguro del teléfono."
           },
           "refreshTokenExpiresAt": {
             "type": "string",

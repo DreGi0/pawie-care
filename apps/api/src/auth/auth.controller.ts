@@ -65,13 +65,14 @@ export class AuthController {
   @Throttle({ default: { limit: 30, ttl: minutes(1) } })
   @ApiOperation({
     summary: 'Renovar los tokens',
-    description: 'Cambia el refresh token por un par nuevo. El anterior deja de servir.',
+    description:
+      'Cambia el refresh token por un par nuevo. El anterior sigue sirviendo 30 segundos, para reintentar si se pierde la respuesta; después, usarlo otra vez cierra la sesión.',
   })
   @ApiOkResponse({ type: AuthSession })
   @ApiUnauthorizedResponse({
     type: ErrorResponse,
     description:
-      '`INVALID_REFRESH_TOKEN`: venció, se cerró la sesión o ya se usó. Hay que iniciar sesión de nuevo.',
+      '`INVALID_REFRESH_TOKEN`: venció, se cerró la sesión o se volvió a usar después de los 30 segundos. Hay que iniciar sesión de nuevo.',
   })
   refresh(@Body() body: RefreshTokenRequest): Promise<AuthSession> {
     return this.auth.refresh(body.refreshToken);

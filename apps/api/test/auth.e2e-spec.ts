@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { hashPassword } from '../src/auth/passwords.js';
+import { REUSE_GRACE_MS } from '../src/auth/refresh-tokens.service.js';
 import { addDays, addMonths, dateInElSalvador } from '../src/common/time/calendar.js';
 import { Role } from '../src/generated/prisma/client.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
@@ -36,9 +37,20 @@ describe('auth', () => {
     afterAll(async () => {
       await state.app?.close();
     });
+    const http = () => request(state.app!.getHttpServer());
     return {
-      http: () => request(state.app!.getHttpServer()),
+      http,
       app: () => state.app!,
+      /** Signs in an owner created for the test. */
+      signIn: async () => {
+        const owner = await existingOwner();
+        const response = await http()
+          .post('/v1/auth/login')
+          .send({ email: owner.email, password: PASSWORD })
+          .expect(200);
+        return { owner, session: response.body as { accessToken: string; refreshToken: string } };
+      },
+      refresh: (refreshToken: string) => http().post('/v1/auth/refresh').send({ refreshToken }),
     };
   }
 
@@ -219,19 +231,7 @@ describe('auth', () => {
   });
 
   describe('tokens', () => {
-    const { http, app } = useApp();
-
-    async function signIn() {
-      const owner = await existingOwner();
-      const response = await http()
-        .post('/v1/auth/login')
-        .send({ email: owner.email, password: PASSWORD })
-        .expect(200);
-      return { owner, session: response.body as { accessToken: string; refreshToken: string } };
-    }
-
-    const refresh = (refreshToken: string) =>
-      http().post('/v1/auth/refresh').send({ refreshToken });
+    const { http, app, signIn, refresh } = useApp();
 
     it('opens protected routes with the access token', async () => {
       const { owner, session } = await signIn();
@@ -288,21 +288,6 @@ describe('auth', () => {
         .expect(200);
     });
 
-    it('ends the whole session when a used refresh token comes back', async () => {
-      const { session } = await signIn();
-      const renewed = await refresh(session.refreshToken).expect(200);
-
-      const reused = await refresh(session.refreshToken).expect(401);
-
-      expect(reused.body).toEqual({
-        statusCode: 401,
-        errorCode: 'INVALID_REFRESH_TOKEN',
-        message: 'Tu sesión terminó. Inicia sesión de nuevo.',
-      });
-      // Whoever got the newer token is signed out too.
-      await refresh(renewed.body.refreshToken).expect(401);
-    });
-
     it('signs out one session and leaves the others', async () => {
       const { owner, session } = await signIn();
       const other = await http()
@@ -335,6 +320,59 @@ describe('auth', () => {
       expect(stored).toHaveLength(1);
       expect(stored[0].tokenHash).toMatch(/^[0-9a-f]{64}$/);
       expect(stored[0].tokenHash).not.toContain(session.refreshToken);
+    });
+  });
+
+  describe('refresh token reuse', () => {
+    const { http, signIn, refresh } = useApp();
+
+    it('still takes a rotated token for a few seconds, for retries after a lost response', async () => {
+      const { session } = await signIn();
+      const lost = await refresh(session.refreshToken).expect(200);
+
+      const retried = await refresh(session.refreshToken).expect(200);
+
+      await refresh(retried.body.refreshToken).expect(200);
+      await refresh(lost.body.refreshToken).expect(200);
+    });
+
+    it('takes two refreshes sent at the same time', async () => {
+      const { session } = await signIn();
+
+      const [first, second] = await Promise.all([
+        refresh(session.refreshToken),
+        refresh(session.refreshToken),
+      ]);
+
+      expect([first.status, second.status]).toEqual([200, 200]);
+    });
+
+    it('ends the whole session when a rotated token comes back after the grace period', async () => {
+      const { owner, session } = await signIn();
+      const renewed = await refresh(session.refreshToken).expect(200);
+      await db.prisma.refreshToken.updateMany({
+        where: { userId: owner.id, rotatedAt: { not: null } },
+        data: { rotatedAt: new Date(Date.now() - REUSE_GRACE_MS - 1000) },
+      });
+
+      const reused = await refresh(session.refreshToken).expect(401);
+
+      expect(reused.body).toEqual({
+        statusCode: 401,
+        errorCode: 'INVALID_REFRESH_TOKEN',
+        message: 'Tu sesión terminó. Inicia sesión de nuevo.',
+      });
+      // Whoever got the newer token is signed out too.
+      await refresh(renewed.body.refreshToken).expect(401);
+    });
+
+    it('does not bring back a token after signing out, even within the grace period', async () => {
+      const { session } = await signIn();
+      await refresh(session.refreshToken).expect(200);
+
+      await http().post('/v1/auth/logout').send({ refreshToken: session.refreshToken }).expect(204);
+
+      await refresh(session.refreshToken).expect(401);
     });
   });
 

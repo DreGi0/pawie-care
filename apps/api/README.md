@@ -59,8 +59,8 @@ Implementa RN-CTA-01 y RN-CTA-02, según §4.4 de la arquitectura. Por ahora sol
 - **Contraseñas:** se guardan con argon2id de `node:crypto`, en formato PHC ([src/auth/passwords.ts](src/auth/passwords.ts)), y tienen entre 8 y 128 caracteres.
 - **Token de acceso:** es un JWT HS256 que dura `JWT_ACCESS_TTL_SECONDS`. Cuando una ruta responde 401 `UNAUTHORIZED`, la app tiene que renovarlo.
 - **Refresh token:** es opaco, dura `REFRESH_TOKEN_TTL_DAYS` y en la base solo queda su SHA-256.
-  - Sirve una vez: `refresh` devuelve uno nuevo y el anterior deja de servir.
-  - Si alguien usa otra vez uno ya cambiado, se revocan todos los tokens de esa sesión y responde `INVALID_REFRESH_TOKEN`. Por eso la app no debe pedir dos `refresh` a la vez con el mismo token.
+  - `refresh` devuelve uno nuevo. El anterior sigue sirviendo 30 segundos, para que la app pueda reintentar si se pierde la respuesta o mandar dos `refresh` a la vez.
+  - Después de esos 30 segundos, usar otra vez uno ya cambiado significa que alguien más lo tiene: se revocan todos los tokens de esa sesión y responde `INVALID_REFRESH_TOKEN`.
 - **Errores:**
   - `EMAIL_TAKEN` (409): ya hay una cuenta con ese correo.
   - `UNDERAGE` (422): es menor de 18 años.

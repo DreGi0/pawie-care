@@ -113,7 +113,7 @@ export class AuthSession {
 
   @ApiProperty({
     description:
-      'Sirve una sola vez: POST /v1/auth/refresh lo cambia por uno nuevo. Hay que guardarlo en el almacenamiento seguro del teléfono.',
+      'POST /v1/auth/refresh lo cambia por uno nuevo, y este deja de servir 30 segundos después. Hay que guardarlo en el almacenamiento seguro del teléfono.',
   })
   refreshToken: string;
 
