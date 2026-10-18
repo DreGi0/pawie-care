@@ -4,6 +4,7 @@ import {
   IsIn,
   IsInt,
   IsOptional,
+  IsPhoneNumber,
   IsString,
   IsUrl,
   Max,
@@ -122,6 +123,15 @@ export class Environment {
   @IsString()
   @MinLength(8)
   DEMO_OWNER_PASSWORD?: string;
+
+  /**
+   * A phone of the team that the seed gives every demo caregiver, which the owner sees
+   * once a booking is confirmed (RN-CTA-04). Without it, they have none.
+   */
+  @Transform(({ value }: { value: unknown }) => (value === '' ? undefined : value))
+  @IsOptional()
+  @IsPhoneNumber('SV')
+  DEMO_CAREGIVER_PHONE?: string;
 
   // Wompi (docs/arquitectura.md §6). The three go together: without them, payments are
   // off and the rest of the API works as usual.

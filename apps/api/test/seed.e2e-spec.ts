@@ -14,6 +14,7 @@ import { storageForTests } from './storage.js';
 const NOW = new Date('2026-10-17T18:00:00Z');
 const TODAY = new Date('2026-10-17');
 const DEMO_OWNER_PASSWORD = 'contraseña-de-la-demo';
+const DEMO_CAREGIVER_PHONE = '+503 2200 0000';
 const PHOTO = Buffer.from('una imagen genérica');
 
 /** A media directory with a photo for Valeria and one for Toby, as seed-media/README.md says. */
@@ -40,6 +41,7 @@ describe('seed', () => {
     const options = {
       now: NOW,
       demoOwnerPassword: DEMO_OWNER_PASSWORD,
+      demoCaregiverPhone: DEMO_CAREGIVER_PHONE,
       media: { storage, directory: await mediaDirectory() },
     };
 
@@ -120,15 +122,23 @@ describe('seed', () => {
     expect(owner.addresses).toMatchObject([{ label: 'Casa', district: { slug: 'san-salvador' } }]);
   });
 
-  it('skips the demo owner when there is no password for it', async () => {
+  it('gives the demo caregivers the phone of DEMO_CAREGIVER_PHONE (RN-CTA-04)', async () => {
+    const phones = (await caregivers()).map(({ user }) => user.phone);
+
+    expect(secondRun.caregiverPhone).toBe(DEMO_CAREGIVER_PHONE);
+    expect(new Set(phones)).toEqual(new Set([DEMO_CAREGIVER_PHONE]));
+  });
+
+  it('skips the demo owner and the caregivers phone when their variables are not set', async () => {
     const empty = await createTestDatabase();
     try {
       const summary = await seedDatabase(empty.prisma, new SettingsService(empty.prisma), {
         now: NOW,
       });
 
-      expect(summary.demoOwner).toBeNull();
+      expect(summary).toMatchObject({ demoOwner: null, caregiverPhone: null });
       expect(await empty.prisma.user.count({ where: { email: 'demo@example.com' } })).toBe(0);
+      expect(await empty.prisma.user.count({ where: { phone: { not: null } } })).toBe(0);
     } finally {
       await empty.close();
     }

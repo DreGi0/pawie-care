@@ -34,6 +34,7 @@ Las tres de Wompi van juntas: si falta una, la API no arranca. Sin ninguna, los 
 | `REFRESH_TOKEN_TTL_DAYS`                                | Duración del refresh token, en días                                                                                   | `30`          |
 | `REDIS_URL`                                             | Redis de las colas de BullMQ: los plazos de las reservas y la limpieza                                                | Obligatoria   |
 | `DEMO_OWNER_PASSWORD`                                   | Contraseña del dueño de demo que crea el seed. Sin ella, el seed no lo crea                                           | Ninguna       |
+| `DEMO_CAREGIVER_PHONE`                                  | Un teléfono del equipo que el seed les pone a los cuidadores de demo. Sin él, no tienen teléfono                      | Ninguno       |
 | `S3_ENDPOINT`                                           | Almacenamiento compatible con S3: el SeaweedFS de `docker-compose.yml` en local y Cloudflare R2 en la demo desplegada | Obligatoria   |
 | `S3_PUBLIC_ENDPOINT`                                    | Host de las URLs firmadas que usan las apps. En el emulador de Android es `http://10.0.2.2:8333`                      | `S3_ENDPOINT` |
 | `S3_REGION`                                             | Región. R2 usa `auto` y SeaweedFS acepta cualquiera                                                                   | `auto`        |
@@ -200,7 +201,7 @@ La tabla de transiciones está en [src/bookings/booking-status.ts](src/bookings/
 - `BookingStateMachine` aplica cada cambio en una transacción: `status` y `blocks_calendar` juntos y un `BookingStatusChange`. Solo cambia una reserva que sigue en el estado que se leyó; si no, responde 409 `BOOKING_STATUS_CHANGED`.
 - `REQUESTED` ya bloquea el horario. `REJECTED`, `EXPIRED` y las cancelaciones lo liberan.
 - No hay panel de cuidador, así que aceptar y rechazar existen solo como `BookingsService.accept()` y `reject()`, sin ruta.
-- `GET /v1/bookings/:id` muestra el teléfono del cuidador desde que la reserva está confirmada (RN-CTA-04). Los cuidadores de demo no tienen teléfono en el seed.
+- `GET /v1/bookings/:id` muestra el teléfono del cuidador desde que la reserva está confirmada (RN-CTA-04). Los cuidadores de demo tienen el de `DEMO_CAREGIVER_PHONE` (ver [Seed](#seed)).
 - `POST /v1/bookings/:id/cancel` cancela sin costo, con un `reason` opcional, mientras está `REQUESTED` o `PENDING_PAYMENT`. En otro estado responde 409 `BOOKING_NOT_CANCELLABLE`.
 
 ### Plazos
@@ -271,7 +272,7 @@ Otros comandos:
 
 - los 14 distritos del AMSS, perro y gato, los dos servicios y el tipo de certificación ⭐;
 - todos los parámetros de la sección 15 que falten, con su valor inicial;
-- 10 cuidadores aprobados y con Reserva inmediata. Hay de los cuatro tipos (⭐, estudiantes, ambos y ninguno), y Gabriela, Diego y Sofía no hacen pernoctas. Sus correos son de `example.com` y no tienen contraseña, así que no pueden iniciar sesión;
+- 10 cuidadores aprobados y con Reserva inmediata. Hay de los cuatro tipos (⭐, estudiantes, ambos y ninguno), y Gabriela, Diego y Sofía no hacen pernoctas. Sus correos son de `example.com` y no tienen contraseña, así que no pueden iniciar sesión. Todos tienen el teléfono de `DEMO_CAREGIVER_PHONE`, que el dueño ve cuando la reserva está confirmada (RN-CTA-04). Usa un número del equipo: el repositorio no inventa números, porque podrían ser de alguien. Sin esa variable, no tienen teléfono;
 - el dueño de demo, `demo@example.com`, con una dirección en San Salvador. Su contraseña es la de `DEMO_OWNER_PASSWORD`, que en local es `pawie-demo-local`. Sin esa variable, el seed no lo crea. En la demo desplegada, que tiene URL pública, usa otra contraseña. Tiene tres mascotas, una por cada caso de la demo: Toby es Normal; Nala es Especial porque necesita ayuda para moverse; y Rocky necesita insulina, así que no se puede reservar (RN-MAS-09);
 - las fotos que haya en [seed-media/](seed-media/README.md), que se suben al bucket. La carpeta explica cómo nombrarlas.
 

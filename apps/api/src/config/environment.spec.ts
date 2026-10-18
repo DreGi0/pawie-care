@@ -89,6 +89,19 @@ describe('validateEnvironment', () => {
     );
   });
 
+  it('takes a Salvadoran phone for the demo caregivers, or none', () => {
+    expect(
+      validateEnvironment({ ...REQUIRED, DEMO_CAREGIVER_PHONE: '' }).DEMO_CAREGIVER_PHONE,
+    ).toBeUndefined();
+    expect(
+      validateEnvironment({ ...REQUIRED, DEMO_CAREGIVER_PHONE: '+503 2200 0000' })
+        .DEMO_CAREGIVER_PHONE,
+    ).toBe('+503 2200 0000');
+    expect(() => validateEnvironment({ ...REQUIRED, DEMO_CAREGIVER_PHONE: '123' })).toThrow(
+      /DEMO_CAREGIVER_PHONE/,
+    );
+  });
+
   describe('Wompi', () => {
     const WOMPI = {
       WOMPI_APP_ID: 'app-id',
