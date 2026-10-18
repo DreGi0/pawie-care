@@ -13,6 +13,7 @@ import { AppConfigModule } from './config/config.module.js';
 import { type Environment, NodeEnv } from './config/environment.js';
 import { FilesModule } from './files/files.module.js';
 import { HealthModule } from './health/health.module.js';
+import { PetsModule } from './pets/pets.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { UsersModule } from './users/users.module.js';
@@ -75,6 +76,7 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
     AuthModule,
     FilesModule,
     CatalogModule,
+    PetsModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ApiValidationPipe },

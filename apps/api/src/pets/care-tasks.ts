@@ -38,3 +38,22 @@ export function canBeOpenEnded(task: CareTask): boolean {
     CARE_TASK_GROUPS[task] === 'PROHIBITED'
   );
 }
+
+/** How each task reads in a sentence, for the messages owners see. */
+export const CARE_TASK_LABELS: Readonly<Record<CareTask, string>> = {
+  [CareTask.MEDICATION]: 'darle medicamentos',
+  [CareTask.WOUND_CARE]: 'curarle heridas o suturas',
+  [CareTask.POST_OPERATIVE_RECOVERY]: 'cuidar su recuperación post-operatoria',
+  [CareTask.SYRINGE_FEEDING]: 'alimentarla con jeringa',
+  [CareTask.PRESCRIBED_REST]: 'mantener su reposo indicado',
+  [CareTask.CHRONIC_CONDITION_MONITORING]: 'vigilar su condición crónica',
+  [CareTask.MOBILITY_ASSISTANCE]: 'ayudarla a moverse',
+  [CareTask.INCONTINENCE_HYGIENE]: 'su higiene por incontinencia',
+  [CareTask.INJECTION]: 'ponerle inyecciones',
+  [CareTask.IV_FLUIDS]: 'ponerle sueros',
+  [CareTask.STITCH_OR_DRAIN_REMOVAL]: 'quitarle puntos o drenajes',
+  [CareTask.TUBE_PLACEMENT]: 'ponerle sondas',
+  [CareTask.SEDATION]: 'sedarla',
+  [CareTask.DOSE_CHANGE]: 'cambiarle la dosis de un medicamento',
+  [CareTask.DIAGNOSIS_OR_PRESCRIPTION]: 'diagnosticarla o recetarle',
+};

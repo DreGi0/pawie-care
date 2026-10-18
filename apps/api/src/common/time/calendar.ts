@@ -30,3 +30,13 @@ export function ageOn(birthDate: Date, today: Date): number {
       today.getUTCDate() >= birthDate.getUTCDate());
   return birthdayPassed ? years : years - 1;
 }
+
+/** "2026-10-17" to the Date Prisma uses for a `date` column. */
+export function parseDateOnly(date: string): Date {
+  return new Date(`${date}T00:00:00Z`);
+}
+
+/** A `date` column back to "2026-10-17". */
+export function formatDateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
