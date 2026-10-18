@@ -6,6 +6,7 @@ import {
   Role,
   type ServiceCode,
 } from '../generated/prisma/client.js';
+import { addDays, addMonths, dateInElSalvador } from '../common/time/calendar.js';
 import type { SettingKey } from '../settings/settings.registry.js';
 import type { SettingsService } from '../settings/settings.service.js';
 import { DEMO_CAREGIVERS, type DemoCaregiver } from './caregivers.js';
@@ -185,18 +186,4 @@ function required<T>(value: T | undefined, name: string): T {
     throw new Error(`The seed refers to ${name}, which isn't in the catalog`);
   }
   return value;
-}
-
-/** Today's date in El Salvador (UTC−6, no daylight saving time), at 00:00 UTC. */
-function dateInElSalvador(now: Date): Date {
-  const local = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-  return new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()));
-}
-
-function addMonths(date: Date, months: number): Date {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, date.getUTCDate()));
-}
-
-function addDays(date: Date, days: number): Date {
-  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
