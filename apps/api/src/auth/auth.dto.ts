@@ -11,13 +11,12 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { trimmed } from '../common/validation/trimmed.js';
 import { UserProfile } from '../users/user-profile.dto.js';
 import { normalizeEmail } from '../users/users.service.js';
 
 // Validation messages are in Spanish because the app shows them next to each field.
 
-const trimmed = ({ value }: { value: unknown }) =>
-  typeof value === 'string' ? value.trim() : value;
 const asEmail = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? normalizeEmail(value) : value;
 

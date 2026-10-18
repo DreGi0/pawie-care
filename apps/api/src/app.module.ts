@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { minutes, ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
+import { AddressesModule } from './addresses/addresses.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CaregiversModule } from './caregivers/caregivers.module.js';
 import { CatalogModule } from './catalog/catalog.module.js';
@@ -78,6 +79,7 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
     FilesModule,
     CatalogModule,
     PetsModule,
+    AddressesModule,
     CaregiversModule,
   ],
   providers: [

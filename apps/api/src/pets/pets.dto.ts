@@ -15,11 +15,9 @@ import {
 } from 'class-validator';
 import { SpeciesOption } from '../catalog/catalog.dto.js';
 import { IsDateOnly } from '../common/validation/is-date-only.js';
+import { trimmed } from '../common/validation/trimmed.js';
 import { CareTask, PetSex } from '../generated/prisma/enums.js';
 import type { CareTaskGroup } from './care-tasks.js';
-
-const trimmed = ({ value }: { value: unknown }) =>
-  typeof value === 'string' ? value.trim() : value;
 
 /** RN-MAS-02. Creating and editing take the whole pet: an optional field left out is cleared. */
 export class PetRequest {

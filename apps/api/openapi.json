@@ -1236,6 +1236,186 @@
         ]
       }
     },
+    "/v1/addresses": {
+      "get": {
+        "operationId": "Addresses_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AddressResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mis direcciones",
+        "tags": [
+          "addresses"
+        ]
+      },
+      "post": {
+        "operationId": "Addresses_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`UNKNOWN_DISTRICT`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Agregar una dirección",
+        "tags": [
+          "addresses"
+        ]
+      }
+    },
+    "/v1/addresses/{addressId}": {
+      "put": {
+        "description": "Reemplaza todos sus datos. Las reservas ya hechas conservan la dirección que tenían (RN-CTA-04).",
+        "operationId": "Addresses_replace",
+        "parameters": [
+          {
+            "name": "addressId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`ADDRESS_NOT_FOUND`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`UNKNOWN_DISTRICT`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Editar una dirección",
+        "tags": [
+          "addresses"
+        ]
+      },
+      "delete": {
+        "description": "Las reservas ya hechas conservan su copia (RN-CTA-04).",
+        "operationId": "Addresses_remove",
+        "parameters": [
+          {
+            "name": "addressId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "`ADDRESS_NOT_FOUND`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Borrar una dirección",
+        "tags": [
+          "addresses"
+        ]
+      }
+    },
     "/v1/caregivers/search": {
       "post": {
         "description": "RN-RES-01. Va por POST porque lleva las mascotas y los horarios; no cambia nada. Devuelve el nivel de la reserva, los tramos y los cuidadores disponibles.",
@@ -2446,6 +2626,70 @@
         "required": [
           "task",
           "startsOn"
+        ]
+      },
+      "AddressResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string",
+            "example": "Casa"
+          },
+          "street": {
+            "type": "string",
+            "example": "Pasaje Las Mascotas 12, Residencial Pawie"
+          },
+          "details": {
+            "type": "string",
+            "nullable": true
+          },
+          "district": {
+            "$ref": "#/components/schemas/DistrictOption"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "street",
+          "details",
+          "district"
+        ]
+      },
+      "AddressRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 40,
+            "example": "Casa",
+            "description": "Cómo la llama el dueño."
+          },
+          "street": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Pasaje Las Mascotas 12, Residencial Pawie",
+            "description": "Calle, número y colonia o residencial."
+          },
+          "details": {
+            "type": "string",
+            "maxLength": 300,
+            "example": "Portón verde, a la par de la tienda",
+            "description": "Apartamento, código del portón o puntos de referencia."
+          },
+          "districtId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Uno de los distritos de GET /v1/catalog."
+          }
+        },
+        "required": [
+          "label",
+          "street",
+          "districtId"
         ]
       },
       "SearchCaregiversRequest": {
