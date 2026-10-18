@@ -1,9 +1,13 @@
 import { randomUUID } from 'node:crypto';
+import { getQueueToken } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
 import { BookingDeadlines } from '../src/bookings/booking-deadlines.js';
 import { BookingsService } from '../src/bookings/bookings.service.js';
 import { addDays, dateInElSalvador, formatDateOnly } from '../src/common/time/calendar.js';
 import { Clock } from '../src/common/time/clock.js';
 import { Role } from '../src/generated/prisma/client.js';
+import { PaymentWebhooks } from '../src/payments/payment-webhooks.js';
+import { PAYMENTS_QUEUE, RETRY_WEBHOOKS_JOB } from '../src/payments/payments.processor.js';
 import { WompiClient, WompiError } from '../src/payments/wompi.client.js';
 import { WOMPI_SETTINGS } from '../src/payments/wompi-settings.js';
 import { seedDatabase } from '../src/seed/seed-database.js';
@@ -53,6 +57,7 @@ describe('payments (RN-PAG)', () => {
   afterEach(() => {
     clock.reset();
     wompi.failure = null;
+    wompi.queryFailure = null;
   });
 
   let lastSlot = 0;
@@ -523,6 +528,70 @@ describe('payments (RN-PAG)', () => {
       }).expect(400);
 
       expect(error).toMatchObject({ errorCode: 'INVALID_WEBHOOK' });
+    });
+  });
+
+  describe('retrying webhooks that could not be applied', () => {
+    const webhooks = () => api.app().get(PaymentWebhooks);
+    /** The retries skip events younger than a minute, which their own request is applying. */
+    const aFewMinutesLater = () => clock.set(new Date(Date.now() + 2 * 60_000));
+
+    it('applies an event once Wompi confirms the transaction', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+      const link = await checkout(daniela, booking.id);
+      const paid = wompi.pay(link, { approved: false });
+      await deliver(paid).expect(200);
+
+      await webhooks().retryPending();
+      expect((await bookingRow(booking.id)).status).toBe('PENDING_PAYMENT');
+
+      wompi.transactions.set(paid.transactionId, {
+        id: paid.transactionId,
+        approved: true,
+        isLive: false,
+        amountCents: link.amountCents,
+      });
+      aFewMinutesLater();
+      expect(await webhooks().retryPending()).toBeGreaterThanOrEqual(1);
+
+      expect((await bookingRow(booking.id)).status).toBe('CONFIRMED');
+      const [event] = await eventsOf(paid.transactionId);
+      expect(event).toMatchObject({ error: null, paymentId: link.reference });
+      expect(event.processedAt).toBeInstanceOf(Date);
+    });
+
+    it('keeps an event when Wompi does not answer the query, and applies it once Wompi is back', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+      const paid = wompi.pay(await checkout(daniela, booking.id));
+      wompi.queryFailure = new WompiError('Wompi did not answer: TimeoutError');
+
+      // Wompi still gets its 200: the event is stored.
+      await deliver(paid).expect(200);
+
+      const [event] = await eventsOf(paid.transactionId);
+      expect(event).toMatchObject({
+        processedAt: null,
+        error: 'WompiError: Wompi did not answer: TimeoutError',
+      });
+      expect((await bookingRow(booking.id)).status).toBe('PENDING_PAYMENT');
+
+      wompi.queryFailure = null;
+      aFewMinutesLater();
+      await webhooks().retryPending();
+
+      expect((await bookingRow(booking.id)).status).toBe('CONFIRMED');
+    });
+
+    it('retries every 5 minutes', async () => {
+      const queue = api.app().get<Queue>(getQueueToken(PAYMENTS_QUEUE));
+
+      await vi.waitFor(async () => {
+        expect(await queue.getJobSchedulers()).toEqual([
+          expect.objectContaining({ key: RETRY_WEBHOOKS_JOB, every: 5 * 60_000 }),
+        ]);
+      });
     });
   });
 

@@ -73,6 +73,8 @@ export class FakeWompi implements WompiApi {
   readonly queried: string[] = [];
   /** The next createPaymentLink() fails with it. */
   failure: Error | null = null;
+  /** Every getTransaction() fails with it while it's set, as if Wompi were down. */
+  queryFailure: Error | null = null;
   private lastLinkId = 1_384_000;
 
   createPaymentLink(request: PaymentLinkRequest): Promise<PaymentLink> {
@@ -89,6 +91,9 @@ export class FakeWompi implements WompiApi {
 
   getTransaction(id: string): Promise<WompiTransaction | null> {
     this.queried.push(id);
+    if (this.queryFailure) {
+      return Promise.reject(this.queryFailure);
+    }
     return Promise.resolve(this.transactions.get(id) ?? null);
   }
 

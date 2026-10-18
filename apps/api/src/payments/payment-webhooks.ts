@@ -49,6 +49,10 @@ const SETTLED: readonly PaymentStatus[] = [
 /** Times a webhook reads the booking again when it changes while the payment is applied. */
 const MAX_APPLY_ATTEMPTS = 3;
 
+/** An event that couldn't be applied is retried after this long, and for this long. */
+const RETRY_AFTER_MS = 60_000;
+const RETRY_FOR_MS = 24 * 60 * 60_000;
+
 type Client = PrismaClient | Prisma.TransactionClient;
 
 interface Approval {
@@ -186,6 +190,36 @@ export class PaymentWebhooks {
       });
       throw error;
     }
+  }
+
+  /**
+   * Applies the events that couldn't be applied when they arrived, because Wompi didn't
+   * answer the query or didn't report the transaction as approved yet. Each one is
+   * retried for a day; after that it stays with its error, for review. Returns how many
+   * it applied.
+   */
+  async retryPending(): Promise<number> {
+    const now = this.clock.now().getTime();
+    const events = await this.prisma.webhookEvent.findMany({
+      where: {
+        processedAt: null,
+        // Not the ones that just arrived, which their own request is applying.
+        receivedAt: { lte: new Date(now - RETRY_AFTER_MS), gte: new Date(now - RETRY_FOR_MS) },
+      },
+      select: { id: true },
+      orderBy: { receivedAt: 'asc' },
+    });
+    let applied = 0;
+    for (const { id } of events) {
+      try {
+        if ((await this.process(id)) !== 'not-approved') {
+          applied += 1;
+        }
+      } catch (error) {
+        this.logger.warn({ eventId: id, error: String(error) }, 'A payment webhook still fails');
+      }
+    }
+    return applied;
   }
 
   private async apply(approval: Approval): Promise<WebhookOutcome> {
