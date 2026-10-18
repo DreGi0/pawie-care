@@ -20,6 +20,7 @@ import {
 import { DistrictOption } from '../catalog/catalog.dto.js';
 import { trimmed } from '../common/validation/trimmed.js';
 import { BookingStatus, CareLevel, ServiceCode } from '../generated/prisma/enums.js';
+import { BookingPayment } from '../payments/payments.dto.js';
 import { ScheduleRequest } from './schedule.dto.js';
 
 /** RN-RES-04: what the caregiver needs if something happens during the service. */
@@ -304,6 +305,14 @@ export class BookingResponse {
 
   @ApiProperty({ type: BookingPrice })
   price: BookingPrice;
+
+  @ApiProperty({
+    type: BookingPayment,
+    nullable: true,
+    description:
+      'El pago que la confirmó o, si no, el último intento. Mientras la reserva está PENDING_PAYMENT y el pago está PENDING, la app espera el aviso de Wompi (RN-PAG-02).',
+  })
+  payment: BookingPayment | null;
 
   @ApiProperty({ format: 'date-time' })
   createdAt: string;

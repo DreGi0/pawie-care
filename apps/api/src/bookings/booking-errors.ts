@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client.js';
 
 /** PostgreSQL's exclusion_violation: only booking_slots_no_overlap raises it. */
@@ -13,6 +13,14 @@ export function isSlotOverlap(error: unknown): boolean {
   const adapterError = error.meta?.driverAdapterError as
     { cause?: { originalCode?: string } } | undefined;
   return adapterError?.cause?.originalCode === EXCLUSION_VIOLATION;
+}
+
+/** The booking doesn't exist or belongs to another owner, who is the only one who sees it. */
+export function bookingNotFound(): NotFoundException {
+  return new NotFoundException({
+    errorCode: 'BOOKING_NOT_FOUND',
+    message: 'No encontramos esa reserva.',
+  });
 }
 
 /**
