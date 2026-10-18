@@ -27,4 +27,16 @@ describe('API documentation', () => {
     expect(response.body.paths['/v1/health'].get.operationId).toBe('Health_check');
     expect(response.body.components.schemas).toHaveProperty('ErrorResponse');
   });
+
+  it('marks which routes need the access token', async () => {
+    const { body } = await request(app.getHttpServer()).get('/docs/openapi.json').expect(200);
+
+    expect(body.components.securitySchemes.bearer).toMatchObject({
+      type: 'http',
+      scheme: 'bearer',
+    });
+    expect(body.paths['/v1/users/me'].get.security).toEqual([{ bearer: [] }]);
+    expect(body.paths['/v1/auth/login'].post.security).toBeUndefined();
+    expect(body.paths['/v1/health'].get.security).toBeUndefined();
+  });
 });

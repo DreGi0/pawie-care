@@ -33,6 +33,288 @@
           "health"
         ]
       }
+    },
+    "/v1/users/me": {
+      "get": {
+        "description": "Los datos de la cuenta que inició sesión.",
+        "operationId": "Users_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o ya venció.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mi cuenta",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/v1/auth/register": {
+      "post": {
+        "description": "Crea la cuenta e inicia sesión.",
+        "operationId": "Auth_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`, con los errores de cada campo en `details`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`EMAIL_TAKEN`: ya hay una cuenta con ese correo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`UNDERAGE`: es menor de 18 años (RN-CTA-02).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiados intentos desde la misma IP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Crear una cuenta de dueño",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "operationId": "Auth_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`, con los errores de cada campo en `details`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`INVALID_CREDENTIALS`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiados intentos desde la misma IP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Iniciar sesión",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/refresh": {
+      "post": {
+        "description": "Cambia el refresh token por un par nuevo. El anterior deja de servir.",
+        "operationId": "Auth_refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`, con los errores de cada campo en `details`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`INVALID_REFRESH_TOKEN`: venció, se cerró la sesión o ya se usó. Hay que iniciar sesión de nuevo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiados intentos desde la misma IP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Renovar los tokens",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "description": "Invalida el refresh token y los demás de la misma sesión. No necesita el token de acceso.",
+        "operationId": "Auth_logout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Sesión cerrada, o el token ya no servía."
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`, con los errores de cada campo en `details`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiados intentos desde la misma IP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Cerrar sesión",
+        "tags": [
+          "auth"
+        ]
+      }
     }
   },
   "info": {
@@ -44,6 +326,13 @@
   "tags": [],
   "servers": [],
   "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
     "schemas": {
       "HealthChecks": {
         "type": "object",
@@ -117,6 +406,177 @@
           "statusCode",
           "errorCode",
           "message"
+        ]
+      },
+      "Role": {
+        "type": "string",
+        "enum": [
+          "OWNER",
+          "CAREGIVER",
+          "ADMIN"
+        ],
+        "description": "RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez."
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "example": "daniela@example.com"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "Daniela"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Pérez"
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "example": "1992-05-20"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "example": "+503 7000 0000"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Role"
+            },
+            "description": "RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez."
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "firstName",
+          "lastName",
+          "birthDate",
+          "phone",
+          "roles"
+        ]
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "example": "daniela@example.com",
+            "description": "Se guarda en minúsculas."
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "firstName": {
+            "type": "string",
+            "maxLength": 80,
+            "example": "Daniela"
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 80,
+            "example": "Pérez"
+          },
+          "birthDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "format": "date",
+            "example": "1992-05-20",
+            "description": "AAAA-MM-DD. Solo pueden registrarse mayores de 18 años (RN-CTA-02)."
+          },
+          "phone": {
+            "type": "string",
+            "example": "+503 7000 0000"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "firstName",
+          "lastName",
+          "birthDate"
+        ]
+      },
+      "AuthSession": {
+        "type": "object",
+        "properties": {
+          "tokenType": {
+            "enum": [
+              "Bearer"
+            ],
+            "type": "string"
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "JWT de vida corta para el header Authorization."
+          },
+          "expiresIn": {
+            "type": "integer",
+            "example": 900,
+            "description": "Segundos que dura el accessToken."
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "Sirve una sola vez: POST /v1/auth/refresh lo cambia por uno nuevo. Hay que guardarlo en el almacenamiento seguro del teléfono."
+          },
+          "refreshTokenExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserProfile"
+          }
+        },
+        "required": [
+          "tokenType",
+          "accessToken",
+          "expiresIn",
+          "refreshToken",
+          "refreshTokenExpiresAt",
+          "user"
+        ]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "daniela@example.com"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "RefreshTokenRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "maxLength": 256,
+            "description": "El refresh token que devolvió el inicio de sesión o el último refresh."
+          }
+        },
+        "required": [
+          "refreshToken"
         ]
       }
     }

@@ -1,5 +1,16 @@
 import { plainToInstance, Transform, Type } from 'class-transformer';
-import { IsEnum, IsIn, IsInt, IsUrl, Max, Min, validateSync } from 'class-validator';
+import {
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Max,
+  Min,
+  MinLength,
+  validateSync,
+} from 'class-validator';
 
 export enum NodeEnv {
   Development = 'development',
@@ -51,6 +62,32 @@ export class Environment {
   @IsInt()
   @Min(0)
   TRUST_PROXY = 0;
+
+  /** Signs the access tokens (HS256). */
+  @IsString()
+  @MinLength(32)
+  JWT_ACCESS_SECRET: string;
+
+  /** Lifetime of an access token, in seconds. */
+  @Type(() => Number)
+  @IsInt()
+  @Min(60)
+  @Max(24 * 60 * 60)
+  JWT_ACCESS_TTL_SECONDS = 15 * 60;
+
+  /** Lifetime of a refresh token, in days. Each use replaces it with a new one. */
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  REFRESH_TOKEN_TTL_DAYS = 30;
+
+  /** Password of the demo owner that the seed creates. Without it, the seed skips the owner. */
+  @Transform(({ value }: { value: unknown }) => (value === '' ? undefined : value))
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  DEMO_OWNER_PASSWORD?: string;
 }
 
 export function validateEnvironment(raw: Record<string, unknown>): Environment {

@@ -15,6 +15,9 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
         'Los errores siempre tienen la forma de `ErrorResponse`.',
     )
     .setVersion('1')
+    // Protected routes say so with @ApiBearerAuth(). The mobile app sends the access token
+    // in the Authorization header.
+    .addBearerAuth()
     .build();
 
   return SwaggerModule.createDocument(app, config, {
