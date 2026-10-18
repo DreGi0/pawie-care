@@ -357,7 +357,7 @@ export class CaregiversService {
     const { ratingCount, ratingSum } = caregiver;
     return {
       id: caregiver.userId,
-      displayName: `${caregiver.user.firstName} ${caregiver.user.lastName.charAt(0)}.`,
+      displayName: caregiverDisplayName(caregiver.user),
       photoUrl: await this.files.downloadUrl(caregiver.photoFile),
       hasSpecialCareCertification: hasSpecialCare(caregiver, today, now),
       isVetStudent: caregiver.vetStudentUntil !== null && caregiver.vetStudentUntil >= today,
@@ -440,4 +440,9 @@ function byRanking(a: CaregiverSummary, b: CaregiverSummary): number {
     b.completedBookingCount - a.completedBookingCount ||
     spanish.compare(a.displayName, b.displayName)
   );
+}
+
+/** RN-RES-02: the first name and the initial of the last name, as owners see caregivers. */
+export function caregiverDisplayName(user: { firstName: string; lastName: string }): string {
+  return `${user.firstName} ${user.lastName.charAt(0)}.`;
 }

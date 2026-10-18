@@ -1416,6 +1416,217 @@
         ]
       }
     },
+    "/v1/bookings": {
+      "post": {
+        "description": "RN-RES-03 y RN-RES-04. Valida igual que la búsqueda. Con Reserva inmediata queda PENDING_PAYMENT con `paymentDueAt` (RN-RES-07); si no, REQUESTED con `responseDueAt` (RN-RES-06). Los precios se copian al crearla (RN-PRE-07).",
+        "operationId": "Bookings_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`ADDRESS_NOT_FOUND` o `PET_NOT_FOUND`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`SLOT_TAKEN`: otra reserva tomó ese horario (RN-CUI-15). `CAREGIVER_UNAVAILABLE`: la búsqueda ya no mostraría a ese cuidador para esa reserva.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Los mismos de la búsqueda: `TOO_MANY_PETS`, `INVALID_SCHEDULE`, `TOO_SOON` o `PET_NOT_BOOKABLE`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reservar",
+        "tags": [
+          "bookings"
+        ]
+      },
+      "get": {
+        "description": "Primero las de servicio más reciente.",
+        "operationId": "Bookings_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BookingResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mis reservas",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/v1/bookings/{bookingId}": {
+      "get": {
+        "description": "El teléfono del cuidador aparece cuando está confirmada (RN-CTA-04).",
+        "operationId": "Bookings_get",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`BOOKING_NOT_FOUND`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver una reserva",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/v1/bookings/{bookingId}/cancel": {
+      "post": {
+        "description": "Sin costo mientras está REQUESTED o PENDING_PAYMENT; pasa a CANCELLED_BY_OWNER y libera el horario. Cancelar una reserva confirmada llega después de la demo.",
+        "operationId": "Bookings_cancel",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelBookingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`BOOKING_NOT_FOUND`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`BOOKING_NOT_CANCELLABLE`: ya está pagada, vencida o cancelada. `BOOKING_STATUS_CHANGED`: cambió mientras tanto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancelar una reserva",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
     "/v1/caregivers/search": {
       "post": {
         "description": "RN-RES-01. Va por POST porque lleva las mascotas y los horarios; no cambia nada. Devuelve el nivel de la reserva, los tramos y los cuidadores disponibles.",
@@ -2692,6 +2903,450 @@
           "districtId"
         ]
       },
+      "EmergencyDetails": {
+        "type": "object",
+        "properties": {
+          "contactName": {
+            "type": "string",
+            "maxLength": 120,
+            "example": "Luis Pérez",
+            "description": "Contacto de emergencia."
+          },
+          "contactPhone": {
+            "type": "string",
+            "example": "+503 7000 0000"
+          },
+          "vetName": {
+            "type": "string",
+            "maxLength": 120,
+            "example": "Clínica Veterinaria San Benito",
+            "description": "Veterinario de cabecera."
+          },
+          "vetPhone": {
+            "type": "string",
+            "example": "+503 2222 0000"
+          },
+          "preauthorizedCents": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 200000,
+            "example": 5000,
+            "description": "Monto preautorizado para emergencias, en centavos. Solo se declara: no se cobra por adelantado (RN-EME-04)."
+          },
+          "clinicConsent": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Consentimiento para llevar a la mascota a una clínica si hace falta. Sin él no se puede reservar (RN-EME-02)."
+          }
+        },
+        "required": [
+          "contactName",
+          "contactPhone",
+          "preauthorizedCents",
+          "clinicConsent"
+        ]
+      },
+      "CreateBookingRequest": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "nights": {
+            "maxItems": 31,
+            "example": [
+              "2026-11-20",
+              "2026-11-21"
+            ],
+            "description": "Solo en pernocta: la fecha en que empieza cada noche.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "visits": {
+            "maxItems": 62,
+            "example": [
+              "2026-11-20T09:00:00-06:00"
+            ],
+            "description": "Cuándo empieza cada visita. En una pernocta son las visitas de día durante la estadía (RN-SER-03).",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "caregiverId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Un cuidador de los resultados de la búsqueda."
+          },
+          "petIds": {
+            "minItems": 1,
+            "maxItems": 10,
+            "description": "Mascotas del dueño.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "addressId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Una de las direcciones de GET /v1/addresses."
+          },
+          "instructions": {
+            "type": "string",
+            "maxLength": 2000,
+            "example": "La comida está en la alacena de la cocina. Toby come dos veces al día.",
+            "description": "Instrucciones para el cuidador (RN-RES-03)."
+          },
+          "emergency": {
+            "$ref": "#/components/schemas/EmergencyDetails"
+          }
+        },
+        "required": [
+          "serviceCode",
+          "caregiverId",
+          "petIds",
+          "addressId",
+          "emergency"
+        ]
+      },
+      "BookingStatus": {
+        "type": "string",
+        "enum": [
+          "REQUESTED",
+          "PENDING_PAYMENT",
+          "CONFIRMED",
+          "IN_PROGRESS",
+          "COMPLETED",
+          "CLOSED",
+          "REJECTED",
+          "EXPIRED",
+          "CANCELLED_BY_OWNER",
+          "CANCELLED_BY_CAREGIVER",
+          "DISPUTED"
+        ],
+        "description": "Sección 8.2."
+      },
+      "CareLevel": {
+        "type": "string",
+        "enum": [
+          "STANDARD",
+          "SPECIAL"
+        ],
+        "description": "RN-PRE-02: Especial si alguna mascota lo es."
+      },
+      "BookingCaregiver": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Valeria M."
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL firmada que vence en 10 minutos."
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "description": "RN-CTA-04: solo aparece cuando la reserva está confirmada."
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "photoUrl",
+          "phone"
+        ]
+      },
+      "BookingPetResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Toby"
+          },
+          "careLevel": {
+            "description": "Su nivel en las fechas de la reserva (RN-MAS-05).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CareLevel"
+              }
+            ]
+          },
+          "vetInstructionIds": {
+            "description": "Las indicaciones del veterinario que se adjuntaron a la reserva (RN-RES-03).",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "careLevel",
+          "vetInstructionIds"
+        ]
+      },
+      "BookingSlotResponse": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "unitPriceCents": {
+            "type": "integer",
+            "example": 1300,
+            "description": "Precio del cuidador por una mascota, en centavos."
+          },
+          "subtotalCents": {
+            "type": "integer",
+            "example": 1950,
+            "description": "Con el recargo por cada mascota adicional (RN-PRE-02)."
+          }
+        },
+        "required": [
+          "serviceCode",
+          "startsAt",
+          "endsAt",
+          "unitPriceCents",
+          "subtotalCents"
+        ]
+      },
+      "BookingAddress": {
+        "type": "object",
+        "properties": {
+          "street": {
+            "type": "string",
+            "example": "Pasaje Las Mascotas 12, Residencial Pawie"
+          },
+          "details": {
+            "type": "string",
+            "nullable": true
+          },
+          "district": {
+            "$ref": "#/components/schemas/DistrictOption"
+          }
+        },
+        "required": [
+          "street",
+          "details",
+          "district"
+        ]
+      },
+      "BookingEmergency": {
+        "type": "object",
+        "properties": {
+          "contactName": {
+            "type": "string"
+          },
+          "contactPhone": {
+            "type": "string"
+          },
+          "vetName": {
+            "type": "string",
+            "nullable": true
+          },
+          "vetPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "preauthorizedCents": {
+            "type": "integer"
+          },
+          "clinicConsent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contactName",
+          "contactPhone",
+          "vetName",
+          "vetPhone",
+          "preauthorizedCents",
+          "clinicConsent"
+        ]
+      },
+      "BookingPrice": {
+        "type": "object",
+        "properties": {
+          "subtotalCents": {
+            "type": "integer",
+            "example": 1700,
+            "description": "Lo que cobra el cuidador: la suma de los tramos."
+          },
+          "serviceFeeBp": {
+            "type": "integer",
+            "example": 1000,
+            "description": "Tarifa de servicio, en puntos básicos."
+          },
+          "serviceFeeCents": {
+            "type": "integer",
+            "example": 170
+          },
+          "totalCents": {
+            "type": "integer",
+            "example": 1870,
+            "description": "Lo que paga el dueño."
+          }
+        },
+        "required": [
+          "subtotalCents",
+          "serviceFeeBp",
+          "serviceFeeCents",
+          "totalCents"
+        ]
+      },
+      "BookingResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "description": "Sección 8.2.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BookingStatus"
+              }
+            ]
+          },
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "careLevel": {
+            "description": "RN-PRE-02: Especial si alguna mascota lo es.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CareLevel"
+              }
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Inicio del primer tramo."
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fin del último tramo."
+          },
+          "responseDueAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "Mientras está SOLICITADA: hasta cuándo puede responder el cuidador (RN-RES-06)."
+          },
+          "paymentDueAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "Mientras está PENDIENTE DE PAGO: hasta cuándo puede pagar el dueño (RN-RES-07)."
+          },
+          "caregiver": {
+            "$ref": "#/components/schemas/BookingCaregiver"
+          },
+          "pets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingPetResponse"
+            }
+          },
+          "slots": {
+            "description": "Cada visita o cada noche, en orden.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingSlotResponse"
+            }
+          },
+          "address": {
+            "$ref": "#/components/schemas/BookingAddress"
+          },
+          "instructions": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergency": {
+            "$ref": "#/components/schemas/BookingEmergency"
+          },
+          "price": {
+            "$ref": "#/components/schemas/BookingPrice"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "serviceCode",
+          "careLevel",
+          "startsAt",
+          "endsAt",
+          "responseDueAt",
+          "paymentDueAt",
+          "caregiver",
+          "pets",
+          "slots",
+          "address",
+          "instructions",
+          "emergency",
+          "price",
+          "createdAt"
+        ]
+      },
+      "CancelBookingRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "Cambié de planes.",
+            "description": "Por qué cancela el dueño."
+          }
+        }
+      },
       "SearchCaregiversRequest": {
         "type": "object",
         "properties": {
@@ -2748,14 +3403,6 @@
           "petIds",
           "districtId"
         ]
-      },
-      "CareLevel": {
-        "type": "string",
-        "enum": [
-          "STANDARD",
-          "SPECIAL"
-        ],
-        "description": "RN-MAS-05, RN-PRE-02: Especial si alguna mascota lo es en esas fechas."
       },
       "SlotResponse": {
         "type": "object",

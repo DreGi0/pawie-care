@@ -10,5 +10,6 @@ import { CaregiversService } from './caregivers.service.js';
   imports: [SettingsModule, FilesModule, PetsModule],
   controllers: [CaregiversController],
   providers: [CaregiversService],
+  exports: [CaregiversService],
 })
 export class CaregiversModule {}

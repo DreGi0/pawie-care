@@ -69,3 +69,20 @@ const NON_BLOCKING_STATUSES: readonly BookingStatus[] = [
 export function blocksCalendar(status: BookingStatus): boolean {
   return !NON_BLOCKING_STATUSES.includes(status);
 }
+
+/** Statuses of a booking that was confirmed and wasn't cancelled. */
+const CONFIRMED_STATUSES: readonly BookingStatus[] = [
+  CONFIRMED,
+  BookingStatus.IN_PROGRESS,
+  BookingStatus.COMPLETED,
+  BookingStatus.CLOSED,
+  BookingStatus.DISPUTED,
+];
+
+/**
+ * RN-CTA-04: the caregiver's phone and the owner's address stay hidden from the other
+ * side until the booking is confirmed.
+ */
+export function revealsContact(status: BookingStatus): boolean {
+  return CONFIRMED_STATUSES.includes(status);
+}

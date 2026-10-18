@@ -7,6 +7,7 @@ import { minutes, ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { AddressesModule } from './addresses/addresses.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { BookingsModule } from './bookings/bookings.module.js';
 import { CaregiversModule } from './caregivers/caregivers.module.js';
 import { CatalogModule } from './catalog/catalog.module.js';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
@@ -80,6 +81,7 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
     CatalogModule,
     PetsModule,
     AddressesModule,
+    BookingsModule,
     CaregiversModule,
   ],
   providers: [
