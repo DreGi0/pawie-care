@@ -7,3 +7,12 @@ export const QUEUE_PREFIX = 'pawie';
 export function queueOptions(redisUrl: string, prefix = QUEUE_PREFIX): QueueOptions {
   return { connection: { url: redisUrl }, prefix };
 }
+
+/**
+ * What every job leaves behind: a completed job goes away at once, and a failed one
+ * stays a week so it can be looked into. Otherwise Redis keeps every job forever.
+ */
+export const JOB_RETENTION = {
+  removeOnComplete: true,
+  removeOnFail: { age: 7 * 24 * 60 * 60 },
+} as const;

@@ -20,6 +20,7 @@ import { PRICING_SETTING_KEYS, quoteBooking, ratesFrom } from '../pricing/bookin
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { isSlotOverlap, slotTaken } from './booking-errors.js';
+import { BookingDeadlines } from './booking-deadlines.js';
 import { BookingStateMachine } from './booking-state-machine.js';
 import { blocksCalendar, canTransition, revealsContact } from './booking-status.js';
 import type { BookingResponse, CreateBookingRequest } from './bookings.dto.js';
@@ -53,6 +54,7 @@ export class BookingsService {
     private readonly addresses: AddressesService,
     private readonly files: FilesService,
     private readonly stateMachine: BookingStateMachine,
+    private readonly deadlines: BookingDeadlines,
     private readonly clock: Clock,
   ) {}
 
@@ -96,8 +98,9 @@ export class BookingsService {
     const serviceIds = await this.serviceIds();
     const { emergency } = request;
 
+    let booking: Booking;
     try {
-      const booking = await this.prisma.$transaction(async (tx) => {
+      booking = await this.prisma.$transaction(async (tx) => {
         const created = await tx.booking.create({
           data: {
             ownerId,
@@ -161,7 +164,6 @@ export class BookingsService {
         });
         return created;
       });
-      return await this.get(ownerId, booking.id);
     } catch (error) {
       // Another booking took the time between the check and the write.
       if (isSlotOverlap(error)) {
@@ -169,6 +171,8 @@ export class BookingsService {
       }
       throw error;
     }
+    await this.deadlines.schedule(booking);
+    return this.get(ownerId, booking.id);
   }
 
   /** The owner's bookings, the latest service first. */
@@ -221,12 +225,14 @@ export class BookingsService {
   async accept(caregiverId: string, bookingId: string): Promise<Booking> {
     const booking = await this.findOwn({ id: bookingId, caregiverId });
     const window = await this.settings.get('bookings.paymentWindowMinutes');
-    return this.stateMachine.transition(bookingId, {
+    const accepted = await this.stateMachine.transition(bookingId, {
       from: BookingStatus.REQUESTED,
       to: BookingStatus.PENDING_PAYMENT,
       changedById: caregiverId,
       paymentDueAt: paymentDeadline(this.clock.now(), booking.startsAt, window),
     });
+    await this.deadlines.schedule(accepted);
+    return accepted;
   }
 
   /** The caregiver rejects a request (§8.2), which frees the time. Like accept(), no route yet. */
