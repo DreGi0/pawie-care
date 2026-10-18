@@ -3,6 +3,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { IsString, MinLength } from 'class-validator';
 import request from 'supertest';
+import { Public } from '../src/auth/public.decorator.js';
 import { createTestApp } from './create-test-app.js';
 
 class GreetingBody {
@@ -12,6 +13,7 @@ class GreetingBody {
 }
 
 /** Routes that exist only in this test, to exercise the global HTTP behavior. */
+@Public()
 @Controller('probe')
 class ProbeController {
   @Post('greetings')

@@ -6,6 +6,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
+import { Public } from '../auth/public.decorator.js';
 import { setTimeout } from 'node:timers/promises';
 import { ErrorResponse } from '../common/errors/error-response.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -14,6 +15,7 @@ import { HealthResponse } from './health-response.dto.js';
 const DATABASE_TIMEOUT_MS = 3_000;
 
 @ApiTags('health')
+@Public()
 @SkipThrottle()
 @Controller('health')
 export class HealthController {

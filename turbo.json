@@ -16,7 +16,9 @@
       "dependsOn": ["generate"]
     },
     "test": {
-      "dependsOn": ["generate"]
+      "dependsOn": ["generate"],
+      // The settings registry test compares the registry with §15 of the rules.
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docs/reglas-de-negocio.md"]
     },
     "dev": {
       "cache": false,

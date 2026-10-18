@@ -19,7 +19,7 @@ docs/           Reglas de negocio y arquitectura
 
 ## Requisitos
 
-- **Node.js 24.** La versión está en `.node-version`; con fnm basta con `fnm use`.
+- **Node.js 24.7 o más** (la API usa `crypto.argon2`). La versión está en `.node-version`; con fnm basta con `fnm use`.
 - **pnpm**, que se activa con `corepack enable`. La versión exacta está en `package.json`.
 - **Docker**, para PostgreSQL, Redis y Mailpit, y para las pruebas de integración de la API.
 - **Android Studio** para el emulador de Android, o **Xcode** en macOS para el simulador de iOS.
@@ -31,6 +31,8 @@ corepack enable
 pnpm install
 pnpm infra:up                         # PostgreSQL, Redis y Mailpit
 cp apps/api/.env.example apps/api/.env
+pnpm --filter @pawie/api db:deploy    # crea las tablas
+pnpm --filter @pawie/api db:seed      # catálogo, parámetros y cuidadores de demo
 pnpm --filter @pawie/api dev          # API en http://localhost:3000 y documentación en /docs
 pnpm --filter @pawie/mobile android   # o "ios" en macOS
 ```

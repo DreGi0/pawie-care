@@ -6,3 +6,4 @@ process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL = inject('databaseUrl');
 process.env.CORS_ORIGINS = 'https://web.pawie.test';
 process.env.LOG_LEVEL = 'silent';
+process.env.JWT_ACCESS_SECRET = 'integration-tests-secret-at-least-32-characters';

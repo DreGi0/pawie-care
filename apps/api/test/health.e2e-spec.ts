@@ -1,9 +1,8 @@
-import type { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import type { Environment } from '../src/config/environment.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { createTestApp } from './create-test-app.js';
+import { prismaFor } from './database.js';
 
 // Nothing listens on port 1, so connections are refused right away.
 const UNREACHABLE_DATABASE_URL = 'postgresql://pawie:pawie@127.0.0.1:1/pawie';
@@ -41,13 +40,9 @@ describe('GET /v1/health', () => {
     let app: NestExpressApplication;
 
     beforeAll(async () => {
-      const config = { get: () => UNREACHABLE_DATABASE_URL } as unknown as ConfigService<
-        Environment,
-        true
-      >;
       app = await createTestApp({
         override: (builder) =>
-          builder.overrideProvider(PrismaService).useValue(new PrismaService(config)),
+          builder.overrideProvider(PrismaService).useValue(prismaFor(UNREACHABLE_DATABASE_URL)),
       });
     });
 
