@@ -5,6 +5,7 @@ import {
   CaregiverStatus,
   CareLevel,
   CertificationStatus,
+  FilePurpose,
   type PrismaClient,
   Role,
   type ServiceCode,
@@ -14,12 +15,15 @@ import type { SettingsService } from '../settings/settings.service.js';
 import { DEMO_CAREGIVERS, type DemoCaregiver } from './caregivers.js';
 import { DISTRICTS, SERVICES, SPECIES } from './catalog.js';
 import { DEMO_OWNER } from './demo-owner.js';
+import { mediaName, type SeedMedia, seedPhoto } from './seed-media.js';
 
 export interface SeedOptions {
   /** Dates such as the ⭐ validity are relative to it. */
   now?: Date;
   /** DEMO_OWNER_PASSWORD. Without it, the demo owner isn't created. */
   demoOwnerPassword?: string;
+  /** Photos to upload. Without it, photos stay as they are. */
+  media?: SeedMedia;
 }
 
 export interface SeedSummary {
@@ -29,12 +33,15 @@ export interface SeedSummary {
   caregivers: number;
   /** Email of the demo owner, or null when there was no password for it. */
   demoOwner: string | null;
+  /** Photos found in the media directory and uploaded. */
+  photos: number;
   /** Settings that didn't exist and got their initial value. */
   createdSettings: SettingKey[];
 }
 
 interface CatalogIds {
   districtIds: Map<string, string>;
+  speciesIds: Map<string, string>;
   serviceIds: Map<ServiceCode, string>;
   specialCareTypeId: string;
 }
@@ -50,7 +57,7 @@ interface CatalogIds {
 export async function seedDatabase(
   prisma: PrismaClient,
   settings: SettingsService,
-  { now = new Date(), demoOwnerPassword }: SeedOptions = {},
+  { now = new Date(), demoOwnerPassword, media }: SeedOptions = {},
 ): Promise<SeedSummary> {
   const catalog = await seedCatalog(prisma);
   const createdSettings = await settings.createMissing({
@@ -60,11 +67,25 @@ export async function seedDatabase(
   const validityMonths = await settings.get('certifications.specialCareValidityMonths');
 
   const today = dateInElSalvador(now);
+  let photos = 0;
   for (const caregiver of DEMO_CAREGIVERS) {
-    await seedCaregiver(prisma, caregiver, catalog, { today, validityMonths });
+    const caregiverId = await seedCaregiver(prisma, caregiver, catalog, { today, validityMonths });
+    if (media) {
+      const photoFileId = await seedPhoto(prisma, media, {
+        folder: 'caregivers',
+        name: mediaName(caregiver.email.split('@')[0]),
+        purpose: FilePurpose.CAREGIVER_PHOTO,
+        uploadedById: caregiverId,
+      });
+      await prisma.caregiverProfile.update({
+        where: { userId: caregiverId },
+        data: { photoFileId },
+      });
+      photos += photoFileId ? 1 : 0;
+    }
   }
   if (demoOwnerPassword !== undefined) {
-    await seedDemoOwner(prisma, demoOwnerPassword, catalog);
+    photos += await seedDemoOwner(prisma, demoOwnerPassword, catalog, { today, media });
   }
 
   return {
@@ -73,16 +94,19 @@ export async function seedDatabase(
     services: SERVICES.length,
     caregivers: DEMO_CAREGIVERS.length,
     demoOwner: demoOwnerPassword === undefined ? null : DEMO_OWNER.email,
+    photos,
     createdSettings,
   };
 }
 
+/** Returns how many pet photos it uploaded. */
 async function seedDemoOwner(
   prisma: PrismaClient,
   password: string,
-  { districtIds }: CatalogIds,
-): Promise<void> {
-  const { email, address, ...owner } = DEMO_OWNER;
+  { districtIds, speciesIds }: CatalogIds,
+  { today, media }: { today: Date; media?: SeedMedia },
+): Promise<number> {
+  const { email, address, pets, ...owner } = DEMO_OWNER;
   const existing = await prisma.user.findUnique({ where: { email } });
   // Keeps the hash while the password stays the same, so another run changes nothing.
   const passwordHash =
@@ -103,7 +127,7 @@ async function seedDemoOwner(
     districtId: required(districtIds.get(address.district), address.district),
   };
 
-  await prisma.$transaction(async (tx) => {
+  const { ownerId, petIds } = await prisma.$transaction(async (tx) => {
     const user = await tx.user.upsert({
       where: { email },
       create: { email, ...account },
@@ -115,7 +139,57 @@ async function seedDemoOwner(
     await (current
       ? tx.address.update({ where: { id: current.id }, data: home })
       : tx.address.create({ data: { userId: user.id, ...home } }));
+
+    // Pets are matched by name, and their care needs are replaced.
+    const ids = new Map<string, string>();
+    for (const { careNeeds, species, ...pet } of pets) {
+      const data = {
+        name: pet.name,
+        speciesId: required(speciesIds.get(species), species),
+        breed: pet.breed,
+        birthDate: new Date(pet.birthDate),
+        birthDateIsApproximate: pet.birthDateIsApproximate ?? false,
+        sex: pet.sex,
+        weightGrams: pet.weightGrams,
+        isSterilized: pet.isSterilized,
+        temperament: pet.temperament ?? null,
+        handlingNotes: pet.handlingNotes ?? null,
+        healthConditions: pet.healthConditions ?? null,
+        medications: pet.medications ?? null,
+        archivedAt: null,
+      };
+      const existingPet = await tx.pet.findFirst({ where: { ownerId: user.id, name: pet.name } });
+      const saved = existingPet
+        ? await tx.pet.update({ where: { id: existingPet.id }, data })
+        : await tx.pet.create({ data: { ownerId: user.id, ...data } });
+      await tx.petCareNeed.deleteMany({ where: { petId: saved.id } });
+      await tx.petCareNeed.createMany({
+        data: careNeeds.map((need) => ({
+          petId: saved.id,
+          startsOn: addMonths(today, -6),
+          ...need,
+        })),
+      });
+      ids.set(pet.name, saved.id);
+    }
+    return { ownerId: user.id, petIds: ids };
   });
+
+  if (!media) {
+    return 0;
+  }
+  let photos = 0;
+  for (const [name, petId] of petIds) {
+    const photoFileId = await seedPhoto(prisma, media, {
+      folder: 'pets',
+      name: mediaName(name),
+      purpose: FilePurpose.PET_PHOTO,
+      uploadedById: ownerId,
+    });
+    await prisma.pet.update({ where: { id: petId }, data: { photoFileId } });
+    photos += photoFileId ? 1 : 0;
+  }
+  return photos;
 }
 
 async function seedCatalog(prisma: PrismaClient): Promise<CatalogIds> {
@@ -129,8 +203,14 @@ async function seedCatalog(prisma: PrismaClient): Promise<CatalogIds> {
     districtIds.set(slug, district.id);
   }
 
+  const speciesIds = new Map<string, string>();
   for (const { code, name } of SPECIES) {
-    await prisma.species.upsert({ where: { code }, create: { code, name }, update: { name } });
+    const species = await prisma.species.upsert({
+      where: { code },
+      create: { code, name },
+      update: { name },
+    });
+    speciesIds.set(code, species.id);
   }
 
   const serviceIds = new Map<ServiceCode, string>();
@@ -150,7 +230,7 @@ async function seedCatalog(prisma: PrismaClient): Promise<CatalogIds> {
     update: { name },
   });
 
-  return { districtIds, serviceIds, specialCareTypeId: specialCare.id };
+  return { districtIds, speciesIds, serviceIds, specialCareTypeId: specialCare.id };
 }
 
 async function seedCaregiver(
@@ -158,7 +238,7 @@ async function seedCaregiver(
   caregiver: DemoCaregiver,
   { districtIds, serviceIds, specialCareTypeId }: CatalogIds,
   { today, validityMonths }: { today: Date; validityMonths: number },
-): Promise<void> {
+): Promise<string> {
   const account = {
     firstName: caregiver.firstName,
     lastName: caregiver.lastName,
@@ -182,7 +262,7 @@ async function seedCaregiver(
     suspendedUntil: null,
   };
 
-  await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     // Seeded caregivers can't sign in: passwordHash stays null.
     const user = await tx.user.upsert({
       where: { email: caregiver.email },
@@ -235,6 +315,7 @@ async function seedCaregiver(
         },
       });
     }
+    return caregiverId;
   });
 }
 

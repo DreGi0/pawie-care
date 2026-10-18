@@ -1,11 +1,12 @@
 import { type INestApplicationContext, Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppConfigModule } from '../config/config.module.js';
+import { FilesModule } from '../files/files.module.js';
 import { PrismaModule } from '../prisma/prisma.module.js';
 import { SettingsModule } from '../settings/settings.module.js';
 
 /** What the command-line scripts need from the API: no HTTP, no request logging. */
-@Module({ imports: [AppConfigModule, PrismaModule, SettingsModule] })
+@Module({ imports: [AppConfigModule, PrismaModule, SettingsModule, FilesModule] })
 class ScriptModule {}
 
 /**
