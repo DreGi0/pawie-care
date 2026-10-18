@@ -74,6 +74,18 @@ describe('SettingsService', () => {
     expect(await historyOf('services.overnightHours')).toEqual(before);
   });
 
+  it('reads several settings at once, each one validated', async () => {
+    const values = await settings.getMany([
+      'bookings.maxPetsPerBooking',
+      'services.overnightHours',
+    ]);
+
+    expect(values).toEqual({
+      'bookings.maxPetsPerBooking': 3,
+      'services.overnightHours': { startMinute: 1140, endMinute: 480 },
+    });
+  });
+
   it('refuses to read a stored value that is no longer valid', async () => {
     await db.prisma.setting.update({
       where: { key: 'payments.gatewayFeeBp' },
@@ -81,6 +93,9 @@ describe('SettingsService', () => {
     });
 
     await expect(settings.get('payments.gatewayFeeBp')).rejects.toThrow(
+      'payments.gatewayFeeBp debe ser un número entero entre 0 y 10000.',
+    );
+    await expect(settings.getMany(['pricing.vatBp', 'payments.gatewayFeeBp'])).rejects.toThrow(
       'payments.gatewayFeeBp debe ser un número entero entre 0 y 10000.',
     );
   });
@@ -92,6 +107,9 @@ describe('SettingsService', () => {
     await db.prisma.setting.delete({ where: { key: 'reviews.writingWindowDays' } });
 
     await expect(settings.get('reviews.writingWindowDays')).rejects.toThrow(
+      'Falta el parámetro reviews.writingWindowDays.',
+    );
+    await expect(settings.getMany(['pricing.vatBp', 'reviews.writingWindowDays'])).rejects.toThrow(
       'Falta el parámetro reviews.writingWindowDays.',
     );
   });

@@ -35,18 +35,18 @@ export class CatalogService {
   }
 
   private async bookingRules(): Promise<BookingRules> {
-    const [maxPetsPerBooking, minLeadTimeMinutes, homeVisitMinutes, overnight] = await Promise.all([
-      this.settings.get('bookings.maxPetsPerBooking'),
-      this.settings.get('bookings.minLeadTimeMinutes'),
-      this.settings.get('services.homeVisitMaxMinutes'),
-      this.settings.get('services.overnightHours'),
+    const settings = await this.settings.getMany([
+      'bookings.maxPetsPerBooking',
+      'bookings.minLeadTimeMinutes',
+      'services.homeVisitMaxMinutes',
+      'services.overnightHours',
     ]);
     return {
-      maxPetsPerBooking,
-      minLeadTimeMinutes,
-      homeVisitMinutes,
-      overnightStartMinute: overnight.startMinute,
-      overnightEndMinute: overnight.endMinute,
+      maxPetsPerBooking: settings['bookings.maxPetsPerBooking'],
+      minLeadTimeMinutes: settings['bookings.minLeadTimeMinutes'],
+      homeVisitMinutes: settings['services.homeVisitMaxMinutes'],
+      overnightStartMinute: settings['services.overnightHours'].startMinute,
+      overnightEndMinute: settings['services.overnightHours'].endMinute,
     };
   }
 }

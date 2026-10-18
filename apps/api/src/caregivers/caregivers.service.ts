@@ -97,12 +97,18 @@ export class CaregiversService {
     request: SearchCaregiversRequest,
   ): Promise<CaregiverSearchResponse> {
     const now = new Date();
-    const [ranges, maxPets, visitMinutes, overnight, minLeadTimeMinutes] = await Promise.all([
-      this.settings.get('pricing.priceRanges'),
-      this.settings.get('bookings.maxPetsPerBooking'),
-      this.settings.get('services.homeVisitMaxMinutes'),
-      this.settings.get('services.overnightHours'),
-      this.settings.get('bookings.minLeadTimeMinutes'),
+    const {
+      'pricing.priceRanges': ranges,
+      'bookings.maxPetsPerBooking': maxPets,
+      'services.homeVisitMaxMinutes': visitMinutes,
+      'services.overnightHours': overnight,
+      'bookings.minLeadTimeMinutes': minLeadTimeMinutes,
+    } = await this.settings.getMany([
+      'pricing.priceRanges',
+      'bookings.maxPetsPerBooking',
+      'services.homeVisitMaxMinutes',
+      'services.overnightHours',
+      'bookings.minLeadTimeMinutes',
     ]);
 
     // RN-RES-03
