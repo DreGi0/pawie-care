@@ -1,24 +1,56 @@
-import { Controller, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Controller,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  type RawBodyRequest,
+  Req,
+} from '@nestjs/common';
 import {
   ApiBadGatewayResponse,
   ApiBearerAuth,
   ApiConflictResponse,
+  ApiExcludeEndpoint,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiServiceUnavailableResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import type { Request } from 'express';
 import type { AuthenticatedUser } from '../auth/authenticated-user.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
+import { Public } from '../auth/public.decorator.js';
 import { ErrorResponse } from '../common/errors/error-response.dto.js';
+import { PaymentWebhooks } from './payment-webhooks.js';
 import { BookingPayment } from './payments.dto.js';
-import { PaymentsService } from './payments.service.js';
+import { PAYMENT_WEBHOOK_PATH, PaymentsService } from './payments.service.js';
 
 @ApiTags('payments')
 @Controller()
 export class PaymentsController {
-  constructor(private readonly payments: PaymentsService) {}
+  constructor(
+    private readonly payments: PaymentsService,
+    private readonly webhooks: PaymentWebhooks,
+  ) {}
+
+  /**
+   * Wompi's webhook (docs/arquitectura.md §6), signed in `wompi_hash`. It's for Wompi,
+   * not for the apps, so it stays out of the OpenAPI document and the generated client.
+   */
+  @Post(PAYMENT_WEBHOOK_PATH)
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiExcludeEndpoint()
+  async webhook(
+    @Req() request: RawBodyRequest<Request>,
+    @Headers('wompi_hash') signature: string | undefined,
+  ): Promise<void> {
+    await this.webhooks.receive(request.rawBody, signature);
+  }
 
   @Post('bookings/:bookingId/payments')
   @HttpCode(HttpStatus.OK)

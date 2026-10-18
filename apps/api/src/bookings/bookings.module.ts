@@ -21,5 +21,7 @@ import { BookingsService } from './bookings.service.js';
   ],
   controllers: [BookingsController],
   providers: [BookingsService, BookingStateMachine, BookingDeadlines, BookingDeadlinesProcessor],
+  // Payments confirm bookings through the state machine (RN-PAG-02).
+  exports: [BookingStateMachine],
 })
 export class BookingsModule {}

@@ -3,7 +3,7 @@ import { getSharedConfigToken } from '@nestjs/bullmq';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import { AppModule } from '../src/app.module.js';
-import { configureApp } from '../src/app.setup.js';
+import { APP_OPTIONS, configureApp } from '../src/app.setup.js';
 import { queueOptions } from '../src/queues/queue-options.js';
 
 interface TestAppOptions {
@@ -28,7 +28,7 @@ export async function createTestApp({
       .useValue(queueOptions(process.env.REDIS_URL ?? '', `test-${randomUUID()}`)),
   ).compile();
 
-  const app = moduleRef.createNestApplication<NestExpressApplication>({ bufferLogs: true });
+  const app = moduleRef.createNestApplication<NestExpressApplication>(APP_OPTIONS);
   configureApp(app);
   await app.init();
   return app;

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { BookingDeadlines } from '../src/bookings/booking-deadlines.js';
 import { BookingsService } from '../src/bookings/bookings.service.js';
 import { addDays, dateInElSalvador, formatDateOnly } from '../src/common/time/calendar.js';
 import { Clock } from '../src/common/time/clock.js';
@@ -8,7 +9,7 @@ import { WOMPI_SETTINGS } from '../src/payments/wompi-settings.js';
 import { seedDatabase } from '../src/seed/seed-database.js';
 import { SettingsService } from '../src/settings/settings.service.js';
 import { createTestDatabase, type TestDatabase } from './database.js';
-import { FakeWompi } from './fake-wompi.js';
+import { FakeWompi, signWebhook, type WompiDelivery, webhookFor } from './fake-wompi.js';
 import { createUser } from './factories.js';
 import { TestClock } from './test-clock.js';
 import { useApi } from './use-api.js';
@@ -120,6 +121,40 @@ describe('payments (RN-PAG)', () => {
     };
   }
 
+  type Owner = Awaited<ReturnType<typeof owner>>;
+
+  /** The owner opens the payment page: the Wompi link of the booking. */
+  async function checkout(someone: Owner, bookingId: string) {
+    const { body } = await someone.pay(bookingId).expect(200);
+    return wompi.linkOf((body as { id: string }).id);
+  }
+
+  /** Wompi calls the webhook, with its signature unless the test gives another. */
+  const deliver = (delivery: WompiDelivery, signature: string | null = delivery.signature) => {
+    const call = api.http().post('/v1/payments/webhook').set('content-type', 'application/json');
+    return (signature === null ? call : call.set('wompi_hash', signature)).send(delivery.body);
+  };
+
+  const paymentRow = (id: string) => db.prisma.payment.findUniqueOrThrow({ where: { id } });
+  const bookingRow = (id: string) =>
+    db.prisma.booking.findUniqueOrThrow({
+      where: { id },
+      include: { statusChanges: { orderBy: { createdAt: 'asc' } }, payments: true },
+    });
+  const eventsOf = (transactionId: string) =>
+    db.prisma.webhookEvent.findMany({ where: { externalId: transactionId } });
+
+  /** Lets the payment deadline pass, and runs the deadline job (RN-RES-07). */
+  async function expire(bookingId: string) {
+    const { paymentDueAt } = await db.prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+    });
+    clock.set(new Date((paymentDueAt ?? new Date()).getTime() + 60_000));
+    expect(await api.app().get(BookingDeadlines).expire(bookingId, 'PENDING_PAYMENT')).toBe(
+      'expired',
+    );
+  }
+
   describe('POST /v1/bookings/:id/payments', () => {
     it('gives the owner a Wompi link for the booking total, valid until the deadline (RN-PAG-02, RN-PRE-07)', async () => {
       const daniela = await owner();
@@ -223,6 +258,271 @@ describe('payments (RN-PAG)', () => {
       expect(body).toMatchObject({ errorCode: 'PAYMENT_GATEWAY_ERROR' });
       expect(await db.prisma.payment.count({ where: { bookingId: booking.id } })).toBe(0);
       await daniela.pay(booking.id).expect(200);
+    });
+  });
+
+  describe('POST /v1/payments/webhook (docs/arquitectura.md §6)', () => {
+    beforeAll(async () => {
+      // RN-CTA-04: the owner sees it once the booking is confirmed.
+      await db.prisma.user.update({ where: { id: carlos }, data: { phone: '+503 2200 0000' } });
+    });
+
+    it('confirms the booking when Wompi approves the payment in time (RN-PAG-02, RN-CTA-04)', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+      const link = await checkout(daniela, booking.id);
+      expect(booking.caregiver.phone).toBeNull();
+
+      const paid = wompi.pay(link);
+      await deliver(paid).expect(200);
+
+      const row = await bookingRow(booking.id);
+      expect(row).toMatchObject({ status: 'CONFIRMED', blocksCalendar: true });
+      expect(row.statusChanges.at(-1)).toMatchObject({
+        fromStatus: 'PENDING_PAYMENT',
+        toStatus: 'CONFIRMED',
+        changedById: null,
+        reason: 'RN-PAG-02: Wompi aprobó el pago.',
+      });
+      const payment = await paymentRow(link.reference);
+      expect(payment).toMatchObject({
+        status: 'APPROVED',
+        providerTransactionId: paid.transactionId,
+        // RN-PAG-01: a test transaction (esReal = false).
+        isLive: false,
+      });
+      expect(payment.approvedAt).toBeInstanceOf(Date);
+      // §6: the API asked Wompi before confirming.
+      expect(wompi.queried).toContain(paid.transactionId);
+      const [event] = await eventsOf(paid.transactionId);
+      expect(event).toMatchObject({ provider: 'WOMPI', paymentId: payment.id, error: null });
+      expect(event.processedAt).toBeInstanceOf(Date);
+      expect(event.payload).toEqual(JSON.parse(paid.body));
+
+      const shown = await daniela.get(booking.id);
+      expect(shown).toMatchObject({
+        status: 'CONFIRMED',
+        paymentDueAt: null,
+        caregiver: { phone: '+503 2200 0000' },
+        payment: { id: payment.id, status: 'APPROVED', checkoutUrl: null },
+      });
+    });
+
+    it('does nothing with a webhook it already processed', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+      const paid = wompi.pay(await checkout(daniela, booking.id));
+      await deliver(paid).expect(200);
+      const before = await bookingRow(booking.id);
+
+      await deliver(paid).expect(200);
+      await deliver(paid).expect(200);
+
+      expect(await bookingRow(booking.id)).toEqual(before);
+      expect(await eventsOf(paid.transactionId)).toHaveLength(1);
+      expect(wompi.queried.filter((id) => id === paid.transactionId)).toHaveLength(1);
+    });
+
+    it('rejects a webhook whose signature does not match, and keeps nothing of it', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+      const paid = wompi.pay(await checkout(daniela, booking.id));
+      const tampered = { ...paid, body: paid.body.replace('"Cantidad":1', '"Cantidad":2') };
+
+      const responses = [
+        await deliver(paid, signWebhook(paid.body, 'another-secret')).expect(401),
+        await deliver(paid, null).expect(401),
+        await deliver(tampered).expect(401),
+      ];
+
+      for (const { body } of responses) {
+        expect(body).toMatchObject({ errorCode: 'INVALID_WEBHOOK_SIGNATURE' });
+      }
+      // Without a JSON body there is nothing whose signature to check.
+      const { body: notJson } = await api
+        .http()
+        .post('/v1/payments/webhook')
+        .set('content-type', 'text/plain')
+        .set('wompi_hash', paid.signature)
+        .send(paid.body)
+        .expect(400);
+      expect(notJson).toMatchObject({ errorCode: 'INVALID_WEBHOOK' });
+      expect(await eventsOf(paid.transactionId)).toHaveLength(0);
+      expect((await bookingRow(booking.id)).status).toBe('PENDING_PAYMENT');
+      // The real webhook still counts afterwards.
+      await deliver(paid).expect(200);
+      expect((await bookingRow(booking.id)).status).toBe('CONFIRMED');
+    });
+
+    it('confirms a payment approved after the deadline if the time is still free (RN-PAG-06)', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+      const link = await checkout(daniela, booking.id);
+      await expire(booking.id);
+
+      await deliver(wompi.pay(link)).expect(200);
+
+      const row = await bookingRow(booking.id);
+      expect(row).toMatchObject({ status: 'CONFIRMED', blocksCalendar: true });
+      expect(row.statusChanges.at(-1)).toMatchObject({
+        fromStatus: 'EXPIRED',
+        toStatus: 'CONFIRMED',
+        reason: 'RN-PAG-06: Wompi aprobó el pago después del plazo y el horario seguía libre.',
+      });
+      expect((await paymentRow(link.reference)).status).toBe('APPROVED');
+    });
+
+    it('sends a late payment to refund if another booking took the time (RN-PAG-06)', async () => {
+      const daniela = await owner();
+      const visit = nextVisit();
+      const booking = await daniela.book(visit);
+      const link = await checkout(daniela, booking.id);
+      await expire(booking.id);
+      clock.reset();
+      const other = await (await owner()).book(visit);
+
+      const paid = wompi.pay(link);
+      await deliver(paid).expect(200);
+
+      expect((await bookingRow(booking.id)).status).toBe('EXPIRED');
+      expect((await bookingRow(other.id)).status).toBe('PENDING_PAYMENT');
+      const payment = await paymentRow(link.reference);
+      expect(payment).toMatchObject({
+        status: 'REFUND_PENDING',
+        providerTransactionId: paid.transactionId,
+      });
+      expect(payment.approvedAt).toBeInstanceOf(Date);
+      expect((await eventsOf(paid.transactionId))[0].processedAt).toBeInstanceOf(Date);
+      expect((await daniela.get(booking.id)).payment).toMatchObject({ status: 'REFUND_PENDING' });
+    });
+
+    it('sends a second approved payment of the same booking to refund, even at the same time (RN-PAG-07)', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+      const first = await checkout(daniela, booking.id);
+      // An earlier attempt whose link was still open.
+      const earlier = await db.prisma.payment.create({
+        data: {
+          bookingId: booking.id,
+          provider: 'WOMPI',
+          amountCents: first.amountCents,
+          providerLinkId: '999001',
+          checkoutUrl: 'https://lk.wompi.test/999001',
+        },
+      });
+
+      await Promise.all([
+        deliver(wompi.pay(first)).expect(200),
+        deliver(
+          wompi.pay({ id: '999001', reference: earlier.id, amountCents: first.amountCents }),
+        ).expect(200),
+      ]);
+
+      const row = await bookingRow(booking.id);
+      expect(row.status).toBe('CONFIRMED');
+      expect(row.payments.map(({ status }) => status).toSorted()).toEqual([
+        'APPROVED',
+        'REFUND_PENDING',
+      ]);
+      const approved = row.payments.find(({ status }) => status === 'APPROVED');
+      expect((await daniela.get(booking.id)).payment).toMatchObject({ id: approved?.id });
+    });
+
+    it('records a second transaction on the same link as its own payment to refund (RN-PAG-07)', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+      const link = await checkout(daniela, booking.id);
+      await deliver(wompi.pay(link)).expect(200);
+
+      const again = wompi.pay(link);
+      await deliver(again).expect(200);
+
+      const extra = await db.prisma.payment.findUniqueOrThrow({
+        where: { providerTransactionId: again.transactionId },
+      });
+      expect(extra).toMatchObject({
+        bookingId: booking.id,
+        status: 'REFUND_PENDING',
+        amountCents: link.amountCents,
+      });
+      expect((await paymentRow(link.reference)).status).toBe('APPROVED');
+      expect((await eventsOf(again.transactionId))[0].paymentId).toBe(extra.id);
+    });
+
+    it('sends the payment of a booking the owner cancelled to refund', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+      const link = await checkout(daniela, booking.id);
+      await api.app().get(BookingsService).cancel(daniela.user.id, booking.id);
+
+      await deliver(wompi.pay(link)).expect(200);
+
+      expect((await bookingRow(booking.id)).status).toBe('CANCELLED_BY_OWNER');
+      expect((await paymentRow(link.reference)).status).toBe('REFUND_PENDING');
+    });
+
+    it('sends an approved payment of another amount to refund', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+      const link = await checkout(daniela, booking.id);
+
+      await deliver(wompi.pay(link, { amountCents: link.amountCents - 100 })).expect(200);
+
+      expect((await bookingRow(booking.id)).status).toBe('PENDING_PAYMENT');
+      expect((await paymentRow(link.reference)).status).toBe('REFUND_PENDING');
+    });
+
+    it('changes nothing while the query does not confirm the transaction, and keeps the event to retry', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+      const link = await checkout(daniela, booking.id);
+      const unconfirmed = wompi.pay(link, { approved: false });
+
+      await deliver(unconfirmed).expect(200);
+
+      expect((await bookingRow(booking.id)).status).toBe('PENDING_PAYMENT');
+      expect(await paymentRow(link.reference)).toMatchObject({
+        status: 'PENDING',
+        providerTransactionId: null,
+        approvedAt: null,
+      });
+      const [event] = await eventsOf(unconfirmed.transactionId);
+      expect(event).toMatchObject({
+        processedAt: null,
+        paymentId: link.reference,
+        error: 'Wompi does not report the transaction as approved',
+      });
+      expect((await daniela.get(booking.id)).payment).toMatchObject({ status: 'PENDING' });
+    });
+
+    it('records a webhook for a payment it does not know, without retrying it', async () => {
+      const delivery = webhookFor({
+        transactionId: randomUUID(),
+        linkId: '1',
+        reference: randomUUID(),
+        amountCents: 1870,
+      });
+
+      await deliver(delivery).expect(200);
+
+      const [event] = await eventsOf(delivery.transactionId);
+      expect(event).toMatchObject({
+        paymentId: null,
+        error: 'No payment matches the payment link',
+      });
+      expect(event.processedAt).toBeInstanceOf(Date);
+    });
+
+    it('rejects a signed body without the transaction or the payment', async () => {
+      const body = JSON.stringify({ ResultadoTransaccion: 'ExitosaAprobada' });
+
+      const { body: error } = await deliver({
+        transactionId: '',
+        body,
+        signature: signWebhook(body),
+      }).expect(400);
+
+      expect(error).toMatchObject({ errorCode: 'INVALID_WEBHOOK' });
     });
   });
 
