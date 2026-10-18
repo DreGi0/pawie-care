@@ -25,6 +25,11 @@ export interface SettingUpdate<K extends SettingKey> {
   changed: boolean;
 }
 
+/** The values of several settings, by key. */
+export type SettingValues<K extends readonly SettingKey[]> = {
+  [P in K[number]]: SettingValue<P>;
+};
+
 /** Reads and changes the configurable parameters (§15), always through the registry. */
 @Injectable()
 export class SettingsService {
@@ -37,9 +42,23 @@ export class SettingsService {
   async get<K extends SettingKey>(key: K): Promise<SettingValue<K>> {
     const setting = await this.prisma.setting.findUnique({ where: { key } });
     if (!setting) {
-      throw new InvalidSettingValueError(`Falta el parámetro ${key}. Corre el seed: pnpm db:seed.`);
+      throw missingSetting(key);
     }
     return parseSettingValue(key, setting.value);
+  }
+
+  /** Several values in one query, each one validated as get() does. */
+  async getMany<const K extends readonly SettingKey[]>(keys: K): Promise<SettingValues<K>> {
+    const settings = await this.prisma.setting.findMany({ where: { key: { in: [...keys] } } });
+    const stored = new Map(settings.map(({ key, value }) => [key, value]));
+    return Object.fromEntries(
+      keys.map((key) => {
+        if (!stored.has(key)) {
+          throw missingSetting(key);
+        }
+        return [key, parseSettingValue(key, stored.get(key))];
+      }),
+    ) as SettingValues<K>;
   }
 
   /** Validates and saves a value, recording the change in setting_changes. */
@@ -88,4 +107,8 @@ export class SettingsService {
     }
     return missing;
   }
+}
+
+function missingSetting(key: SettingKey): InvalidSettingValueError {
+  return new InvalidSettingValueError(`Falta el parámetro ${key}. Corre el seed: pnpm db:seed.`);
 }

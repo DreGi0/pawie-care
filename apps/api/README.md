@@ -12,7 +12,7 @@ pnpm db:seed               # carga el catálogo, los parámetros y los cuidadore
 pnpm dev                   # genera el cliente de Prisma y levanta http://localhost:3000
 ```
 
-- **Estado:** <http://localhost:3000/v1/health> revisa la conexión con la base de datos y responde 200, o 503 si algo falla.
+- **Estado:** <http://localhost:3000/v1/health> revisa la conexión con la base de datos y con Redis, y responde 200, o 503 si algo falla.
 - **Documentación:** Swagger UI en <http://localhost:3000/docs>, y el documento OpenAPI en <http://localhost:3000/docs/openapi.json>.
 
 ## Configuración
@@ -30,6 +30,7 @@ Las variables de entorno se validan al arrancar, en [src/config/environment.ts](
 | `JWT_ACCESS_SECRET`                                     | Firma los tokens de acceso. Mínimo 32 caracteres, y uno distinto en cada entorno desplegado                           | Obligatoria   |
 | `JWT_ACCESS_TTL_SECONDS`                                | Duración del token de acceso, en segundos                                                                             | `900`         |
 | `REFRESH_TOKEN_TTL_DAYS`                                | Duración del refresh token, en días                                                                                   | `30`          |
+| `REDIS_URL`                                             | Redis de las colas de BullMQ: los plazos de las reservas y la limpieza                                                | Obligatoria   |
 | `DEMO_OWNER_PASSWORD`                                   | Contraseña del dueño de demo que crea el seed. Sin ella, el seed no lo crea                                           | Ninguna       |
 | `S3_ENDPOINT`                                           | Almacenamiento compatible con S3: el SeaweedFS de `docker-compose.yml` en local y Cloudflare R2 en la demo desplegada | Obligatoria   |
 | `S3_PUBLIC_ENDPOINT`                                    | Host de las URLs firmadas que usan las apps. En el emulador de Android es `http://10.0.2.2:8333`                      | `S3_ENDPOINT` |
@@ -111,7 +112,7 @@ Las fotos y los documentos van en un bucket privado (arquitectura §4.11). La ap
 - **Pernocta:** `nights` es la fecha en que empieza cada noche, de 19:00 a 08:00 del día siguiente. Puede llevar `visits` durante la estadía (RN-SER-03).
 - **Visita:** `visits` es la hora en que empieza cada una, con zona horaria. Cada visita dura 60 min.
 
-[src/bookings/slot-plan.ts](src/bookings/slot-plan.ts) convierte eso en tramos, y la Etapa 5 usará los mismos para reservar.
+[src/bookings/slot-plan.ts](src/bookings/slot-plan.ts) convierte eso en tramos, los mismos que usa la reserva.
 
 La respuesta trae el nivel de la reserva, los tramos y los cuidadores disponibles. Un cuidador aparece si:
 
@@ -128,8 +129,96 @@ Los resultados van ordenados por calificación y después por servicios completa
   - `TOO_SOON` (RN-RES-05);
   - `PET_NOT_BOOKABLE` (RN-MAS-09), con un mensaje que explica el motivo y las mascotas y tareas en `details`;
   - `UNKNOWN_DISTRICT`.
-- **Precios:** son por una mascota. Si el cuidador no fijó uno, se usa el sugerido, y siempre se ajustan al rango vigente. El recargo por mascota adicional y la tarifa de servicio se calculan en la Etapa 5.
+- **Precios:** son por una mascota. Si el cuidador no fijó uno, se usa el sugerido, y siempre se ajustan al rango vigente (RN-CUI-17). El recargo por mascota adicional y la tarifa de servicio se calculan al reservar.
 - **Perfil:** `GET /v1/caregivers/:id` (RN-RES-02) muestra la ⭐, la insignia de estudiante, la calificación, los distritos y los precios. Los de nivel Especial solo aparecen si el cuidador tiene la ⭐.
+
+## Direcciones
+
+`/v1/addresses` lista, crea, reemplaza (`PUT`) y borra las direcciones del dueño. Cada una tiene un nombre (`label`, como "Casa"), la calle, indicaciones opcionales y el distrito. Una reserva copia la dirección que usa (RN-CTA-04), así que editarla o borrarla después no cambia la reserva. Para las de otro dueño responde 404 `ADDRESS_NOT_FOUND`.
+
+## Reservas
+
+`/v1/bookings` implementa RN-RES-03 a RN-RES-07 y RN-CAN-07. Cada dueño solo ve sus reservas; para las de otros responde 404 `BOOKING_NOT_FOUND`.
+
+### Cómo se reserva
+
+`POST /v1/bookings` recibe lo mismo que la búsqueda, con un cuidador de los resultados y una dirección en vez del distrito:
+
+```json
+{
+  "caregiverId": "…",
+  "serviceCode": "HOME_VISIT",
+  "visits": ["2026-11-20T15:00:00-06:00"],
+  "petIds": ["…"],
+  "addressId": "…",
+  "instructions": "La comida está en la alacena.",
+  "emergency": {
+    "contactName": "Luis Pérez",
+    "contactPhone": "+503 7000 0000",
+    "vetName": "Clínica San Benito",
+    "vetPhone": "+503 2222 0000",
+    "preauthorizedCents": 5000,
+    "clinicConsent": true
+  }
+}
+```
+
+- **Validación:** usa `planBooking()` y `bookableCaregiver()` de [CaregiversService](src/caregivers/caregivers.service.ts), igual que la búsqueda, así que nunca reserva a un cuidador que la búsqueda no mostraría. El distrito sale de la dirección.
+- **Datos de emergencia (RN-RES-04):** sin `clinicConsent: true` no se puede reservar. El monto preautorizado solo se declara; no se cobra.
+- **Lo que guarda la reserva:**
+  - el nivel de cuidado de cada mascota en esas fechas; con una sola mascota Especial, toda la reserva es Especial (RN-PRE-02);
+  - una copia de la dirección (RN-CTA-04);
+  - los precios, los porcentajes y `pricing_snapshot` vigentes al crearla (RN-PRE-07);
+  - las indicaciones del veterinario de las tareas clínicas activas en esas fechas (RN-RES-03).
+- **Precios ([src/pricing/booking-price.ts](src/pricing/booking-price.ts)):** cada tramo es el precio del cuidador más 50% por mascota adicional; las visitas de día de una pernocta van al precio de visita del mismo nivel (RN-SER-03). El subtotal es la suma de los tramos, la tarifa y la comisión son porcentajes del subtotal, y el cuidador recibe el subtotal menos la comisión. Cada monto se redondea una vez, con la mitad hacia arriba (RN-PRE-08). Una visita Especial de $17 le cuesta al dueño $18.70 y le deja al cuidador $14.45.
+- **Errores:** los de la búsqueda, más:
+  - `ADDRESS_NOT_FOUND` (404);
+  - `SLOT_TAKEN` (409): otra reserva tomó ese horario, antes de revisarlo o al mismo tiempo (la restricción de exclusión falla con 23P01);
+  - `CAREGIVER_UNAVAILABLE` (409): la búsqueda ya no mostraría a ese cuidador para esa reserva, por ejemplo porque cambió su horario.
+
+### Estados
+
+La tabla de transiciones está en [src/bookings/booking-status.ts](src/bookings/booking-status.ts) (arquitectura §4.7):
+
+| Desde             | Hacia                | Cuándo                                                                     |
+| ----------------- | -------------------- | -------------------------------------------------------------------------- |
+| (nueva)           | `PENDING_PAYMENT`    | El cuidador tiene Reserva inmediata (RN-CUI-16), como todos los de la demo |
+| (nueva)           | `REQUESTED`          | El cuidador no tiene Reserva inmediata                                     |
+| `REQUESTED`       | `PENDING_PAYMENT`    | El cuidador acepta                                                         |
+| `REQUESTED`       | `REJECTED`           | El cuidador rechaza                                                        |
+| `REQUESTED`       | `EXPIRED`            | El cuidador no responde a tiempo (RN-RES-06)                               |
+| `PENDING_PAYMENT` | `CONFIRMED`          | Wompi aprueba el pago (Etapa 6)                                            |
+| `PENDING_PAYMENT` | `EXPIRED`            | El dueño no paga a tiempo (RN-RES-07)                                      |
+| `REQUESTED`       | `CANCELLED_BY_OWNER` | El dueño cancela sin costo (RN-CAN-07)                                     |
+| `PENDING_PAYMENT` | `CANCELLED_BY_OWNER` | El dueño cancela sin costo (RN-CAN-07)                                     |
+| `EXPIRED`         | `CONFIRMED`          | Un pago aprobado tarde, si el horario sigue libre (Etapa 6)                |
+
+- `BookingStateMachine` aplica cada cambio en una transacción: `status` y `blocks_calendar` juntos y un `BookingStatusChange`. Solo cambia una reserva que sigue en el estado que se leyó; si no, responde 409 `BOOKING_STATUS_CHANGED`.
+- `REQUESTED` ya bloquea el horario. `REJECTED`, `EXPIRED` y las cancelaciones lo liberan.
+- No hay panel de cuidador, así que aceptar y rechazar existen solo como `BookingsService.accept()` y `reject()`, sin ruta.
+- `GET /v1/bookings/:id` muestra el teléfono del cuidador desde que la reserva está confirmada (RN-CTA-04). Los cuidadores de demo no tienen teléfono en el seed.
+- `POST /v1/bookings/:id/cancel` cancela sin costo, con un `reason` opcional, mientras está `REQUESTED` o `PENDING_PAYMENT`. En otro estado responde 409 `BOOKING_NOT_CANCELLABLE`.
+
+### Plazos
+
+[src/bookings/deadlines.ts](src/bookings/deadlines.ts) calcula cada plazo, que vence en su duración o al inicio del primer tramo, lo que ocurra primero:
+
+- **Respuesta del cuidador (RN-RES-06):** 24 h si faltan más de 72 h para el servicio, 6 h si faltan de 24 a 72 h (con exactamente 72 h o 24 h también) y 1 h si faltan menos de 24 h.
+- **Pago (RN-RES-07):** 2 h desde que la reserva pasa a `PENDING_PAYMENT`.
+
+La respuesta trae `responseDueAt` mientras está `REQUESTED` y `paymentDueAt` mientras está `PENDING_PAYMENT`. Cómo se vencen está en [Colas y tareas](#colas-y-tareas).
+
+## Colas y tareas
+
+BullMQ corre sobre el Redis de `REDIS_URL` (arquitectura §4.10), con los workers dentro de la API. Las claves de Redis empiezan con `pawie:`.
+
+- **`booking-deadlines`** ([src/bookings/booking-deadlines.ts](src/bookings/booking-deadlines.ts)):
+  - al crear una reserva, y cuando el cuidador acepta, se agenda una tarea diferida que la vence al cumplirse el plazo;
+  - antes de actuar, la tarea vuelve a leer la reserva, y solo la vence si sigue esperando en ese estado y el plazo ya pasó;
+  - si Redis no responde en 2 segundos al agendarla, la reserva se crea igual; cada 5 minutos una tarea periódica vence las reservas con el plazo pasado, también las que Redis haya perdido.
+- **`maintenance`** ([src/maintenance/maintenance.service.ts](src/maintenance/maintenance.service.ts)): cada hora borra los refresh tokens vencidos, y los archivos que nunca se terminaron de subir o que nadie usó en un día, con su objeto en el bucket.
+
+Las tareas terminadas se borran de Redis, y las fallidas se quedan una semana. La API arranca aunque Redis no esté; `/v1/health` responde 503 y las tareas corren cuando vuelve.
 
 ## Contrato OpenAPI
 
@@ -194,7 +283,7 @@ Se puede correr las veces que quieras:
 Los parámetros de la sección 15 de las reglas viven en la tabla `settings`.
 
 - Cada clave está en [src/settings/settings.registry.ts](src/settings/settings.registry.ts), con su validador, su valor inicial y la regla que implementa.
-- En el código se leen con `SettingsService.get()`, que valida el valor y falla si falta o no es válido.
+- En el código se leen con `SettingsService.get()`, o varios en una sola consulta con `getMany()`. Los dos validan cada valor y fallan si falta o no es válido.
 - Las duraciones van en minutos o días, según lo diga la clave; los porcentajes, en puntos básicos; el dinero, en centavos; y las calificaciones, en décimas (40 es 4.0).
 
 Para cambiar uno:
@@ -214,10 +303,11 @@ Para agregar un parámetro, súmalo al registro y a la tabla de la sección 15. 
 ## Pruebas
 
 - **Unitarias:** `src/**/*.spec.ts`.
-- **De integración:** `test/**/*.e2e-spec.ts`. Levantan con Testcontainers un PostgreSQL 18 y un SeaweedFS reales, así que **necesitan Docker**. Aplican las migraciones y arrancan el `AppModule` completo con la misma configuración HTTP que `main.ts` (ver `test/create-test-app.ts`).
+- **De integración:** `test/**/*.e2e-spec.ts`. Levantan con Testcontainers un PostgreSQL 18, un SeaweedFS y un Redis 8 reales, así que **necesitan Docker**. Aplican las migraciones y arrancan el `AppModule` completo con la misma configuración HTTP que `main.ts` (ver `test/create-test-app.ts`).
   - Cada archivo que escribe datos pide su propia base con `createTestDatabase()` ([test/database.ts](test/database.ts)), que es una copia vacía de la base ya migrada. Así los archivos corren en paralelo sin ver los datos de los otros.
   - [test/factories.ts](test/factories.ts) crea las filas mínimas válidas: usuarios, cuidadores, mascotas y reservas con sus tramos.
   - [test/use-api.ts](test/use-api.ts) arranca la API contra la base de un archivo y firma tokens de acceso sin pasar por el inicio de sesión. [test/uploads.ts](test/uploads.ts) sube un archivo como lo hace la app.
+  - Cada app de prueba usa su propio prefijo de colas en Redis ([test/create-test-app.ts](test/create-test-app.ts)), así que sus workers no toman las tareas de otra. [test/test-clock.ts](test/test-clock.ts) reemplaza el `Clock` para detener y adelantar el tiempo de los plazos.
 
 ## Comandos
 

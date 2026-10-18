@@ -1,6 +1,6 @@
 # Pawie Care: reglas de negocio
 
-**Versión:** 0.2 · **Fecha:** 2026-10-17 · **Estado:** borrador aprobado para empezar el backend
+**Versión:** 0.3 · **Fecha:** 2026-10-18 · **Estado:** borrador aprobado para empezar el backend
 
 ## Cómo leer este documento
 
@@ -102,7 +102,7 @@ Lo que la demo resuelve de otra forma:
 
 - **RN-CUI-15** Un cuidador no puede tener tramos que se crucen. Cada tramo (una visita o una noche, ver sección 8.1) bloquea solo su propio horario, sea una pernocta normal o especial.
 - **RN-CUI-16** Si el cuidador activa la **Reserva inmediata**, las solicitudes se confirman sin esperar su aprobación.
-- **RN-CUI-17** El cuidador fija su precio para cada servicio y nivel **dentro del rango** que define Pawie (ver sección 7). Si no lo cambia, se usa el precio sugerido.
+- **RN-CUI-17** El cuidador fija su precio para cada servicio y nivel **dentro del rango** que define Pawie (ver sección 7). Si no lo cambia, se usa el precio sugerido. Si el rango cambia y su precio queda afuera, se cobra el extremo más cercano del rango vigente.
 
 ## 5. Mascotas
 
@@ -151,13 +151,18 @@ Lo que la demo resuelve de otra forma:
 - **RN-PRE-04** El **cuidador recibe** su precio menos una **comisión de [15%]**.
 - **RN-PRE-05** No hay descuentos por repetir con el mismo cuidador. La comisión es igual para todas las reservas.
 - **RN-PRE-06** De lo que se queda Pawie salen el **IVA ([13%])**, la comisión de la pasarela de pagos y el **fondo de la Garantía Pawie ([2%] de lo que paga el dueño)**. El dueño siempre ve el precio final. Falta validar con un contador cómo se aplica el IVA.
-- **RN-PRE-07** **Cada reserva guarda una copia** de los precios, comisiones y porcentajes vigentes al confirmarse. Si después cambia un parámetro, solo afecta a las reservas nuevas.
+- **RN-PRE-07** **Cada reserva guarda una copia** de los precios, comisiones y porcentajes vigentes **al crearse**, es decir, cuando el dueño la solicita. Si después cambia un parámetro, solo afecta a las reservas nuevas. Así el dueño paga lo que vio al reservar, aunque el cuidador tarde en aceptar.
+- **RN-PRE-08** **Redondeo:** cada monto se redondea una sola vez, al centavo y con la mitad hacia arriba:
+  - cada tramo cuesta el precio del cuidador más el recargo por cada mascota adicional (RN-PRE-02);
+  - el subtotal es la suma de los tramos;
+  - la tarifa de servicio es un porcentaje del subtotal, y el dueño paga el subtotal más la tarifa;
+  - la comisión es un porcentaje del subtotal, y **el cuidador recibe el subtotal menos la comisión**.
 
 **Ejemplo (visita especial):** el cuidador cobra $17. El dueño paga **$18.70** ($17 + 10%) y el cuidador recibe **$14.45** ($17 − 15%). Pawie se queda con $4.25 brutos; después de IVA, pasarela y fondo de garantía le quedan unos **$2.65**.
 
 ## 8. Reservas
 
-**En la demo:** búsqueda, solicitud, Reserva inmediata, pago y confirmación (RN-RES-01 a RN-RES-07).
+**En la demo:** búsqueda, solicitud, Reserva inmediata, pago y confirmación (RN-RES-01 a RN-RES-07), y la cancelación sin costo antes de pagar (RN-CAN-07).
 
 ### 8.1 Búsqueda y solicitud
 
@@ -166,7 +171,7 @@ Una reserva es con un cuidador y un servicio, para una o varias mascotas. Tiene 
 - **RN-RES-01** El dueño busca por mascota(s), servicio, fechas y distrito. Solo aparecen los cuidadores que están aprobados y activos, cubren el distrito, tienen disponibilidad en esas fechas y, si la reserva es Especial, tienen la ⭐ vigente hasta el último día del servicio. Los resultados se ordenan por calificación y, después, por la cantidad de servicios en Pawie.
 - **RN-RES-02** El perfil del cuidador muestra la ⭐, la insignia de estudiante, la calificación, la cantidad de servicios en Pawie, los precios, los distritos y si tiene Reserva inmediata.
 - **RN-RES-03** Al solicitar, el dueño elige las mascotas (hasta **[3]** por reserva), el servicio, las fechas y horas, y deja instrucciones. Si la reserva es Especial, se adjuntan automáticamente las indicaciones del veterinario que están en el perfil de la mascota.
-- **RN-RES-04** Al solicitar, el dueño también deja sus **datos de emergencia**: veterinario de cabecera, un contacto de emergencia, un **monto preautorizado para emergencias** y su consentimiento para que lleven a la mascota a una clínica.
+- **RN-RES-04** Al solicitar, el dueño también deja sus **datos de emergencia**: veterinario de cabecera, un contacto de emergencia, un **monto preautorizado para emergencias** y su consentimiento para que lleven a la mascota a una clínica. Sin ese consentimiento no se puede reservar, porque ante una señal de alarma el cuidador tiene que ir a la clínica de inmediato (RN-EME-02). El monto solo se declara: no se cobra al reservar (RN-EME-04).
 - **RN-RES-05** Una solicitud debe hacerse con al menos **[2 h]** de anticipación al inicio del servicio.
 
 ### 8.2 Estados de una reserva
@@ -184,8 +189,8 @@ Una reserva es con un cuidador y un servicio, para una o varias mascotas. Tiene 
 | `CANCELADA_POR_DUENO` / `CANCELADA_POR_CUIDADOR` | Cancelación (ver sección 10)                                                          |
 | `EN_DISPUTA`                                     | Alguien abre una disputa durante la retención del pago `Fase 2`                       |
 
-- **RN-RES-06** El cuidador tiene un plazo para responder que depende de cuánto falta para el servicio: **[24 h]** si faltan más de 72 h, **[6 h]** si faltan entre 24 y 72 h, y **[1 h]** si faltan menos de 24 h.
-- **RN-RES-07** Desde que la reserva pasa a `PENDIENTE_DE_PAGO`, el dueño tiene **[2 h]** para pagar.
+- **RN-RES-06** El cuidador tiene un plazo para responder que depende de cuánto falta para el servicio cuando el dueño solicita: **[24 h]** si faltan más de 72 h, **[6 h]** si faltan entre 24 y 72 h (con exactamente 72 h o 24 h también), y **[1 h]** si faltan menos de 24 h. Si el servicio empieza antes, el plazo vence al inicio del primer tramo.
+- **RN-RES-07** Desde que la reserva pasa a `PENDIENTE_DE_PAGO`, el dueño tiene **[2 h]** para pagar. Si el servicio empieza antes, el plazo vence al inicio del primer tramo.
 - **RN-RES-08** La primera reserva Especial con un cuidador nuevo exige un **encuentro previo**. Se hace **después del pago**, para que no sirva para arreglar por fuera; si cualquiera de los dos decide no seguir, se devuelve el 100%. `Fase 2`
 - **RN-RES-09** Para urgencias existe la **solicitud abierta**: se envía a todos los cuidadores elegibles de la zona y la toma el primero que acepte. `Fase 2`
 
@@ -199,9 +204,11 @@ Una reserva es con un cuidador y un servicio, para una o varias mascotas. Tiene 
 - **RN-PAG-04** En estadías largas, el pago al cuidador se libera por semanas completadas. `Fase 2`
 - **RN-PAG-05** Los reembolsos se hacen por el mismo medio de pago. La API de Wompi no tiene un endpoint de reembolso, así que se hacen desde el panel de Wompi y el administrador los registra en Pawie.
 
-## 10. Cancelaciones `Fase 2`
+## 10. Cancelaciones
 
-- **RN-CAN-01** Si cancela el dueño, la devolución depende de cuánto falta para el inicio:
+**En la demo:** solo la cancelación sin costo antes de pagar (RN-CAN-07). Lo demás es Fase 2.
+
+- **RN-CAN-01** Si el dueño cancela una reserva ya pagada, la devolución depende de cuánto falta para el inicio:
   - más de **[48 h]**: 100%;
   - entre **[24 y 48 h]**: **[50%]**;
   - menos de **[24 h]**: nada.
@@ -210,6 +217,7 @@ Una reserva es con un cuidador y un servicio, para una o varias mascotas. Tiene 
 - **RN-CAN-04** Si el servicio ya empezó, no se devuelve nada por el tiempo restante, salvo que haya una disputa.
 - **RN-CAN-05** Si cancela el cuidador, no paga dinero, pero queda en su historial. Con **[3] cancelaciones en [90] días** se suspende por **[15 días]**. Si cancela un cuidado Especial con menos de 48 h de anticipación, se le suspende la ⭐ por **[30 días]**.
 - **RN-CAN-06** Cuando cancela el cuidador, Pawie busca un reemplazo con prioridad. Si no lo consigue, devuelve el 100% al dueño y le da un crédito del **[10%]** del valor de la reserva para la próxima.
+- **RN-CAN-07** Mientras la reserva está `SOLICITADA` o `PENDIENTE_DE_PAGO`, el dueño puede cancelarla sin costo, porque todavía no pagó nada. Pasa a `CANCELADA_POR_DUENO` y libera el horario del cuidador.
 
 ## 11. Ejecución del servicio `Fase 2`
 
@@ -255,7 +263,7 @@ Una reserva es con un cuidador y un servicio, para una o varias mascotas. Tiene 
 
 ## 15. Parámetros configurables
 
-Se guardan en la base de datos, no en el código. En la demo se cambian con un script o un seed; en Fase 2, desde el panel de administración. Cambiarlos no afecta las reservas ya confirmadas (RN-PRE-07).
+Se guardan en la base de datos, no en el código. En la demo se cambian con un script o un seed; en Fase 2, desde el panel de administración. Cambiarlos no afecta las reservas ya creadas (RN-PRE-07).
 
 | Parámetro                                            | Valor inicial                       | Regla     |
 | ---------------------------------------------------- | ----------------------------------- | --------- |

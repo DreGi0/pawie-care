@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { blocksCalendar } from '../src/bookings/booking-status.js';
 import {
   BookingStatus,
   CareLevel,
@@ -90,18 +91,6 @@ export async function createVetInstruction(
   return prisma.vetInstruction.create({
     data: { petId: pet.id, fileId: file.id, issuedOn: new Date('2026-10-01') },
   });
-}
-
-/** Statuses that free the caregiver's time (bookings_blocks_calendar_check). */
-const NON_BLOCKING_STATUSES = new Set<BookingStatus>([
-  BookingStatus.REJECTED,
-  BookingStatus.EXPIRED,
-  BookingStatus.CANCELLED_BY_OWNER,
-  BookingStatus.CANCELLED_BY_CAREGIVER,
-]);
-
-export function blocksCalendar(status: BookingStatus): boolean {
-  return !NON_BLOCKING_STATUSES.has(status);
 }
 
 export interface SlotTimes {

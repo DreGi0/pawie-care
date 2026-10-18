@@ -5,6 +5,7 @@ const JWT_ACCESS_SECRET = 'a-secret-for-the-unit-tests-of-environment';
 const REQUIRED = {
   DATABASE_URL,
   JWT_ACCESS_SECRET,
+  REDIS_URL: 'redis://localhost:6379',
   S3_ENDPOINT: 'http://localhost:8333',
   S3_BUCKET: 'pawie-files',
   S3_ACCESS_KEY_ID: 'pawie',
@@ -46,9 +47,25 @@ describe('validateEnvironment', () => {
       validateEnvironment({ PORT: 'abc', NODE_ENV: 'staging', CORS_ORIGINS: 'not-a-url' });
 
     expect(validate).toThrow('Invalid environment variables');
-    for (const name of ['DATABASE_URL', 'JWT_ACCESS_SECRET', 'PORT', 'NODE_ENV', 'CORS_ORIGINS']) {
+    for (const name of [
+      'DATABASE_URL',
+      'JWT_ACCESS_SECRET',
+      'REDIS_URL',
+      'PORT',
+      'NODE_ENV',
+      'CORS_ORIGINS',
+    ]) {
       expect(validate).toThrow(`- ${name}:`);
     }
+  });
+
+  it('rejects a Redis URL that is not Redis', () => {
+    expect(() => validateEnvironment({ ...REQUIRED, REDIS_URL: 'http://localhost:6379' })).toThrow(
+      /REDIS_URL/,
+    );
+    expect(validateEnvironment({ ...REQUIRED, REDIS_URL: 'rediss://cache:6380' }).REDIS_URL).toBe(
+      'rediss://cache:6380',
+    );
   });
 
   it('rejects a database URL that is not PostgreSQL', () => {

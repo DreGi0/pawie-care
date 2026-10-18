@@ -5,17 +5,22 @@ import { ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { minutes, ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
+import { AddressesModule } from './addresses/addresses.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { BookingsModule } from './bookings/bookings.module.js';
 import { CaregiversModule } from './caregivers/caregivers.module.js';
 import { CatalogModule } from './catalog/catalog.module.js';
+import { ClockModule } from './common/time/clock.module.js';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
 import { ApiValidationPipe } from './common/errors/api-validation.pipe.js';
 import { AppConfigModule } from './config/config.module.js';
 import { type Environment, NodeEnv } from './config/environment.js';
 import { FilesModule } from './files/files.module.js';
 import { HealthModule } from './health/health.module.js';
+import { MaintenanceModule } from './maintenance/maintenance.module.js';
 import { PetsModule } from './pets/pets.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { QueuesModule } from './queues/queues.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { UsersModule } from './users/users.module.js';
 
@@ -71,6 +76,8 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
     }),
     ThrottlerModule.forRoot([{ ttl: minutes(1), limit: 100 }]),
     PrismaModule,
+    QueuesModule,
+    ClockModule,
     HealthModule,
     SettingsModule,
     UsersModule,
@@ -78,6 +85,9 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
     FilesModule,
     CatalogModule,
     PetsModule,
+    AddressesModule,
+    BookingsModule,
+    MaintenanceModule,
     CaregiversModule,
   ],
   providers: [

@@ -8,6 +8,7 @@ process.env.DATABASE_URL = inject('databaseUrl');
 process.env.CORS_ORIGINS = 'https://web.pawie.test';
 process.env.LOG_LEVEL = 'silent';
 process.env.JWT_ACCESS_SECRET = 'integration-tests-secret-at-least-32-characters';
+process.env.REDIS_URL = inject('redisUrl');
 process.env.S3_ENDPOINT = inject('s3Endpoint');
 process.env.S3_BUCKET = TEST_S3.bucket;
 process.env.S3_ACCESS_KEY_ID = TEST_S3.accessKeyId;

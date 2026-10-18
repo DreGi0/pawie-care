@@ -1,6 +1,6 @@
 # Pawie Care: arquitectura y stack técnico
 
-**Versión:** 0.1 · **Fecha:** 2026-10-17 · **Estado:** aprobado para empezar el scaffolding
+**Versión:** 0.2 · **Fecha:** 2026-10-18 · **Estado:** aprobado para empezar el scaffolding
 
 Las reglas de negocio están en [reglas-de-negocio.md](reglas-de-negocio.md). Este documento cubre cómo se construye.
 
@@ -52,21 +52,21 @@ Versiones estables al 2026-10-17. Al crear cada proyecto se fijan en sus archivo
 
 ### 3.1 Backend
 
-| Necesidad                | Elección                                    | Notas                                                                                                                                                                                    |
-| ------------------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Entorno de ejecución     | Node.js 24 LTS, desde la 24.7               | La 24.7 trae `crypto.argon2`, con el que la API hashea las contraseñas                                                                                                                   |
-| Framework                | NestJS 12                                   | Organiza el código por módulos con inyección de dependencias                                                                                                                             |
-| Base de datos            | PostgreSQL 18                               |                                                                                                                                                                                          |
-| ORM y migraciones        | Prisma 7.10.1                               | Fijado en versión exacta en `prisma`, `@prisma/client` y `@prisma/adapter-pg`. **No usar la 8**: la etiqueta `latest` de `prisma` en npm apunta a una versión candidata (`8.0.0-rc`)     |
-| Colas y tareas diferidas | BullMQ + Redis 8                            | Para los plazos de las reservas (RN-RES-06, RN-RES-07) y la liberación de pagos (RN-PAG-03)                                                                                              |
-| Autenticación            | Passport + JWT, contraseñas con argon2id    | argon2id de `node:crypto`, sin dependencias nativas. Token de acceso JWT (HS256) de 15 min y refresh token opaco de 30 días, que se guarda hasheado y cambia en cada uso                 |
-| Validación               | class-validator + class-transformer         | Los mismos DTO generan el esquema OpenAPI                                                                                                                                                |
-| Contrato de la API       | @nestjs/swagger, que exporta `openapi.json` | De ese archivo se genera `packages/api-client`. Va en git, se genera sin levantar el servidor y el CI falla si quedó desactualizado                                                      |
-| Seguridad HTTP           | helmet, @nestjs/throttler, CORS restringido | Límite de intentos en el inicio de sesión                                                                                                                                                |
-| Logs                     | pino (nestjs-pino)                          | En formato JSON y sin datos sensibles                                                                                                                                                    |
-| Errores                  | Sentry                                      |                                                                                                                                                                                          |
-| Lint                     | oxlint con reglas que usan los tipos        | Viene con NestJS 12                                                                                                                                                                      |
-| Pruebas                  | Vitest, Supertest y Testcontainers          | NestJS 12 ya trae Vitest. Las pruebas de integración corren contra un PostgreSQL real en Docker, la misma imagen de `docker-compose.yml`, y forman parte de `pnpm test` también en el CI |
+| Necesidad                | Elección                                    | Notas                                                                                                                                                                                                              |
+| ------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Entorno de ejecución     | Node.js 24 LTS, desde la 24.7               | La 24.7 trae `crypto.argon2`, con el que la API hashea las contraseñas                                                                                                                                             |
+| Framework                | NestJS 12                                   | Organiza el código por módulos con inyección de dependencias                                                                                                                                                       |
+| Base de datos            | PostgreSQL 18                               |                                                                                                                                                                                                                    |
+| ORM y migraciones        | Prisma 7.10.1                               | Fijado en versión exacta en `prisma`, `@prisma/client` y `@prisma/adapter-pg`. **No usar la 8**: la etiqueta `latest` de `prisma` en npm apunta a una versión candidata (`8.0.0-rc`)                               |
+| Colas y tareas diferidas | BullMQ 6 + Redis 8, con @nestjs/bullmq      | Para los plazos de las reservas (RN-RES-06, RN-RES-07), la limpieza periódica y, después de la demo, la liberación de pagos (RN-PAG-03). BullMQ 6 ya no trae cliente de Redis: usa ioredis 5                       |
+| Autenticación            | Passport + JWT, contraseñas con argon2id    | argon2id de `node:crypto`, sin dependencias nativas. Token de acceso JWT (HS256) de 15 min y refresh token opaco de 30 días, que se guarda hasheado y cambia en cada uso                                           |
+| Validación               | class-validator + class-transformer         | Los mismos DTO generan el esquema OpenAPI                                                                                                                                                                          |
+| Contrato de la API       | @nestjs/swagger, que exporta `openapi.json` | De ese archivo se genera `packages/api-client`. Va en git, se genera sin levantar el servidor y el CI falla si quedó desactualizado                                                                                |
+| Seguridad HTTP           | helmet, @nestjs/throttler, CORS restringido | Límite de intentos en el inicio de sesión                                                                                                                                                                          |
+| Logs                     | pino (nestjs-pino)                          | En formato JSON y sin datos sensibles                                                                                                                                                                              |
+| Errores                  | Sentry                                      |                                                                                                                                                                                                                    |
+| Lint                     | oxlint con reglas que usan los tipos        | Viene con NestJS 12                                                                                                                                                                                                |
+| Pruebas                  | Vitest, Supertest y Testcontainers          | NestJS 12 ya trae Vitest. Las pruebas de integración corren contra PostgreSQL, SeaweedFS y Redis reales en Docker, con las mismas imágenes de `docker-compose.yml`, y forman parte de `pnpm test` también en el CI |
 
 ### 3.2 App móvil (demo)
 
@@ -120,13 +120,22 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 5. **El dinero se guarda en centavos enteros**, nunca con decimales flotantes. Los porcentajes van en puntos básicos (1500 = 15%).
 6. **Los instantes se guardan en UTC** (`timestamptz`) y se muestran en `America/El_Salvador`. Las fechas de calendario, como un nacimiento o el fin de una receta, van en `date`. Las horas del día, como las del horario semanal, van en minutos desde la medianoche en hora de El Salvador, que no tiene horario de verano.
 7. **Las reservas tienen una máquina de estados explícita**, con una tabla de transiciones permitidas basada en la sección 8.2 de las reglas y un test para cada transición. Cualquier otra transición se rechaza.
+   - La tabla está en `src/bookings/booking-status.ts`. Tiene las transiciones de la demo: el cuidador acepta o rechaza, el dueño paga o cancela antes de pagar (RN-CAN-07), y cada paso puede vencer. También tiene la confirmación de una reserva vencida, para el pago aprobado tarde. Las de después de la demo se suman con su funcionalidad.
+   - `BookingStateMachine` aplica cada cambio en una transacción: actualiza `status` y `blocks_calendar` juntos y guarda un `BookingStatusChange` con quién lo hizo (nadie, si fue el sistema).
+   - Solo cambia una reserva que sigue en el estado que se leyó, así que de dos cambios simultáneos pasa uno y el otro recibe 409 `BOOKING_STATUS_CHANGED`.
 8. **La base de datos impide las reservas dobles** con una restricción de exclusión de PostgreSQL (`btree_gist`) sobre los **tramos**: dos tramos del mismo cuidador no se pueden cruzar mientras sus reservas bloqueen el horario (RN-CUI-15).
    - Una reserva bloquea el horario desde que se solicita (`REQUESTED`) y deja de bloquearlo cuando se rechaza, vence o se cancela.
    - Lo marca la columna `blocks_calendar` de la reserva, que un `CHECK` ata a su estado. La llave foránea de los tramos copia ese valor a cada tramo, que es donde lo lee la restricción.
    - Si un pago se aprueba tarde, volver a confirmar la reserva enciende otra vez `blocks_calendar`. Si el horario ya se tomó, la restricción lo rechaza.
+   - La API revisa la disponibilidad antes de escribir, con la misma lógica que la búsqueda. Si otra reserva toma el horario entre esa revisión y la escritura, la restricción falla con el código 23P01 y la API responde 409 `SLOT_TAKEN`.
    - Prisma no puede expresar esta restricción, ni los `CHECK` ni los índices únicos parciales, así que van en una migración SQL escrita a mano. Una prueba de integración comprueba que `prisma migrate diff` entre la base migrada y el esquema sale vacío, es decir, que Prisma no intentaría borrarlos.
-9. **Cada reserva guarda una copia de los precios y comisiones** del momento en que se confirmó (RN-PRE-07). Los parámetros viven en una tabla, y cada cambio registra quién lo hizo, cuándo y qué valor tenía antes. Un registro tipado en el código (`src/settings/settings.registry.ts`) define cada clave con su validador, su valor inicial y la regla que implementa, y los valores siempre se leen validados.
+9. **Cada reserva guarda una copia de los precios y comisiones** del momento en que se creó (RN-PRE-07): los montos y los porcentajes en sus columnas, y en `pricing_snapshot` todo lo que usó el cálculo, como los precios del cuidador antes de ajustarlos al rango. Las funciones puras de `src/pricing/` calculan los montos y redondean cada uno una sola vez (RN-PRE-08). Los parámetros viven en una tabla, y cada cambio registra quién lo hizo, cuándo y qué valor tenía antes. Un registro tipado en el código (`src/settings/settings.registry.ts`) define cada clave con su validador, su valor inicial y la regla que implementa, y los valores siempre se leen validados.
 10. **Los plazos se manejan con tareas diferidas de BullMQ.** Por ejemplo, cuando una reserva pasa a `PENDIENTE_DE_PAGO` se agenda una tarea que la vence si no se paga en el plazo. Antes de actuar, la tarea vuelve a revisar el estado, para que una reserva ya pagada no se venza por error.
+    - Hay una tarea por reserva y estado, en la cola `booking-deadlines`, con el ID `<reserva>-<estado>`. Se agenda al crear la reserva y cuando el cuidador acepta.
+    - Agendarla nunca hace fallar la petición: si Redis no responde en 2 segundos, la reserva se crea igual. Una tarea periódica revisa cada 5 minutos si hay reservas con el plazo vencido y las vence; también cubre las tareas que Redis haya perdido.
+    - La cola `maintenance` corre cada hora la limpieza: borra los refresh tokens vencidos y los archivos que nunca se terminaron de subir o que nadie usó en un día.
+    - Los workers corren en el mismo proceso de la API. Las tareas terminadas se borran de Redis, y las fallidas se guardan una semana para revisarlas.
+    - La API arranca aunque Redis no esté, y `/v1/health` lo reporta.
 11. **Los archivos van en un bucket privado**, las fotos y también los documentos médicos. Se suben y se abren con URLs firmadas de vida corta.
     - La app pide la subida diciendo el propósito, el tipo y el tamaño exacto, sube el archivo con `PUT` directo al bucket y después la confirma. La API nunca recibe los bytes.
     - El tipo y el tamaño van firmados en la URL, así que el bucket rechaza cualquier otro archivo. Por eso los límites se cumplen aunque la API no vea el archivo.
@@ -145,15 +154,18 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 | --------------- | ---------------------------------------------------------------------------------------------- | ---------------------------- |
 | `auth`          | Registro, inicio de sesión y tokens                                                            | RN-CTA-01, RN-CTA-02         |
 | `users`         | Cuentas y roles                                                                                | RN-CTA                       |
+| `addresses`     | Direcciones del dueño, que cada reserva copia                                                  | RN-CTA-04                    |
 | `caregivers`    | Perfil, certificaciones, distritos, disponibilidad, Reserva inmediata y búsqueda de cuidadores | RN-CUI, RN-RES-01, RN-RES-02 |
 | `pets`          | Mascotas, indicaciones del veterinario y clasificación del nivel de cuidado                    | RN-MAS                       |
 | `catalog`       | Especies, servicios y distritos                                                                | RN-MAS-01, RN-SER            |
 | `settings`      | Parámetros configurables y su historial de cambios                                             | Sección 15 de las reglas     |
 | `pricing`       | Cálculo del precio de una reserva                                                              | RN-PRE                       |
-| `bookings`      | Solicitudes, estados y plazos, y el plan de tramos que también usa la búsqueda                 | RN-RES                       |
+| `bookings`      | Solicitudes, estados y plazos, y el plan de tramos que también usa la búsqueda                 | RN-RES, RN-CAN-07            |
 | `payments`      | Integración con Wompi y webhooks                                                               | RN-PAG                       |
 | `files`         | Subida y acceso a archivos                                                                     | RN-MAS-02, RN-MAS-08         |
 | `notifications` | Correos y, más adelante, notificaciones push                                                   |                              |
+| `queues`        | Conexión de BullMQ con Redis y su chequeo en `/v1/health`                                      |                              |
+| `maintenance`   | Limpieza periódica: refresh tokens vencidos y archivos abandonados                             |                              |
 
 ## 6. Integración con Wompi
 

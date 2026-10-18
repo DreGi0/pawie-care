@@ -23,9 +23,7 @@ export interface PetCareLevel {
  * (RN-MAS-07), so only the care needs matter.
  */
 export function careLevelOn(needs: readonly DatedCareNeed[], from: Date, to: Date): PetCareLevel {
-  const active = needs.filter(
-    ({ startsOn, endsOn }) => startsOn <= to && (endsOn === null || endsOn >= from),
-  );
+  const active = activeOn(needs, from, to);
   const tasksOf = (prohibited: boolean) => [
     ...new Set(
       active
@@ -39,4 +37,11 @@ export function careLevelOn(needs: readonly DatedCareNeed[], from: Date, to: Dat
     specialTasks,
     prohibitedTasks: tasksOf(true),
   };
+}
+
+/** The care needs whose dates overlap the service's, both inclusive (RN-MAS-05). */
+export function activeOn<N extends DatedCareNeed>(needs: readonly N[], from: Date, to: Date): N[] {
+  return needs.filter(
+    ({ startsOn, endsOn }) => startsOn <= to && (endsOn === null || endsOn >= from),
+  );
 }

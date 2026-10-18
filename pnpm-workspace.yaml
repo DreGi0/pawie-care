@@ -17,3 +17,6 @@ allowBuilds:
   ssh2: false
   # Optional native dependency of ssh2, compiled with node-gyp
   cpu-features: false
+  # Optional native speed-up of msgpackr (used by BullMQ). Its binaries ship as per-platform optional
+  # dependencies and msgpackr falls back to plain JS, so the node-gyp compile fallback isn't needed
+  msgpackr-extract: false
