@@ -1,4 +1,5 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { colors, fontFamily, radius, space, type ColorName } from '@/theme/tokens';
 
@@ -16,24 +17,27 @@ const tones = {
 export type BannerProps = {
   tone: keyof typeof tones;
   message: string;
+  /** Replaces the tone's icon, such as a lock for a notice about privacy. */
+  icon?: IconName;
 };
 
 /** A colored notice. An error is announced to screen readers as soon as it shows up. */
-export function Banner({ tone, message }: BannerProps) {
-  const { background, text, icon } = tones[tone];
+export function Banner({ tone, message, icon }: BannerProps) {
+  const { background, text, icon: toneIcon } = tones[tone];
   const isError = tone === 'error';
 
   return (
-    <View
+    <Animated.View
+      entering={FadeIn.duration(250)}
       accessibilityRole={isError ? 'alert' : undefined}
       accessibilityLiveRegion={isError ? 'assertive' : 'none'}
       style={[styles.banner, { backgroundColor: colors[background] }]}
     >
-      <Icon name={icon} color={text} />
+      <Icon name={icon ?? toneIcon} color={text} />
       <Text color={text} style={[styles.message, isError && styles.errorMessage]}>
         {message}
       </Text>
-    </View>
+    </Animated.View>
   );
 }
 

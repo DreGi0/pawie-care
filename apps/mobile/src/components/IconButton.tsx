@@ -1,16 +1,11 @@
-import {
-  Pressable,
-  StyleSheet,
-  type PressableProps,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { colors, radius, shadow, touchTarget, type ColorName } from '@/theme/tokens';
 
 import { Icon, type IconName } from './Icon';
+import { Touchable, type TouchableProps } from './Touchable';
 
-export type IconButtonProps = Omit<PressableProps, 'children' | 'style'> & {
+export type IconButtonProps = Omit<TouchableProps, 'children' | 'style'> & {
   icon: IconName;
   /** Says what the button does, since there is no text. */
   accessibilityLabel: string;
@@ -28,9 +23,10 @@ export function IconButton({
   ...props
 }: IconButtonProps) {
   return (
-    <Pressable
+    <Touchable
       accessibilityRole="button"
-      style={({ pressed }) => [
+      pressedScale={0.9}
+      style={(pressed) => [
         styles.base,
         variant === 'raised' && styles.raised,
         pressed && styles.pressed,
@@ -39,7 +35,7 @@ export function IconButton({
       {...props}
     >
       <Icon name={icon} color={color} />
-    </Pressable>
+    </Touchable>
   );
 }
 

@@ -1,20 +1,14 @@
 import type { ReactNode } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  type PressableProps,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { colors, radius, space, touchTarget, type ColorName } from '@/theme/tokens';
 
 import { Text } from './Text';
+import { Touchable, type TouchableProps } from './Touchable';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
-export type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
+export type ButtonProps = Omit<TouchableProps, 'children' | 'style'> & {
   label: string;
   variant?: Variant;
   loading?: boolean;
@@ -46,12 +40,12 @@ export function Button({
   const color = disabled ? 'inkMuted' : labelColor[variant];
 
   return (
-    <Pressable
+    <Touchable
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled, busy: loading }}
       disabled={disabled || loading}
-      style={({ pressed }) => [
+      style={(pressed) => [
         styles.base,
         styles[variant],
         pressed && (variant === 'primary' ? styles.primaryPressed : styles.pressed),
@@ -70,7 +64,7 @@ export function Button({
           </Text>
         </>
       )}
-    </Pressable>
+    </Touchable>
   );
 }
 

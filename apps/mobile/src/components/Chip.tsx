@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { colors, radius, shadow, space } from '@/theme/tokens';
 
 import { Text } from './Text';
+import { Touchable } from './Touchable';
 
 export type ChipProps = {
   label: string;
@@ -16,11 +17,11 @@ export type ChipProps = {
 /** One option of a choice, such as "Perro" or "Gato", or an amount. */
 export function Chip({ label, selected, onPress, icon }: ChipProps) {
   return (
-    <Pressable
+    <Touchable
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={(pressed) => [
         styles.chip,
         selected ? styles.selected : styles.unselected,
         pressed && styles.pressed,
@@ -28,7 +29,7 @@ export function Chip({ label, selected, onPress, icon }: ChipProps) {
     >
       {icon}
       <Text variant="label">{label}</Text>
-    </Pressable>
+    </Touchable>
   );
 }
 

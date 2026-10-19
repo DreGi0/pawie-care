@@ -1,6 +1,8 @@
-import { Pressable, StyleSheet, View, type ViewProps } from 'react-native';
+import { StyleSheet, View, type ViewProps } from 'react-native';
 
 import { colors, radius, shadow, space } from '@/theme/tokens';
+
+import { Touchable } from './Touchable';
 
 export type CardProps = ViewProps & {
   /** Makes the whole card tappable, like a caregiver in the search results. */
@@ -11,10 +13,11 @@ export type CardProps = ViewProps & {
 export function Card({ onPress, style, ...props }: CardProps) {
   if (onPress) {
     return (
-      <Pressable
+      <Touchable
         accessibilityRole="button"
         onPress={onPress}
-        style={({ pressed }) => [styles.card, pressed && styles.pressed, style]}
+        pressedScale={0.98}
+        style={[styles.card, style]}
         {...props}
       />
     );
@@ -29,5 +32,4 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     boxShadow: shadow.soft,
   },
-  pressed: { opacity: 0.8 },
 });

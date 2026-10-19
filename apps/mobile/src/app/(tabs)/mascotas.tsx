@@ -2,6 +2,7 @@ import { usePetsList, type PetResponse } from '@pawie/api-client';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatar';
@@ -53,8 +54,10 @@ export default function PetsScreen() {
           <NoPets />
         ) : (
           <>
-            {pets.data.map((pet) => (
-              <PetCard key={pet.id} pet={pet} />
+            {pets.data.map((pet, index) => (
+              <Animated.View key={pet.id} entering={FadeInDown.delay(index * 60).duration(300)}>
+                <PetCard pet={pet} />
+              </Animated.View>
             ))}
             <AddPetButton />
           </>
