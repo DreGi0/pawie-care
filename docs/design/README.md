@@ -41,6 +41,7 @@ flowchart LR
 ## Reglas del design system
 
 - Cada pantalla tiene **un solo botón primario** (`grape-deep`).
+  - Si una lista puede tener varias acciones primarias, solo la más urgente lleva el botón primario y las demás, el secundario. Por ejemplo, en Visitas, con dos reservas por pagar, solo la que vence antes muestra "Pagar" en primario.
 - No se usa naranja. `butter` es solo para la ⭐ y para avisos reales.
 - Los pasteles (`grape`, `sage`, `sky`) son superficies y siempre llevan texto `ink`.
 - El texto más pequeño es `caption` (13 px). Las áreas táctiles miden al menos 48 px.
@@ -56,6 +57,9 @@ flowchart LR
 ## Pendientes conocidos
 
 - **Galería de 3 fotos:** el backend solo tiene `photoUrl`. Falta agregar `photos: [{ fileId, caption }]` (máximo 3) a `CaregiverProfile`.
-- **Recuperar contraseña:** el enlace aparece en el login, pero el endpoint no existe.
+- **Recuperar contraseña:** el enlace aparece en el login, pero el endpoint no existe. La app todavía no lo muestra, igual que "Crea tu cuenta" mientras Registro no esté construido.
+- **Mis mascotas y Cuenta no tienen mockup**, aunque están en la barra de pestañas. En la app, Mis mascotas se hizo con el design system: una tarjeta por mascota (foto o inicial, especie, raza y edad), un estado vacío y "Agregar mascota". Cuenta solo muestra el nombre, el correo y "Cerrar sesión".
+- **Nivel de cuidado en Mis mascotas:** no se muestra si una mascota es Normal o Especial, ni que no se puede reservar (por ejemplo, si necesita insulina). Depende de las fechas de cada servicio (RN-MAS-05) y la API solo lo calcula en la búsqueda.
+- **Aviso de cuidado especial en Main:** el mockup nombra a la mascota ("Mishi necesita cuidado especial"), pero la búsqueda devuelve el `careLevel` de todas las mascotas juntas, no cuál es la especial.
 - **Nimbus:** está dibujado en SVG inline. Hay que reemplazarlo por los assets finales (`nimbus-hola.svg`, `nimbus-durmiendo.svg`).
 - **Fotos de cuidadores:** son marcadores `[Foto N]`.
