@@ -42,6 +42,9 @@ export type ErrorType<_Error> = ApiError;
 
 let config: ApiClientConfig | null = null;
 
+/** How long a request waits for the API's answer. */
+export const REQUEST_TIMEOUT_MS = 15_000;
+
 export function configureApiClient(next: ApiClientConfig): void {
   config = { ...next, baseUrl: next.baseUrl.replace(/\/+$/, '') };
 }
@@ -59,7 +62,11 @@ export async function customFetch<T>(url: string, options: RequestInit = {}): Pr
   if (token) {
     headers.set('authorization', `Bearer ${token}`);
   }
-  const response = await fetch(`${config.baseUrl}${url}`, { ...options, headers });
+  // An API that never answers (it's off, or a firewall drops the request) would keep the
+  // request waiting forever: after REQUEST_TIMEOUT_MS it fails like a network error.
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+  const response = await fetch(`${config.baseUrl}${url}`, { ...options, headers, signal });
   const body = await readBody(response);
   if (!response.ok) {
     throw new ApiError(response.status, isApiErrorBody(body) ? body : null);

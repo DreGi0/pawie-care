@@ -29,6 +29,20 @@ describe('customFetch', () => {
     expect(new Headers(init.headers).get('accept')).toBe('application/json');
   });
 
+  it('gives up on a request the API never answers', async () => {
+    const caller = new AbortController();
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+
+    await customFetch('/v1/health', { signal: caller.signal });
+
+    const { signal } = fetchMock.mock.calls[0][1];
+    expect(signal).toBeInstanceOf(AbortSignal);
+    expect(signal?.aborted).toBe(false);
+    // The caller can still cancel it, as TanStack Query does.
+    caller.abort();
+    expect(signal?.aborted).toBe(true);
+  });
+
   it('sends no Authorization header when nobody is signed in', async () => {
     configureApiClient({ baseUrl: 'http://localhost:3000', getAccessToken: () => null });
     fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
