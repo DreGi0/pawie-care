@@ -2,23 +2,76 @@
 
 App móvil de Pawie Care para iOS y Android, hecha con Expo SDK 58 y Expo Router. Las pantallas viven en `src/app/`: cada archivo es una ruta.
 
-## Correr la app
+## Correr la app en Android
+
+Para probarla con la API y los datos locales, sigue primero la preparación de Docker, `.env`, migraciones y seed de [las instrucciones de la raíz](../../README.md#primeros-pasos). Inicia el emulador de Android Studio antes de continuar.
+
+En una terminal desde la raíz del repo, deja la API corriendo:
 
 ```bash
-pnpm android   # emulador de Android (Android Studio, en Windows o macOS)
-pnpm ios       # simulador de iOS (Xcode, solo en macOS)
+pnpm --filter @pawie/api dev
 ```
 
-El emulador o el simulador tiene que estar abierto antes de correr el comando.
+Comprueba en otra terminal que PostgreSQL y Redis estén conectados:
+
+```powershell
+Invoke-RestMethod http://localhost:3000/v1/health
+```
+
+La respuesta debe indicar `status: ok` y `up` para `database` y `redis`. Con la API arriba, abre otra terminal en la raíz del repo y ejecuta:
+
+```bash
+pnpm --filter @pawie/mobile android
+```
+
+Para limpiar la caché de Metro si hay problemas con el bundle:
+
+```bash
+pnpm --filter @pawie/mobile android -- --clear
+```
+
+También puedes ejecutar `pnpm android` desde esta carpeta. El emulador Android accede al backend del equipo por `http://10.0.2.2:3000`; no uses `localhost` como URL de la API desde la app.
+
+## Correr la app en el simulador de iPhone (macOS)
+
+Necesitas Xcode instalado y abierto al menos una vez para que configure sus componentes. Abre **Simulator** desde Xcode (`Xcode > Open Developer Tool > Simulator`) y selecciona un iPhone en `File > Open Simulator`. También puedes dejar que Expo abra el simulador disponible.
+
+La infraestructura local y la API deben estar corriendo. Desde la raíz del repo, deja la API activa en una terminal:
+
+```bash
+pnpm --filter @pawie/api dev
+```
+
+En otra terminal, verifica que la API, PostgreSQL y Redis respondan:
+
+```bash
+curl http://localhost:3000/v1/health
+```
+
+La respuesta debe incluir `"status":"ok"` y `"up"` para `database` y `redis`. Luego, desde la raíz, inicia la app en el simulador:
+
+```bash
+pnpm --filter @pawie/mobile ios
+```
+
+Si necesitas limpiar la caché de Metro:
+
+```bash
+pnpm --filter @pawie/mobile ios -- --clear
+```
+
+También puedes ejecutar `pnpm ios` desde esta carpeta. El simulador de iOS accede a la API local por `http://localhost:3000`.
 
 ## Conectarse a la API
 
-La app usa la API local, que se levanta con `pnpm dev` en `apps/api`:
+La app usa la API local:
 
 - **Emulador de Android:** la API está en `http://10.0.2.2:3000`.
 - **Simulador de iOS:** la API está en `http://localhost:3000`.
 
 Para usar otra, como la de la demo desplegada, pon `EXPO_PUBLIC_API_URL=https://…` en `apps/mobile/.env.local` y reinicia Expo.
+
+Para que las fotos carguen en el emulador Android, configura `S3_PUBLIC_ENDPOINT=http://10.0.2.2:8333` en `apps/api/.env` y reinicia la API. En el simulador iOS, el valor predeterminado `http://localhost:8333` funciona sin cambios.
 
 Para entrar, usa el dueño de demo del seed: `demo@example.com`, con la contraseña de `DEMO_OWNER_PASSWORD` (en local, `pawie-demo-local`). Tiene tres mascotas: Toby, Nala y Rocky.
 
