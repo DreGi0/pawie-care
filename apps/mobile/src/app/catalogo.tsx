@@ -1,23 +1,38 @@
+import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Avatar } from '@/components/Avatar';
+import { Banner } from '@/components/Banner';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { Chip } from '@/components/Chip';
+import { Icon, type IconName } from '@/components/Icon';
+import { IconButton } from '@/components/IconButton';
+import { icons } from '@/components/icons.generated';
 import { Input } from '@/components/Input';
 import { StepBar } from '@/components/StepBar';
 import { Tag } from '@/components/Tag';
 import { Text } from '@/components/Text';
 import { colors, space } from '@/theme/tokens';
 
-// Temporary catalog of the base components, to review them on a device. Bienvenida replaces it.
+// Catalog of the components, to review them on a device. Only exists in development.
 // It breaks "one primary button per screen" on purpose, to show every state.
 export default function ComponentCatalog() {
   const [showPassword, setShowPassword] = useState(false);
+  const [species, setSpecies] = useState<'dog' | 'cat'>('dog');
 
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
+        {router.canGoBack() && (
+          <IconButton
+            icon="chevron-left"
+            accessibilityLabel="Volver"
+            onPress={() => router.back()}
+          />
+        )}
         <Text variant="display">Componentes</Text>
 
         <Section title="Texto">
@@ -53,9 +68,10 @@ export default function ComponentCatalog() {
             helper="Mínimo 8 caracteres."
             secureTextEntry={!showPassword}
             accessory={
-              <Button
-                label={showPassword ? 'Ocultar' : 'Ver'}
-                variant="ghost"
+              <IconButton
+                variant="plain"
+                icon={showPassword ? 'eye-off' : 'eye'}
+                accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 onPress={() => setShowPassword(!showPassword)}
               />
             }
@@ -104,6 +120,65 @@ export default function ComponentCatalog() {
           <StepBar current={1} total={2} />
           <StepBar current={2} steps={['Solicitar', 'Ana responde', 'Pagar']} />
         </Section>
+
+        <Section title="Banner">
+          <Banner
+            tone="info"
+            message="Todavía no pagas. Cuando Ana acepte, tendrás 2 horas para pagar."
+          />
+          <Banner tone="success" message="Pago recibido. Tu visita está confirmada." />
+          <Banner tone="warning" message="Paga antes de las 17:30 o la solicitud se cancela." />
+          <Banner
+            tone="error"
+            message="El correo o la contraseña no coinciden. Revísalos e intenta de nuevo."
+          />
+        </Section>
+
+        <Section title="Chip">
+          <View style={styles.row}>
+            <View style={styles.flex}>
+              <Chip label="Perro" selected={species === 'dog'} onPress={() => setSpecies('dog')} />
+            </View>
+            <View style={styles.flex}>
+              <Chip label="Gato" selected={species === 'cat'} onPress={() => setSpecies('cat')} />
+            </View>
+          </View>
+        </Section>
+
+        <Section title="Avatar">
+          <View style={styles.row}>
+            <Avatar name="Luna" size={40} />
+            <Avatar name="Ana Martínez" />
+            <Avatar name="Mishi" size={56} />
+          </View>
+        </Section>
+
+        <Section title="IconButton">
+          <View style={styles.row}>
+            <IconButton icon="chevron-left" accessibilityLabel="Volver" onPress={() => {}} />
+            <IconButton icon="x" accessibilityLabel="Cerrar" onPress={() => {}} />
+            <IconButton
+              icon="plus"
+              variant="plain"
+              color="grapeDeep"
+              accessibilityLabel="Agregar mascota"
+              onPress={() => {}}
+            />
+          </View>
+        </Section>
+
+        <Section title="Icon">
+          <View style={styles.icons}>
+            {(Object.keys(icons) as IconName[]).map((name) => (
+              <View key={name} style={styles.icon}>
+                <Icon name={name} />
+                <Text variant="caption" color="inkMuted">
+                  {name}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </Section>
       </ScrollView>
     </SafeAreaView>
   );
@@ -123,4 +198,8 @@ const styles = StyleSheet.create({
   content: { padding: space[4], gap: space[8] },
   section: { gap: space[4] },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  flex: { flex: 1 },
+  icons: { flexDirection: 'row', flexWrap: 'wrap', gap: space[4] },
+  icon: { width: 96, alignItems: 'center', gap: space[1] },
 });

@@ -53,18 +53,13 @@ export async function signOut(): Promise<void> {
 
 /** At startup: trades the stored refresh token for a new access token. */
 export async function restoreSession(): Promise<void> {
-  refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
-  if (!refreshToken) {
-    setStatus('signedOut');
-    return;
-  }
   try {
-    await renew();
-    setStatus(refreshToken ? 'signedIn' : 'signedOut');
+    refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+    if (refreshToken) await renew();
   } catch {
     // The API is unreachable: keep the refresh token and renew on the next request.
-    setStatus('signedIn');
   }
+  setStatus(refreshToken ? 'signedIn' : 'signedOut');
 }
 
 /** For configureApiClient: the access token, renewed first if it's about to expire. */
