@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { AddressesService } from '../addresses/addresses.service.js';
 import {
   type BookingPlan,
@@ -14,12 +14,13 @@ import {
   Prisma,
   type ServiceCode,
 } from '../generated/prisma/client.js';
+import { currentPayment } from '../payments/booking-payment.js';
 import { activeOn } from '../pets/care-level.js';
 import { CARE_TASK_GROUPS } from '../pets/care-tasks.js';
 import { PRICING_SETTING_KEYS, quoteBooking, ratesFrom } from '../pricing/booking-price.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SettingsService } from '../settings/settings.service.js';
-import { isSlotOverlap, slotTaken } from './booking-errors.js';
+import { bookingNotFound, isSlotOverlap, slotTaken } from './booking-errors.js';
 import { BookingDeadlines } from './booking-deadlines.js';
 import { BookingStateMachine } from './booking-state-machine.js';
 import { blocksCalendar, canTransition, revealsContact } from './booking-status.js';
@@ -40,6 +41,7 @@ const BOOKING_INCLUDE = {
   caregiver: { include: { user: true, photoFile: true } },
   pets: { include: { pet: true, vetInstructions: true } },
   slots: { include: { service: true }, orderBy: { startsAt: 'asc' } },
+  payments: true,
 } satisfies Prisma.BookingInclude;
 
 type BookingWithDetails = Prisma.BookingGetPayload<{ include: typeof BOOKING_INCLUDE }>;
@@ -322,6 +324,7 @@ export class BookingsService {
         serviceFeeCents: booking.ownerServiceFeeCents,
         totalCents: booking.totalCents,
       },
+      payment: currentPayment(booking.payments),
       createdAt: booking.createdAt.toISOString(),
     };
   }
@@ -343,11 +346,4 @@ function vetInstructionsFor({ pets, dates }: BookingPlan) {
         ),
     ).values(),
   ]);
-}
-
-function bookingNotFound(): NotFoundException {
-  return new NotFoundException({
-    errorCode: 'BOOKING_NOT_FOUND',
-    message: 'No encontramos esa reserva.',
-  });
 }

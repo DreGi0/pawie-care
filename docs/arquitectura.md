@@ -1,6 +1,6 @@
 # Pawie Care: arquitectura y stack técnico
 
-**Versión:** 0.2 · **Fecha:** 2026-10-18 · **Estado:** aprobado para empezar el scaffolding
+**Versión:** 0.3 · **Fecha:** 2026-10-18 · **Estado:** aprobado para empezar el scaffolding
 
 Las reglas de negocio están en [reglas-de-negocio.md](reglas-de-negocio.md). Este documento cubre cómo se construye.
 
@@ -44,7 +44,7 @@ pawie-care/
 - **pnpm 12** con workspaces y **Turborepo 2**, que corre en orden y con caché las tareas de todos los paquetes (`pnpm lint`, `pnpm test`, etc.).
 - Cada paquete tiene su propio `tsconfig.json`; no hay uno en la raíz.
 - La API no depende de ningún otro paquete del repositorio y se comunica con los clientes solo a través de su contrato OpenAPI. Por eso Prisma y la base de datos viven dentro de `apps/api` y no en un paquete compartido.
-- `packages/api-client` se crea cuando la API publique su OpenAPI, y `apps/web` cuando empiece la web.
+- `packages/api-client` se genera desde el OpenAPI de la API (§3.4). `apps/web` se crea cuando empiece la web.
 
 ## 3. Stack por capa
 
@@ -70,23 +70,25 @@ Versiones estables al 2026-10-17. Al crear cada proyecto se fijan en sus archivo
 
 ### 3.2 App móvil (demo)
 
-| Necesidad          | Elección                                                              | Notas                                                                                            |
-| ------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Framework          | Expo SDK 58 (React Native 0.88)                                       | iOS y Android desde un solo código                                                               |
-| Navegación         | Expo Router                                                           | Las rutas se definen con la estructura de carpetas                                               |
-| Estilos            | NativeWind 4.2                                                        | Usa las clases de Tailwind, igual que la web. **No usar la 5**, que está en versión candidata    |
-| Componentes        | React Native Reusables                                                | Una versión de shadcn/ui para móvil, que se puede adaptar a nuestro diseño                       |
-| Formularios        | React Hook Form + Zod                                                 |                                                                                                  |
-| Datos del servidor | TanStack Query con el cliente de `packages/api-client`                | Caché, reintentos y estados de carga sin escribirlos a mano                                      |
-| Sesión             | expo-secure-store                                                     | Guarda el refresh token en el llavero seguro del teléfono (Keychain en iOS, Keystore en Android) |
-| Pago               | expo-web-browser                                                      | Abre la página de pago de Wompi dentro de la app (ver sección 6)                                 |
-| Fotos y documentos | expo-image-picker, expo-document-picker, expo-image                   | Foto de la mascota e indicaciones del veterinario                                                |
-| Animación de 5 s   | Reanimated o lottie-react-native                                      | Lottie si se diseña una ilustración animada                                                      |
-| Fechas             | date-fns + @date-fns/tz                                               | Se muestran siempre en la zona `America/El_Salvador`                                             |
-| Errores            | @sentry/react-native                                                  |                                                                                                  |
-| Lint               | ESLint 9 con eslint-config-expo                                       | Los plugins de Expo todavía no son compatibles con ESLint 10                                     |
-| Pruebas            | Jest + React Native Testing Library, y Maestro para el flujo completo | Maestro recorre la demo: registro, mascota, búsqueda, reserva y pago                             |
-| Compilación        | Development build (expo-dev-client), con EAS Build cuando haga falta  | Expo Go solo para pruebas rápidas                                                                |
+| Necesidad          | Elección                                                                     | Notas                                                                                                                                                                                                                                                               |
+| ------------------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework          | Expo SDK 58 (React Native 0.88)                                              | iOS y Android desde un solo código                                                                                                                                                                                                                                  |
+| Navegación         | Expo Router                                                                  | Las rutas se definen con la estructura de carpetas                                                                                                                                                                                                                  |
+| Estilos            | StyleSheet de React Native con los tokens de `src/theme/`                    | Los tokens salen de `docs/design/tokens.json`. Se probó NativeWind 4.2.7 en SDK 58 el 2026-10-18 y se descartó: convierte `box-shadow` a las props de sombra antiguas, que en Android casi no se ven, y no soporta `outline`, con el que se marca el campo con foco |
+| Componentes        | Propios, en `src/components/`                                                | Siguen el design system de `docs/design/`, así que no hace falta una librería                                                                                                                                                                                       |
+| Tipografía         | Nunito, con @expo-google-fonts/nunito                                        | Se carga con `useFonts` de expo-font, que funciona en Expo Go y en la development build                                                                                                                                                                             |
+| Íconos             | Lucide, con los datos de Iconify (`@iconify-json/lucide`) y react-native-svg | Iconify no tiene componente para React Native. `pnpm icons` copia solo los íconos que usa la app a `icons.generated.ts`, porque el set completo pesa ~600 KB                                                                                                        |
+| Formularios        | React Hook Form + Zod                                                        |                                                                                                                                                                                                                                                                     |
+| Datos del servidor | TanStack Query con el cliente de `packages/api-client`                       | Caché, reintentos y estados de carga sin escribirlos a mano                                                                                                                                                                                                         |
+| Sesión             | expo-secure-store                                                            | Guarda el refresh token en el llavero seguro del teléfono (Keychain en iOS, Keystore en Android)                                                                                                                                                                    |
+| Pago               | expo-web-browser                                                             | Abre la página de pago de Wompi dentro de la app (ver sección 6)                                                                                                                                                                                                    |
+| Fotos y documentos | expo-image-picker, expo-document-picker, expo-image                          | Foto de la mascota e indicaciones del veterinario                                                                                                                                                                                                                   |
+| Animación de 5 s   | Reanimated o lottie-react-native                                             | Lottie si se diseña una ilustración animada                                                                                                                                                                                                                         |
+| Fechas             | date-fns + @date-fns/tz                                                      | Se muestran siempre en la zona `America/El_Salvador`                                                                                                                                                                                                                |
+| Errores            | @sentry/react-native                                                         |                                                                                                                                                                                                                                                                     |
+| Lint               | ESLint 9 con eslint-config-expo                                              | Los plugins de Expo todavía no son compatibles con ESLint 10                                                                                                                                                                                                        |
+| Pruebas            | Jest + React Native Testing Library, y Maestro para el flujo completo        | Maestro recorre la demo: registro, mascota, búsqueda, reserva y pago                                                                                                                                                                                                |
+| Compilación        | Development build (expo-dev-client), con EAS Build cuando haga falta         | Expo Go solo para pruebas rápidas                                                                                                                                                                                                                                   |
 
 ### 3.3 Web (después)
 
@@ -94,8 +96,12 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 
 ### 3.4 Código compartido: `packages/api-client`
 
-- **Orval** genera este paquete a partir del `openapi.json` del backend. Incluye tipos TypeScript, un cliente basado en `fetch`, hooks de TanStack Query y esquemas Zod.
+- **Orval** genera este paquete a partir del `openapi.json` del backend. Incluye tipos TypeScript, un cliente basado en `fetch`, hooks de TanStack Query y esquemas Zod (en `@pawie/api-client/zod`).
 - Nadie lo edita a mano: si el backend cambia, se vuelve a generar. Si un cambio rompe el contrato, la app deja de compilar y el error se ve antes de llegar al usuario.
+- El código generado **va en git**, como `openapi.json`, para que un cambio del contrato se vea en el diff y la app lo use sin generar nada antes. Turborepo lo genera antes de `typecheck` y `test`, y el CI falla si quedó distinto.
+- Lo único escrito a mano es `src/fetcher.ts`, por el que pasan todas las llamadas. La app le da una vez la URL de la API y cómo leer el token de acceso, y cada respuesta de error se lanza como `ApiError`, con su `errorCode`, para que TanStack Query la entregue como error.
+- `POST /v1/caregivers/search` se genera como query y no como mutación, porque no cambia nada: así TanStack Query guarda los resultados en caché por el cuerpo de la búsqueda.
+- El webhook de Wompi y la vuelta a la app no van en el documento OpenAPI, porque no los llama la app.
 
 ### 3.5 Infraestructura
 
@@ -120,13 +126,13 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 5. **El dinero se guarda en centavos enteros**, nunca con decimales flotantes. Los porcentajes van en puntos básicos (1500 = 15%).
 6. **Los instantes se guardan en UTC** (`timestamptz`) y se muestran en `America/El_Salvador`. Las fechas de calendario, como un nacimiento o el fin de una receta, van en `date`. Las horas del día, como las del horario semanal, van en minutos desde la medianoche en hora de El Salvador, que no tiene horario de verano.
 7. **Las reservas tienen una máquina de estados explícita**, con una tabla de transiciones permitidas basada en la sección 8.2 de las reglas y un test para cada transición. Cualquier otra transición se rechaza.
-   - La tabla está en `src/bookings/booking-status.ts`. Tiene las transiciones de la demo: el cuidador acepta o rechaza, el dueño paga o cancela antes de pagar (RN-CAN-07), y cada paso puede vencer. También tiene la confirmación de una reserva vencida, para el pago aprobado tarde. Las de después de la demo se suman con su funcionalidad.
+   - La tabla está en `src/bookings/booking-status.ts`. Tiene las transiciones de la demo: el cuidador acepta o rechaza, el dueño paga o cancela antes de pagar (RN-CAN-07), y cada paso puede vencer. También tiene la confirmación de una reserva vencida, para el pago aprobado tarde (RN-PAG-06). Las de después de la demo se suman con su funcionalidad.
    - `BookingStateMachine` aplica cada cambio en una transacción: actualiza `status` y `blocks_calendar` juntos y guarda un `BookingStatusChange` con quién lo hizo (nadie, si fue el sistema).
    - Solo cambia una reserva que sigue en el estado que se leyó, así que de dos cambios simultáneos pasa uno y el otro recibe 409 `BOOKING_STATUS_CHANGED`.
 8. **La base de datos impide las reservas dobles** con una restricción de exclusión de PostgreSQL (`btree_gist`) sobre los **tramos**: dos tramos del mismo cuidador no se pueden cruzar mientras sus reservas bloqueen el horario (RN-CUI-15).
    - Una reserva bloquea el horario desde que se solicita (`REQUESTED`) y deja de bloquearlo cuando se rechaza, vence o se cancela.
    - Lo marca la columna `blocks_calendar` de la reserva, que un `CHECK` ata a su estado. La llave foránea de los tramos copia ese valor a cada tramo, que es donde lo lee la restricción.
-   - Si un pago se aprueba tarde, volver a confirmar la reserva enciende otra vez `blocks_calendar`. Si el horario ya se tomó, la restricción lo rechaza.
+   - Si un pago se aprueba tarde, volver a confirmar la reserva enciende otra vez `blocks_calendar`. Si el horario ya se tomó, la restricción lo rechaza y el pago queda para reembolso (§6).
    - La API revisa la disponibilidad antes de escribir, con la misma lógica que la búsqueda. Si otra reserva toma el horario entre esa revisión y la escritura, la restricción falla con el código 23P01 y la API responde 409 `SLOT_TAKEN`.
    - Prisma no puede expresar esta restricción, ni los `CHECK` ni los índices únicos parciales, así que van en una migración SQL escrita a mano. Una prueba de integración comprueba que `prisma migrate diff` entre la base migrada y el esquema sale vacío, es decir, que Prisma no intentaría borrarlos.
 9. **Cada reserva guarda una copia de los precios y comisiones** del momento en que se creó (RN-PRE-07): los montos y los porcentajes en sus columnas, y en `pricing_snapshot` todo lo que usó el cálculo, como los precios del cuidador antes de ajustarlos al rango. Las funciones puras de `src/pricing/` calculan los montos y redondean cada uno una sola vez (RN-PRE-08). Los parámetros viven en una tabla, y cada cambio registra quién lo hizo, cuándo y qué valor tenía antes. Un registro tipado en el código (`src/settings/settings.registry.ts`) define cada clave con su validador, su valor inicial y la regla que implementa, y los valores siempre se leen validados.
@@ -134,6 +140,7 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
     - Hay una tarea por reserva y estado, en la cola `booking-deadlines`, con el ID `<reserva>-<estado>`. Se agenda al crear la reserva y cuando el cuidador acepta.
     - Agendarla nunca hace fallar la petición: si Redis no responde en 2 segundos, la reserva se crea igual. Una tarea periódica revisa cada 5 minutos si hay reservas con el plazo vencido y las vence; también cubre las tareas que Redis haya perdido.
     - La cola `maintenance` corre cada hora la limpieza: borra los refresh tokens vencidos y los archivos que nunca se terminaron de subir o que nadie usó en un día.
+    - La cola `payments` vuelve a aplicar cada 5 minutos los webhooks de Wompi que no se pudieron aplicar cuando llegaron (§6). Cada uno se reintenta durante un día; después queda con su error para revisarlo.
     - Los workers corren en el mismo proceso de la API. Las tareas terminadas se borran de Redis, y las fallidas se guardan una semana para revisarlas.
     - La API arranca aunque Redis no esté, y `/v1/health` lo reporta.
 11. **Los archivos van en un bucket privado**, las fotos y también los documentos médicos. Se suben y se abren con URLs firmadas de vida corta.
@@ -161,7 +168,7 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 | `settings`      | Parámetros configurables y su historial de cambios                                             | Sección 15 de las reglas     |
 | `pricing`       | Cálculo del precio de una reserva                                                              | RN-PRE                       |
 | `bookings`      | Solicitudes, estados y plazos, y el plan de tramos que también usa la búsqueda                 | RN-RES, RN-CAN-07            |
-| `payments`      | Integración con Wompi y webhooks                                                               | RN-PAG                       |
+| `payments`      | Integración con Wompi, sus webhooks y los reintentos de los que no se pudieron aplicar         | RN-PAG                       |
 | `files`         | Subida y acceso a archivos                                                                     | RN-MAS-02, RN-MAS-08         |
 | `notifications` | Correos y, más adelante, notificaciones push                                                   |                              |
 | `queues`        | Conexión de BullMQ con Redis y su chequeo en `/v1/health`                                      |                              |
@@ -169,17 +176,37 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 
 ## 6. Integración con Wompi
 
-- **Autenticación:** OAuth2 con client credentials. Se pide un token con `POST https://id.wompi.sv/connect/token` (`grant_type=client_credentials`, `audience=wompi_api`, App ID y API Secret). El token dura 1 hora, así que se guarda y se reutiliza.
-- **Cobro:** se usa **Enlace de Pago** (`POST /EnlacePago`) con `identificadorEnlaceComercio` igual al ID de la reserva. La app lo abre con `expo-web-browser`.
+Confirmada contra la [documentación de Wompi El Salvador](https://docs.wompi.sv) el 2026-10-18. El código está en `apps/api/src/payments/`.
+
+- **Autenticación:** OAuth2 con client credentials. Se pide un token con `POST https://id.wompi.sv/connect/token` (`grant_type=client_credentials`, `audience=wompi_api`, App ID y API Secret). El token dura 1 hora, así que se reutiliza hasta un minuto antes de que venza.
+  - La API de Wompi está en `https://api.wompi.sv`. Se llama con el `fetch` de Node, sin SDK.
+  - Las variables `WOMPI_APP_ID`, `WOMPI_API_SECRET` y `PUBLIC_API_URL` van juntas. Sin ellas, los pagos quedan apagados (`PAYMENTS_UNAVAILABLE`) y el resto de la API funciona igual.
+- **Cobro (RN-PAG-08):** `POST /v1/bookings/:id/payments` crea un `Payment`, que es **un intento de pago**, y su **Enlace de Pago** (`POST /EnlacePago`). La app abre la página del enlace con `expo-web-browser`.
+  - `identificadorEnlaceComercio` es el ID del `Payment`, no el de la reserva, para que el webhook diga qué intento se pagó.
+  - El enlace cobra el `totalCents` de la reserva (RN-PRE-07), solo con tarjeta.
+  - Acepta un solo pago exitoso (`limitesDeUso`) y vence en el `paymentDueAt` de la reserva (`vigencia.fechaFin`, en hora de El Salvador).
+  - Mientras hay un pago `PENDING`, pagar otra vez devuelve el mismo enlace. La API bloquea la fila de la reserva mientras lo crea, así que dos toques a la vez reciben el mismo. Si la tarjeta es rechazada, el dueño reintenta en ese enlace.
+  - Si Wompi falla, la transacción se deshace y no queda un pago sin enlace (`PAYMENT_GATEWAY_ERROR`).
   - Los datos de la tarjeta nunca pasan por nuestra app ni por nuestros servidores, lo que reduce las obligaciones de seguridad PCI al mínimo.
   - Por ser un servicio físico, Apple y Google exigen cobrar por fuera de sus tiendas, así que no se llevan comisión.
-- **Vuelta a la app:** el redirect de Wompi apunta a `https://<api>/v1/payments/return`, que redirige a `pawie://payment/result`. Falta confirmar si Wompi acepta directamente un esquema propio de la app.
-- **Confirmación:** una reserva pasa a `CONFIRMADA` **solo por el webhook**, nunca por el redirect. El webhook se procesa así:
-  1. Se verifica la firma: el header `wompi_hash` debe coincidir con un HMAC-SHA256 del cuerpo tal como llegó, calculado con el API Secret. Por eso NestJS se configura con `rawBody: true`.
-  2. Se descarta si el `IdTransaccion` ya se procesó, así un webhook repetido no confirma dos veces.
-  3. Se consulta la transacción con `GET /TransaccionCompra/{id}` para comprobar que está aprobada antes de confirmar.
-- **Pruebas:** las transacciones de prueba traen `esReal = false`.
-- **Limitaciones confirmadas:** la API no tiene endpoint de reembolso (RN-PAG-05), y los cobros con tarjeta guardada piden el CVV cada vez (RN-EME-04).
+- **Vuelta a la app:** el redirect de Wompi (`urlRedirect`) apunta a `https://<api>/v1/payments/return`, que responde 302 a `pawie://payment/result?bookingId=…&paymentId=…` sin cambiar nada. La documentación de Wompi no dice si acepta un esquema propio como `pawie://`, así que Wompi solo ve esa página HTTPS intermedia.
+- **Confirmación:** una reserva pasa a `CONFIRMADA` **solo por el webhook** (`POST /v1/payments/webhook`), nunca por el redirect (RN-PAG-02). El webhook se procesa así:
+  1. **Se verifica la firma:** el header `wompi_hash` debe coincidir con un HMAC-SHA256 del cuerpo tal como llegó, calculado con el API Secret y escrito en hex. Por eso NestJS se crea con `rawBody: true`, en `main.ts` y en las pruebas. Sin una firma válida responde 401 y no guarda nada: un evento falso podría ocupar el `IdTransaccion` de uno real.
+  2. **Se guarda el evento** en `WebhookEvent`, que es único por proveedor e `IdTransaccion`. Un `IdTransaccion` que ya se procesó se descarta, así que un webhook repetido no hace nada.
+  3. **Se consulta la transacción** con `GET /TransaccionCompra/{id}`, y solo cuenta si Wompi la reporta aprobada (`esAprobada`). Su `esReal` se guarda en `Payment.isLive` (RN-PAG-01). El webhook no trae `esReal`, sino `EsProductiva`.
+  4. **El pago y la reserva cambian en una sola transacción:**
+     - Desde `PENDIENTE_DE_PAGO`, la reserva pasa a `CONFIRMADA` y el pago a `APPROVED`.
+     - Desde `EXPIRADA`, también, si el horario sigue libre (RN-PAG-06). Si la restricción de exclusión lo rechaza (`SLOT_TAKEN`), la reserva sigue vencida y el pago pasa a `REFUND_PENDING`.
+     - Si la reserva ya estaba pagada, si el dueño la canceló o si el monto no coincide, el pago pasa a `REFUND_PENDING` (RN-PAG-07). El índice único parcial `payments_one_approved_per_booking_key` asegura que haya un solo `APPROVED` por reserva. Una segunda transacción aprobada en el mismo enlace recibe su propio `Payment`, también en `REFUND_PENDING`.
+     - Los webhooks de un mismo pago se esperan en la fila del pago. Si la reserva cambia mientras tanto (por el plazo, el dueño u otro pago), se vuelve a leer.
+  5. **Wompi recibe 200** en cuanto el evento queda guardado. Si no se pudo aplicar, porque Wompi no respondió la consulta o todavía no reporta la transacción aprobada, el evento guarda el motivo en `error`. La cola `payments` lo vuelve a intentar cada 5 minutos durante un día (§4.10). La documentación de Wompi no dice si reintenta sus webhooks.
+- **Reembolsos (RN-PAG-05):** un pago `REFUND_PENDING` se devuelve desde el panel de Wompi. La API lo registra en los logs como `Approved payment to refund from the Wompi panel`. Marcarlo `REFUNDED` llega con el panel de administración.
+- **Pruebas:** un negocio en desarrollo aprueba todos los pagos, y con CVV `111` los rechaza. Las transacciones de prueba traen `esReal = false`. El CI no llega a Wompi, así que las pruebas de integración reemplazan el cliente por un doble (`test/fake-wompi.ts`) y firman los webhooks con un secreto de prueba.
+- **En local:** el túnel de cloudflared da la URL pública de `PUBLIC_API_URL` (ver `apps/api/README.md`).
+- **Limitaciones confirmadas:**
+  - La API no tiene endpoint de reembolso (RN-PAG-05).
+  - Los cobros con tarjeta guardada piden el CVV cada vez (RN-EME-04).
+  - El header `wompi_hash` lleva guion bajo, y algunos proxies, como nginx, descartan esos headers por defecto. Hay que revisarlo en el hosting de la demo.
 
 ## 7. Entornos y demo
 
@@ -223,14 +250,17 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 | Tarea de cuidado: clínica, de asistencia o prohibida                                                                                                                                  | Care task: clinical, assistance or prohibited                                                                                                                        |
 | Insignia "Estudiante de veterinaria"                                                                                                                                                  | Vet student badge                                                                                                                                                    |
 | Parámetro configurable                                                                                                                                                                | Setting                                                                                                                                                              |
+| Pago (cada intento de pago de una reserva) / Enlace de pago                                                                                                                           | Payment / Payment link                                                                                                                                               |
 | Estados: `SOLICITADA`, `PENDIENTE_DE_PAGO`, `CONFIRMADA`, `EN_CURSO`, `FINALIZADA`, `CERRADA`, `RECHAZADA`, `EXPIRADA`, `CANCELADA_POR_DUENO`, `CANCELADA_POR_CUIDADOR`, `EN_DISPUTA` | `REQUESTED`, `PENDING_PAYMENT`, `CONFIRMED`, `IN_PROGRESS`, `COMPLETED`, `CLOSED`, `REJECTED`, `EXPIRED`, `CANCELLED_BY_OWNER`, `CANCELLED_BY_CAREGIVER`, `DISPUTED` |
 
 ## 9. Pendientes técnicos
 
-| Tema                  | Qué falta                                                                                                                        |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Credenciales de Wompi | Registrar el negocio en el panel de Wompi para obtener el App ID y el API Secret de prueba. Sin ellos no se puede probar el pago |
-| Redirect de Wompi     | Confirmar si acepta `pawie://` o si hace falta la página intermedia (sección 6)                                                  |
-| Hosting de la demo    | Elegir entre Railway y Render                                                                                                    |
-| Animación de 5 s      | Decidir si se usa Reanimated o Lottie, según el diseño                                                                           |
-| Repositorio remoto    | Crear un repositorio privado en GitHub para trabajar con quienes prueban en Mac                                                  |
+| Tema                  | Qué falta                                                                                                                                                                           |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Credenciales de Wompi | Copiar el App ID y el API Secret del negocio en el panel de Wompi (listado de negocios, editar el negocio), con el negocio en desarrollo. Sin ellos no se puede probar el pago real |
+| Redirect de Wompi     | Probar en los emuladores que la página intermedia (sección 6) devuelve a la app. Si Wompi acepta `pawie://` directo, se podría quitar                                               |
+| Webhooks de Wompi     | Preguntarle a Wompi si reintenta un webhook que falla. La API ya los reintenta por su cuenta (sección 6)                                                                            |
+| Reembolsos            | Registrar en Pawie el reembolso hecho desde el panel de Wompi (`REFUNDED`), con el panel de administración                                                                          |
+| Hosting de la demo    | Elegir entre Railway y Render                                                                                                                                                       |
+| Animación de 5 s      | Decidir si se usa Reanimated o Lottie, según el diseño                                                                                                                              |
+| Repositorio remoto    | Crear un repositorio privado en GitHub para trabajar con quienes prueban en Mac                                                                                                     |

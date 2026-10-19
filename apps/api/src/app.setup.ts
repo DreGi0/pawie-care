@@ -1,10 +1,18 @@
-import { VersioningType } from '@nestjs/common';
+import { type NestApplicationOptions, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import type { Environment } from './config/environment.js';
 import { setupSwaggerUi } from './openapi/openapi.js';
+
+/** Options to create the app with, shared by main.ts and the integration tests. */
+export const APP_OPTIONS = {
+  bufferLogs: true,
+  // Keeps the body as it arrived in req.rawBody: Wompi signs those exact bytes
+  // (docs/arquitectura.md §6).
+  rawBody: true,
+} satisfies NestApplicationOptions;
 
 /**
  * HTTP setup shared by main.ts and the integration tests, so tests exercise the

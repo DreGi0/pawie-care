@@ -13,6 +13,7 @@ await runScript(async (app) => {
   const config = app.get<ConfigService<Environment, true>>(ConfigService);
   const summary = await seedDatabase(app.get(PrismaService), app.get(SettingsService), {
     demoOwnerPassword: config.get('DEMO_OWNER_PASSWORD', { infer: true }),
+    demoCaregiverPhone: config.get('DEMO_CAREGIVER_PHONE', { infer: true }),
     // From dist/seed/ to apps/api/seed-media/.
     media: {
       storage: app.get(StorageService),
@@ -27,6 +28,11 @@ await runScript(async (app) => {
     summary.demoOwner
       ? `Dueño de demo: ${summary.demoOwner}, con la contraseña de DEMO_OWNER_PASSWORD.`
       : 'No se creó el dueño de demo porque falta DEMO_OWNER_PASSWORD.',
+  );
+  console.log(
+    summary.caregiverPhone
+      ? `Teléfono de los cuidadores de demo: ${summary.caregiverPhone}.`
+      : 'Los cuidadores de demo no tienen teléfono porque falta DEMO_CAREGIVER_PHONE.',
   );
   console.log(`Fotos subidas desde seed-media/: ${summary.photos}.`);
   console.log(

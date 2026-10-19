@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Bienvenida</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6b3a8a}a:hover{color:#4f2a66}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; background: #fff8f0; color: #3b3346; font-family: Nunito, 'SF Pro Rounded', system-ui, sans-serif; display: flex; flex-direction: column; gap: 24px; padding: 32px 16px 32px">
+
+<span style="font-size: 18px; line-height: 24px; font-weight: 800; text-align: center">Pawie Care</span>
+
+<div style="display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center">
+<div style="width: 176px; height: 176px; border-radius: 999px; background: #e7d6f2; display: flex; align-items: center; justify-content: center">
+<svg width="144" height="144" viewBox="0 0 160 160" role="img" aria-label="Nimbus saluda">
+<ellipse cx="124" cy="54" rx="11" ry="20" transform="rotate(32 124 54)" fill="#ffffff" stroke="#3b3346" stroke-width="3.5"></ellipse>
+<path d="M80 36C112 36 132 60 132 92C132 120 110 136 80 136C50 136 28 120 28 92C28 60 48 36 80 36Z" fill="#ffffff" stroke="#3b3346" stroke-width="3.5" stroke-linejoin="round"></path>
+<ellipse cx="66" cy="86" rx="5" ry="7.5" fill="#3b3346"></ellipse>
+<ellipse cx="94" cy="86" rx="5" ry="7.5" fill="#3b3346"></ellipse>
+<path d="M140 26c5 3 8 8 9 14M146 16c8 5 12 12 13 21" fill="none" stroke="#3b3346" stroke-width="3" stroke-linecap="round"></path>
+</svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-size: 32px; line-height: 38px; font-weight: 800; letter-spacing: -0.01em">Cuidadores de confianza para tu mascota</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px">Visitas y pernoctas en tu casa, en San Salvador y alrededores.</p>
+</div>
+</div>
+
+<ul style="margin: 0; padding: 16px; list-style: none; display: flex; flex-direction: column; gap: 12px; background: #ffffff; border-radius: 20px; box-shadow: 0 6px 20px rgba(59, 51, 70, 0.08)">
+<li style="display: flex; gap: 12px; align-items: flex-start; font-size: 16px; line-height: 24px">
+<span aria-hidden="true" style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 999px; background: #ffe9a8; display: flex; align-items: center; justify-content: center; font-size: 15px">⭐</span>
+<span>Cuidadores ⭐ con curso de cuidado especial, para mascotas mayores o en recuperación.</span></li>
+<li style="display: flex; gap: 12px; align-items: flex-start; font-size: 16px; line-height: 24px">
+<span aria-hidden="true" style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 999px; background: #d6e6cc; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+<span>Pagas solo cuando el cuidador acepta tu visita.</span></li>
+<li style="display: flex; gap: 12px; align-items: flex-start; font-size: 16px; line-height: 24px">
+<span aria-hidden="true" style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 999px; background: #cfe6f7; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span>
+<span>Tu dirección solo la ve quien confirma una visita contigo.</span></li>
+</ul>
+
+<div style="display: flex; flex-direction: column; gap: 12px; margin-top: auto">
+<a href="Registro.dc.html" style="height: 52px; border-radius: 999px; background: #6b3a8a; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 20px; font-weight: 700; text-decoration: none">Crear mi cuenta</a>
+<a href="Login.dc.html" style="height: 52px; box-sizing: border-box; border-radius: 999px; border: 1.5px solid #958879; color: #3b3346; display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 20px; font-weight: 700; text-decoration: none">Ya tengo cuenta</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

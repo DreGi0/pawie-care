@@ -1,4 +1,4 @@
-import { NodeEnv, validateEnvironment } from './environment.js';
+import { NodeEnv, validateEnvironment, wompiSettings } from './environment.js';
 
 const DATABASE_URL = 'postgresql://pawie:pawie@localhost:5432/pawie';
 const JWT_ACCESS_SECRET = 'a-secret-for-the-unit-tests-of-environment';
@@ -87,5 +87,61 @@ describe('validateEnvironment', () => {
     expect(() => validateEnvironment({ ...REQUIRED, DEMO_OWNER_PASSWORD: 'corta' })).toThrow(
       /DEMO_OWNER_PASSWORD/,
     );
+  });
+
+  it('takes a Salvadoran phone for the demo caregivers, or none', () => {
+    expect(
+      validateEnvironment({ ...REQUIRED, DEMO_CAREGIVER_PHONE: '' }).DEMO_CAREGIVER_PHONE,
+    ).toBeUndefined();
+    expect(
+      validateEnvironment({ ...REQUIRED, DEMO_CAREGIVER_PHONE: '+503 2200 0000' })
+        .DEMO_CAREGIVER_PHONE,
+    ).toBe('+503 2200 0000');
+    expect(() => validateEnvironment({ ...REQUIRED, DEMO_CAREGIVER_PHONE: '123' })).toThrow(
+      /DEMO_CAREGIVER_PHONE/,
+    );
+  });
+
+  describe('Wompi', () => {
+    const WOMPI = {
+      WOMPI_APP_ID: 'app-id',
+      WOMPI_API_SECRET: 'api-secret',
+      PUBLIC_API_URL: 'https://pawie.trycloudflare.com/',
+    };
+
+    it('turns payments off when none of its variables is set', () => {
+      expect(wompiSettings(validateEnvironment(REQUIRED))).toBeNull();
+      expect(
+        wompiSettings(
+          validateEnvironment({
+            ...REQUIRED,
+            WOMPI_APP_ID: '',
+            WOMPI_API_SECRET: '',
+            PUBLIC_API_URL: '',
+          }),
+        ),
+      ).toBeNull();
+    });
+
+    it('takes the credentials and the public URL, without its trailing slash', () => {
+      expect(wompiSettings(validateEnvironment({ ...REQUIRED, ...WOMPI }))).toEqual({
+        appId: 'app-id',
+        apiSecret: 'api-secret',
+        publicApiUrl: 'https://pawie.trycloudflare.com',
+      });
+    });
+
+    it('needs all three once one is set', () => {
+      const validate = () => validateEnvironment({ ...REQUIRED, WOMPI_APP_ID: 'app-id' });
+
+      expect(validate).toThrow(/WOMPI_API_SECRET/);
+      expect(validate).toThrow(/PUBLIC_API_URL/);
+    });
+
+    it('rejects a public URL that is not HTTPS, which Wompi could not call safely', () => {
+      expect(() =>
+        validateEnvironment({ ...REQUIRED, ...WOMPI, PUBLIC_API_URL: 'http://localhost:3000' }),
+      ).toThrow(/PUBLIC_API_URL/);
+    });
   });
 });

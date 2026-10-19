@@ -18,6 +18,7 @@ import { type Environment, NodeEnv } from './config/environment.js';
 import { FilesModule } from './files/files.module.js';
 import { HealthModule } from './health/health.module.js';
 import { MaintenanceModule } from './maintenance/maintenance.module.js';
+import { PaymentsModule } from './payments/payments.module.js';
 import { PetsModule } from './pets/pets.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { QueuesModule } from './queues/queues.module.js';
@@ -87,6 +88,7 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
     PetsModule,
     AddressesModule,
     BookingsModule,
+    PaymentsModule,
     MaintenanceModule,
     CaregiversModule,
   ],

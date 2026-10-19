@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Pagar visita</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6b3a8a}a:hover{color:#4f2a66}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; background: #fff8f0; color: #3b3346; font-family: Nunito, 'SF Pro Rounded', system-ui, sans-serif; display: flex; flex-direction: column; gap: 24px; padding: 16px 16px 32px">
+
+<header style="display: flex; align-items: center; gap: 12px">
+<a href="Visitas.dc.html" aria-label="Cerrar. Puedes pagar después desde Mis visitas" style="width: 48px; height: 48px; flex-shrink: 0; border-radius: 999px; background: #ffffff; box-shadow: 0 6px 20px rgba(59, 51, 70, 0.08); display: flex; align-items: center; justify-content: center">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+</a>
+<h1 style="margin: 0; font-size: 24px; line-height: 30px; font-weight: 800">Paga tu visita</h1>
+</header>
+
+<ol aria-label="Pasos de la reserva" style="display: flex; gap: 8px; margin: -8px 0 0; padding: 0; list-style: none">
+<li style="flex: 1; display: flex; flex-direction: column; gap: 6px"><span style="height: 6px; border-radius: 999px; background: #6b3a8a"></span><span style="font-size: 13px; line-height: 18px; font-weight: 600">1. Solicitar</span></li>
+<li style="flex: 1; display: flex; flex-direction: column; gap: 6px"><span style="height: 6px; border-radius: 999px; background: #6b3a8a"></span><span style="font-size: 13px; line-height: 18px; font-weight: 600">2. Ana responde</span></li>
+<li aria-current="step" style="flex: 1; display: flex; flex-direction: column; gap: 6px"><span style="height: 6px; border-radius: 999px; background: #6b3a8a"></span><span style="font-size: 13px; line-height: 18px; font-weight: 800">3. Pagar</span></li>
+</ol>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: #d6e6cc; border-radius: 20px">
+<div aria-hidden="true" style="width: 48px; height: 48px; border-radius: 999px; background: #e7d6f2; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; flex-shrink: 0">AM</div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 16px; line-height: 24px; font-weight: 700">Ana aceptó cuidar a Luna</span><span style="font-size: 13px; line-height: 18px; font-weight: 600">Lun 19 oct · 9:00–10:00</span></div>
+</div>
+
+<div role="status" style="display: flex; gap: 12px; padding: 16px; background: #ffe9a8; border-radius: 20px">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+<p style="margin: 0; font-size: 16px; line-height: 24px">Paga antes de las <strong>17:30</strong>. Si no, el horario se libera para otra familia.</p>
+</div>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 700">Detalle</h2>
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: #ffffff; border-radius: 20px; box-shadow: 0 6px 20px rgba(59, 51, 70, 0.08)">
+<div style="display: flex; justify-content: space-between; font-size: 16px; line-height: 24px"><span>Visita normal · Luna</span><span>$12.00</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 16px; line-height: 24px"><span>Tarifa de servicio (10%)</span><span>$1.20</span></div>
+<div style="display: flex; justify-content: space-between; border-top: 1px solid #eadfd3; padding-top: 12px; font-size: 18px; line-height: 24px; font-weight: 700"><span>Total</span><span>$13.20</span></div>
+</div>
+</section>
+
+<div style="display: flex; gap: 12px; padding: 16px; background: #cfe6f7; border-radius: 20px">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+<p style="margin: 0; font-size: 16px; line-height: 24px">Pagas con tarjeta en Wompi, de Banco Agrícola. Al terminar, te traemos de vuelta aquí.</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 4px; margin-top: auto">
+<a href="Confirmada.dc.html" style="height: 52px; border-radius: 999px; background: #6b3a8a; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 20px; font-weight: 700; text-decoration: none">Pagar $13.20</a>
+<button style="height: 48px; border: none; background: transparent; cursor: pointer; color: #a2363f; font-size: 15px; line-height: 20px; font-weight: 700">Cancelar sin costo</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

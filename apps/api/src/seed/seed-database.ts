@@ -22,6 +22,11 @@ export interface SeedOptions {
   now?: Date;
   /** DEMO_OWNER_PASSWORD. Without it, the demo owner isn't created. */
   demoOwnerPassword?: string;
+  /**
+   * DEMO_CAREGIVER_PHONE: a number of the team that every demo caregiver shows once a
+   * booking is confirmed (RN-CTA-04). Without it, they have no phone.
+   */
+  demoCaregiverPhone?: string;
   /** Photos to upload. Without it, photos stay as they are. */
   media?: SeedMedia;
 }
@@ -33,6 +38,8 @@ export interface SeedSummary {
   caregivers: number;
   /** Email of the demo owner, or null when there was no password for it. */
   demoOwner: string | null;
+  /** The phone the demo caregivers got, or null. */
+  caregiverPhone: string | null;
   /** Photos found in the media directory and uploaded. */
   photos: number;
   /** Settings that didn't exist and got their initial value. */
@@ -57,7 +64,7 @@ interface CatalogIds {
 export async function seedDatabase(
   prisma: PrismaClient,
   settings: SettingsService,
-  { now = new Date(), demoOwnerPassword, media }: SeedOptions = {},
+  { now = new Date(), demoOwnerPassword, demoCaregiverPhone, media }: SeedOptions = {},
 ): Promise<SeedSummary> {
   const catalog = await seedCatalog(prisma);
   const createdSettings = await settings.createMissing({
@@ -69,7 +76,11 @@ export async function seedDatabase(
   const today = dateInElSalvador(now);
   let photos = 0;
   for (const caregiver of DEMO_CAREGIVERS) {
-    const caregiverId = await seedCaregiver(prisma, caregiver, catalog, { today, validityMonths });
+    const caregiverId = await seedCaregiver(prisma, caregiver, catalog, {
+      today,
+      validityMonths,
+      phone: demoCaregiverPhone ?? null,
+    });
     if (media) {
       const photoFileId = await seedPhoto(prisma, media, {
         folder: 'caregivers',
@@ -94,6 +105,7 @@ export async function seedDatabase(
     services: SERVICES.length,
     caregivers: DEMO_CAREGIVERS.length,
     demoOwner: demoOwnerPassword === undefined ? null : DEMO_OWNER.email,
+    caregiverPhone: demoCaregiverPhone ?? null,
     photos,
     createdSettings,
   };
@@ -237,13 +249,14 @@ async function seedCaregiver(
   prisma: PrismaClient,
   caregiver: DemoCaregiver,
   { districtIds, serviceIds, specialCareTypeId }: CatalogIds,
-  { today, validityMonths }: { today: Date; validityMonths: number },
+  { today, validityMonths, phone }: { today: Date; validityMonths: number; phone: string | null },
 ): Promise<string> {
   const account = {
     firstName: caregiver.firstName,
     lastName: caregiver.lastName,
     birthDate: new Date(caregiver.birthDate),
     roles: [Role.CAREGIVER],
+    phone,
   };
   const profile = {
     status: CaregiverStatus.APPROVED,

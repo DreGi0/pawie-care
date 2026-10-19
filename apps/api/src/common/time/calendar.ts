@@ -46,6 +46,15 @@ export function atMinuteInElSalvador(date: Date, minute: number): Date {
   return new Date(date.getTime() - EL_SALVADOR_UTC_OFFSET_MS + minute * 60_000);
 }
 
+/**
+ * The instant in El Salvador's time with its offset, to the second: "2026-10-18T15:30:00-06:00".
+ * Fractions of a second are dropped, never rounded up.
+ */
+export function isoInElSalvador(instant: Date): string {
+  const local = new Date(instant.getTime() + EL_SALVADOR_UTC_OFFSET_MS);
+  return `${local.toISOString().slice(0, 19)}-06:00`;
+}
+
 /** ISO day of the week of a date: 1 is Monday and 7 is Sunday. */
 export function isoWeekday(date: Date): number {
   return ((date.getUTCDay() + 6) % 7) + 1;

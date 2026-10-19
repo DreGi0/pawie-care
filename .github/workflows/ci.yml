@@ -37,3 +37,13 @@ jobs:
             echo "::error file=apps/api/openapi.json::Out of date. Run 'pnpm --filter @pawie/api openapi:generate' and commit the result."
             exit 1
           }
+
+      # Turbo already generated it for the typecheck; this also catches new and deleted files
+      - name: Check that packages/api-client is up to date
+        run: |
+          pnpm --filter @pawie/api-client generate
+          if [ -n "$(git status --porcelain -- packages/api-client)" ]; then
+            git status --short -- packages/api-client
+            echo "::error file=packages/api-client::Out of date. Run 'pnpm --filter @pawie/api-client generate' and commit the result."
+            exit 1
+          fi

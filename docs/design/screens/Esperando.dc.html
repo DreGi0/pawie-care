@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Esperando a Ana</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6b3a8a}a:hover{color:#4f2a66}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #fff8f0; color: #3b3346; font-family: Nunito, 'SF Pro Rounded', system-ui, sans-serif; display: flex; flex-direction: column; gap: 24px; padding: 24px 16px 32px">
+
+<ol aria-label="Pasos de la reserva" style="display: flex; gap: 8px; margin: 0; padding: 0; list-style: none">
+<li style="flex: 1; display: flex; flex-direction: column; gap: 6px"><span style="height: 6px; border-radius: 999px; background: #6b3a8a"></span><span style="font-size: 13px; line-height: 18px; font-weight: 600">1. Solicitar</span></li>
+<li aria-current="step" style="flex: 1; display: flex; flex-direction: column; gap: 6px"><span style="height: 6px; border-radius: 999px; background: #6b3a8a"></span><span style="font-size: 13px; line-height: 18px; font-weight: 800">2. Ana responde</span></li>
+<li style="flex: 1; display: flex; flex-direction: column; gap: 6px"><span style="height: 6px; border-radius: 999px; background: #eadfd3"></span><span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">3. Pagar</span></li>
+</ol>
+
+<div aria-live="polite" style="display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center">
+<div style="width: 192px; height: 192px; border-radius: 999px; background: #cfe6f7; display: flex; align-items: center; justify-content: center">
+<svg width="160" height="160" viewBox="0 0 160 160" role="img" aria-label="Nimbus espera dormido">
+<path d="M80 74C118 74 140 98 140 116C140 128 128 132 80 132C32 132 20 128 20 116C20 98 42 74 80 74Z" fill="#ffffff" stroke="#3b3346" stroke-width="3.5" stroke-linejoin="round"></path>
+<path d="M58 108c3 4 9 4 12 0M90 108c3 4 9 4 12 0" fill="none" stroke="#3b3346" stroke-width="3.5" stroke-linecap="round"></path>
+<path d="M112 40h12l-12 14h12M132 22h8l-8 10h8" fill="none" stroke="#3b3346" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<sc-if value="{{waiting}}" hint-placeholder-val="{{true}}">
+<span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: #cfe6f7; font-size: 13px; line-height: 18px; font-weight: 600">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+Solicitud enviada</span>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-size: 24px; line-height: 30px; font-weight: 800">Le avisamos a Ana</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px">Tiene 1 hora para responder. Te avisamos en cuanto acepte.</p>
+</div>
+</sc-if>
+<sc-if value="{{accepted}}" hint-placeholder-val="{{false}}">
+<span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: #d6e6cc; font-size: 13px; line-height: 18px; font-weight: 600">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+Ana aceptó</span>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-size: 24px; line-height: 30px; font-weight: 800">¡Ana puede cuidar a Luna!</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px">Paga en las próximas 2 horas para confirmar la visita.</p>
+</div>
+</sc-if>
+</div>
+
+<div style="display: flex; flex-direction: column; padding: 4px 16px; background: #ffffff; border-radius: 20px; box-shadow: 0 6px 20px rgba(59, 51, 70, 0.08)">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eadfd3">
+<div aria-hidden="true" style="width: 40px; height: 40px; border-radius: 999px; background: #e7d6f2; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; flex-shrink: 0">AM</div>
+<div style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 16px; line-height: 24px; font-weight: 700">Ana Martínez</span><span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">Visita a domicilio · Luna</span></div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eadfd3; font-size: 16px; line-height: 24px">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="3"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+Lun 19 oct · 9:00–10:00</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; font-size: 16px; line-height: 24px">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"></rect><path d="M2 10h20"></path></svg>
+<span style="flex-grow: 1">Total</span><span><strong>$13.20</strong> <span style="font-size: 13px; font-weight: 600; color: #6b6274">· aún no pagas</span></span></div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 4px; margin-top: auto">
+<sc-if value="{{accepted}}" hint-placeholder-val="{{false}}">
+<a href="Pagar.dc.html" style="height: 52px; margin-bottom: 8px; border-radius: 999px; background: #6b3a8a; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 20px; font-weight: 700; text-decoration: none">Ir a pagar</a>
+</sc-if>
+<sc-if value="{{waiting}}" hint-placeholder-val="{{true}}">
+<p style="margin: 0 0 8px; font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274; text-align: center">Puedes cerrar la app. Te avisamos y la encuentras en Mis visitas.</p>
+<a href="Visitas.dc.html" style="height: 52px; box-sizing: border-box; border-radius: 999px; border: 1.5px solid #958879; color: #3b3346; display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 20px; font-weight: 700; text-decoration: none">Ver mis visitas</a>
+</sc-if>
+<button style="height: 48px; border: none; background: transparent; cursor: pointer; color: #a2363f; font-size: 15px; line-height: 20px; font-weight: 700">Cancelar solicitud</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+componentDidMount() {
+// Demo (RN-CUI-16): Reserva inmediata, la aceptación se simula a los ~5 s
+this.timer = setTimeout(() => this.setState({ accepted: true }), 5000);
+}
+componentWillUnmount() { clearTimeout(this.timer); }
+renderVals() {
+const accepted = !!(this.state && this.state.accepted);
+return { accepted, waiting: !accepted };
+}
+}
+</script>
+</body>
+</html>

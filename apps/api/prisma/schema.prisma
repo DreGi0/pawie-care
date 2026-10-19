@@ -699,12 +699,16 @@ enum PaymentStatus {
   PENDING
   /// Approved by the gateway (webhook, RN-PAG-02) and applied to the booking.
   APPROVED
+  /// Not set yet: Wompi only sends webhooks for successful payments, and after a
+  /// declined card the owner retries on the same link (RN-PAG-08).
   DECLINED
-  /// The link expired without a payment.
+  /// The link expired without a payment. Not set yet: the link expires with the
+  /// booking's payment deadline, and the booking's status already shows it.
   EXPIRED
   /// Approved by the gateway, but it couldn't confirm the booking: it arrived after
-  /// the deadline and the slot was taken, or the booking was already paid. It's
-  /// refunded from the Wompi panel (RN-PAG-05).
+  /// the deadline and the slot was taken (RN-PAG-06), or the booking was already paid
+  /// or cancelled by the owner, or the amount differs (RN-PAG-07). It's refunded from
+  /// the Wompi panel (RN-PAG-05).
   REFUND_PENDING
   /// An admin recorded the refund.
   REFUNDED

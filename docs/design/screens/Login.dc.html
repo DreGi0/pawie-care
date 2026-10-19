@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Iniciar sesión</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6b3a8a}a:hover{color:#4f2a66}
+input{font-family:inherit}
+input::placeholder{color:#6b6274}
+input:focus{outline:3px solid #6b3a8a;outline-offset:1px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; background: #fff8f0; color: #3b3346; font-family: Nunito, 'SF Pro Rounded', system-ui, sans-serif; display: flex; flex-direction: column; gap: 24px; padding: 16px 16px 32px">
+
+<a href="Bienvenida.dc.html" aria-label="Volver" style="width: 48px; height: 48px; border-radius: 999px; background: #ffffff; box-shadow: 0 6px 20px rgba(59, 51, 70, 0.08); display: flex; align-items: center; justify-content: center">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+</a>
+
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-size: 24px; line-height: 30px; font-weight: 800">Qué bueno verte de nuevo</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px; color: #6b6274">Entra con tu correo y contraseña.</p>
+</div>
+
+<sc-if value="{{showError}}" hint-placeholder-val="{{false}}">
+<div role="alert" style="display: flex; gap: 12px; padding: 16px; border-radius: 20px; background: #f8d0d2; color: #a2363f">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a2363f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path></svg>
+<p style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">El correo o la contraseña no coinciden. Revísalos e intenta de nuevo.</p>
+</div>
+</sc-if>
+
+<form style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="correo" style="font-size: 15px; line-height: 20px; font-weight: 700">Correo</label>
+<input id="correo" type="email" autocomplete="email" placeholder="tu@correo.com" style="height: 52px; box-sizing: border-box; width: 100%; padding: 0 16px; background: #ffffff; border: 1.5px solid #958879; border-radius: 12px; font-size: 16px; color: #3b3346">
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="clave" style="font-size: 15px; line-height: 20px; font-weight: 700">Contraseña</label>
+<input id="clave" type="password" autocomplete="current-password" placeholder="Tu contraseña" style="height: 52px; box-sizing: border-box; width: 100%; padding: 0 16px; background: #ffffff; border: 1.5px solid #958879; border-radius: 12px; font-size: 16px; color: #3b3346">
+<a href="#" style="align-self: flex-end; font-size: 15px; line-height: 20px; font-weight: 700; text-decoration: none; padding: 12px 0">¿Olvidaste tu contraseña?</a>
+</div>
+</form>
+
+<div style="display: flex; flex-direction: column; gap: 16px; margin-top: auto">
+<a href="Main.dc.html" style="height: 52px; border-radius: 999px; background: #6b3a8a; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 20px; font-weight: 700; text-decoration: none">Iniciar sesión</a>
+<p style="margin: 0; font-size: 16px; line-height: 24px; text-align: center">¿Eres nuevo en Pawie? <a href="Registro.dc.html" style="font-weight: 700; display: inline-block; padding: 12px 4px">Crea tu cuenta</a></p>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"showError":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return { showError: this.props.showError ?? false };
+}
+}
+</script>
+</body>
+</html>

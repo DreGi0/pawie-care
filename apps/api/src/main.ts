@@ -2,10 +2,10 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module.js';
-import { configureApp } from './app.setup.js';
+import { APP_OPTIONS, configureApp } from './app.setup.js';
 import type { Environment } from './config/environment.js';
 
-const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+const app = await NestFactory.create<NestExpressApplication>(AppModule, APP_OPTIONS);
 configureApp(app);
 app.enableShutdownHooks();
 

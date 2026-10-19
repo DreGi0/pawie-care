@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    // The apps compile it from source: Metro in the mobile app and, later, Next.js.
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "ES2023",
+    // fetch, RequestInit and Headers, which React Native also provides.
+    "lib": ["ES2023", "DOM"],
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": ["src", "orval.config.ts"]
+}

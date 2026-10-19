@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Crear cuenta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6b3a8a}a:hover{color:#4f2a66}
+button,input{font-family:inherit}
+input::placeholder{color:#6b6274}
+input:focus{outline:3px solid #6b3a8a;outline-offset:1px}
+</style>
+</helmet>
+<div style="width: 390px; height: 1080px; box-sizing: border-box; overflow: hidden; background: #fff8f0; color: #3b3346; font-family: Nunito, 'SF Pro Rounded', system-ui, sans-serif; display: flex; flex-direction: column; gap: 24px; padding: 16px 16px 32px">
+
+<a href="Bienvenida.dc.html" aria-label="Volver" style="width: 48px; height: 48px; border-radius: 999px; background: #ffffff; box-shadow: 0 6px 20px rgba(59, 51, 70, 0.08); display: flex; align-items: center; justify-content: center">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+</a>
+
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-size: 24px; line-height: 30px; font-weight: 800">Crea tu cuenta</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px; color: #6b6274">Te toma un minuto. Después registramos a tu mascota.</p>
+</div>
+
+<form style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="nombre" style="font-size: 15px; line-height: 20px; font-weight: 700">Nombre</label>
+<input id="nombre" autocomplete="given-name" value="Sofía" style="height: 52px; box-sizing: border-box; width: 100%; padding: 0 16px; background: #ffffff; border: 1.5px solid #958879; border-radius: 12px; font-size: 16px; color: #3b3346">
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="apellido" style="font-size: 15px; line-height: 20px; font-weight: 700">Apellido</label>
+<input id="apellido" autocomplete="family-name" placeholder="Tu apellido" style="height: 52px; box-sizing: border-box; width: 100%; padding: 0 16px; background: #ffffff; border: 1.5px solid #958879; border-radius: 12px; font-size: 16px; color: #3b3346">
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="correo" style="font-size: 15px; line-height: 20px; font-weight: 700">Correo</label>
+<input id="correo" type="email" autocomplete="email" placeholder="tu@correo.com" style="height: 52px; box-sizing: border-box; width: 100%; padding: 0 16px; background: #ffffff; border: 1.5px solid #958879; border-radius: 12px; font-size: 16px; color: #3b3346">
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="clave" style="font-size: 15px; line-height: 20px; font-weight: 700">Contraseña</label>
+<div style="position: relative">
+<input id="clave" type="{{pwType}}" autocomplete="new-password" aria-describedby="clave-ayuda" placeholder="Crea una contraseña" style="height: 52px; box-sizing: border-box; width: 100%; padding: 0 56px 0 16px; background: #ffffff; border: 1.5px solid #958879; border-radius: 12px; font-size: 16px; color: #3b3346">
+<button type="button" onClick="{{togglePw}}" aria-label="{{pwLabel}}" style="position: absolute; right: 2px; top: 2px; width: 48px; height: 48px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+</button>
+</div>
+<span id="clave-ayuda" style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">Mínimo 8 caracteres.</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="nacimiento" style="font-size: 15px; line-height: 20px; font-weight: 700">Fecha de nacimiento</label>
+<input id="nacimiento" inputmode="numeric" autocomplete="bday" aria-describedby="nac-ayuda" placeholder="DD/MM/AAAA" style="height: 52px; box-sizing: border-box; width: 100%; padding: 0 16px; background: #ffffff; border: 1.5px solid #958879; border-radius: 12px; font-size: 16px; color: #3b3346">
+<span id="nac-ayuda" style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">Para usar Pawie necesitas tener 18 años o más.</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="tel" style="font-size: 15px; line-height: 20px; font-weight: 700">Teléfono <span style="font-weight: 600; color: #6b6274">(opcional)</span></label>
+<div style="height: 52px; box-sizing: border-box; display: flex; align-items: center; background: #ffffff; border: 1.5px solid #958879; border-radius: 12px; overflow: hidden">
+<span style="padding: 0 12px 0 16px; font-size: 16px; font-weight: 700; border-right: 1px solid #eadfd3">+503</span>
+<input id="tel" type="tel" autocomplete="tel-national" placeholder="7000 0000" style="flex-grow: 1; min-width: 0; height: 100%; padding: 0 12px; border: none; background: transparent; font-size: 16px; color: #3b3346">
+</div>
+</div>
+</form>
+
+<div style="display: flex; flex-direction: column; gap: 16px; margin-top: auto">
+<p style="margin: 0; font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274; text-align: center">Al crear tu cuenta aceptas los <a href="#">Términos</a> y el <a href="#">Aviso de privacidad</a>.</p>
+<a href="OnbMascota.dc.html" style="height: 52px; border-radius: 999px; background: #6b3a8a; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 20px; font-weight: 700; text-decoration: none">Crear cuenta</a>
+<p style="margin: 0; font-size: 16px; line-height: 24px; text-align: center">¿Ya tienes cuenta? <a href="Login.dc.html" style="font-weight: 700; display: inline-block; padding: 12px 4px">Inicia sesión</a></p>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+const show = !!(this.state && this.state.show);
+return {
+pwType: show ? 'text' : 'password',
+pwLabel: show ? 'Ocultar contraseña' : 'Mostrar contraseña',
+togglePw: () => this.setState({ show: !show })
+};
+}
+}
+</script>
+</body>
+</html>

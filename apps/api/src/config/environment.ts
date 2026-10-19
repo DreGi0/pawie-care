@@ -4,11 +4,13 @@ import {
   IsIn,
   IsInt,
   IsOptional,
+  IsPhoneNumber,
   IsString,
   IsUrl,
   Max,
   Min,
   MinLength,
+  ValidateIf,
   validateSync,
 } from 'class-validator';
 
@@ -121,6 +123,65 @@ export class Environment {
   @IsString()
   @MinLength(8)
   DEMO_OWNER_PASSWORD?: string;
+
+  /**
+   * A phone of the team that the seed gives every demo caregiver, which the owner sees
+   * once a booking is confirmed (RN-CTA-04). Without it, they have none.
+   */
+  @Transform(({ value }: { value: unknown }) => (value === '' ? undefined : value))
+  @IsOptional()
+  @IsPhoneNumber('SV')
+  DEMO_CAREGIVER_PHONE?: string;
+
+  // Wompi (docs/arquitectura.md §6). The three go together: without them, payments are
+  // off and the rest of the API works as usual.
+
+  /** App ID of the business in panel.wompi.sv: the OAuth client_id. */
+  @Transform(({ value }: { value: unknown }) => (value === '' ? undefined : value))
+  @ValidateIf(paymentsConfigured)
+  @IsString()
+  @MinLength(1)
+  WOMPI_APP_ID?: string;
+
+  /** API Secret of the same business: the OAuth client_secret and the key that signs the webhooks. */
+  @Transform(({ value }: { value: unknown }) => (value === '' ? undefined : value))
+  @ValidateIf(paymentsConfigured)
+  @IsString()
+  @MinLength(1)
+  WOMPI_API_SECRET?: string;
+
+  /** Public HTTPS URL of this API, where Wompi sends the webhook and the owner after paying. */
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.replace(/\/+$/, '') || undefined : value,
+  )
+  @ValidateIf(paymentsConfigured)
+  @IsUrl({ protocols: ['https'], require_tld: false, require_protocol: true })
+  PUBLIC_API_URL?: string;
+}
+
+/** Whether any Wompi variable is set, which makes all of them required. */
+function paymentsConfigured(environment: Environment): boolean {
+  return [environment.WOMPI_APP_ID, environment.WOMPI_API_SECRET, environment.PUBLIC_API_URL].some(
+    (value) => value !== undefined,
+  );
+}
+
+/** What the API needs to take payments with Wompi. */
+export interface WompiSettings {
+  appId: string;
+  apiSecret: string;
+  /** Without a trailing slash. */
+  publicApiUrl: string;
+}
+
+/** The Wompi settings, or null when payments are off. */
+export function wompiSettings(
+  environment: Pick<Environment, 'WOMPI_APP_ID' | 'WOMPI_API_SECRET' | 'PUBLIC_API_URL'>,
+): WompiSettings | null {
+  const { WOMPI_APP_ID, WOMPI_API_SECRET, PUBLIC_API_URL } = environment;
+  return WOMPI_APP_ID && WOMPI_API_SECRET && PUBLIC_API_URL
+    ? { appId: WOMPI_APP_ID, apiSecret: WOMPI_API_SECRET, publicApiUrl: PUBLIC_API_URL }
+    : null;
 }
 
 export function validateEnvironment(raw: Record<string, unknown>): Environment {

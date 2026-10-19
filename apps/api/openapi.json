@@ -1731,6 +1731,83 @@
           "caregivers"
         ]
       }
+    },
+    "/v1/bookings/{bookingId}/payments": {
+      "post": {
+        "description": "RN-PAG-02: crea el enlace de pago de Wompi por el total de la reserva, que la app abre con expo-web-browser. Solo el dueño, mientras la reserva está PENDING_PAYMENT y antes de `paymentDueAt` (RN-RES-07). Si ya hay un enlace pendiente, devuelve el mismo: acepta un solo pago y vence con el plazo. La reserva se confirma cuando llega el aviso de Wompi, no cuando el dueño vuelve a la app.",
+        "operationId": "Payments_start",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingPayment"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`BOOKING_NOT_FOUND`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`BOOKING_NOT_PAYABLE`: la reserva no espera un pago (todavía está solicitada, o ya está pagada, vencida o cancelada) o venció el plazo. `details.status` trae su estado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "`PAYMENT_GATEWAY_ERROR`: Wompi no respondió o rechazó el enlace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`PAYMENTS_UNAVAILABLE`: la API no tiene configurado Wompi.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pagar una reserva",
+        "tags": [
+          "payments"
+        ]
+      }
     }
   },
   "info": {
@@ -3241,6 +3318,63 @@
           "totalCents"
         ]
       },
+      "PaymentStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "APPROVED",
+          "DECLINED",
+          "EXPIRED",
+          "REFUND_PENDING",
+          "REFUNDED"
+        ],
+        "description": "`PENDING`: el enlace espera el pago, o el aviso de Wompi de que se pagó. `APPROVED`: pagado; la reserva quedó confirmada. `REFUND_PENDING`: Wompi cobró, pero la reserva no se pudo confirmar (venció y el horario ya se tomó, ya estaba pagada o el dueño la canceló), así que se devuelve desde el panel de Wompi (RN-PAG-05). `REFUNDED`: ya se devolvió."
+      },
+      "BookingPayment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "description": "`PENDING`: el enlace espera el pago, o el aviso de Wompi de que se pagó. `APPROVED`: pagado; la reserva quedó confirmada. `REFUND_PENDING`: Wompi cobró, pero la reserva no se pudo confirmar (venció y el horario ya se tomó, ya estaba pagada o el dueño la canceló), así que se devuelve desde el panel de Wompi (RN-PAG-05). `REFUNDED`: ya se devolvió.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PaymentStatus"
+              }
+            ]
+          },
+          "amountCents": {
+            "type": "integer",
+            "example": 1870,
+            "description": "Lo que se cobra, en centavos: el total de la reserva (RN-PRE-07)."
+          },
+          "checkoutUrl": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://lk.wompi.sv/abcd",
+            "description": "Mientras está `PENDING`: la página de pago de Wompi, que la app abre con expo-web-browser."
+          },
+          "approvedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "amountCents",
+          "checkoutUrl",
+          "approvedAt",
+          "createdAt"
+        ]
+      },
       "BookingResponse": {
         "type": "object",
         "properties": {
@@ -3322,6 +3456,16 @@
           "price": {
             "$ref": "#/components/schemas/BookingPrice"
           },
+          "payment": {
+            "nullable": true,
+            "description": "El pago que la confirmó o, si no, el último intento. Mientras la reserva está PENDING_PAYMENT y el pago está PENDING, la app espera el aviso de Wompi (RN-PAG-02).",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BookingPayment"
+              }
+            ]
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -3343,6 +3487,7 @@
           "instructions",
           "emergency",
           "price",
+          "payment",
           "createdAt"
         ]
       },

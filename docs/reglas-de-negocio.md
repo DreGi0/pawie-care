@@ -1,6 +1,6 @@
 # Pawie Care: reglas de negocio
 
-**Versión:** 0.3 · **Fecha:** 2026-10-18 · **Estado:** borrador aprobado para empezar el backend
+**Versión:** 0.4 · **Fecha:** 2026-10-18 · **Estado:** borrador aprobado para empezar el backend
 
 ## Cómo leer este documento
 
@@ -180,7 +180,7 @@ Una reserva es con un cuidador y un servicio, para una o varias mascotas. Tiene 
 | ------------------------------------------------ | ------------------------------------------------------------------------------------- |
 | `SOLICITADA`                                     | El dueño envía la solicitud a un cuidador sin Reserva inmediata                       |
 | `PENDIENTE_DE_PAGO`                              | El cuidador acepta, o el dueño solicita a un cuidador con Reserva inmediata           |
-| `CONFIRMADA`                                     | La pasarela aprueba el pago (aviso por webhook)                                       |
+| `CONFIRMADA`                                     | La pasarela aprueba el pago (aviso por webhook), también uno tarde (RN-PAG-06)        |
 | `EN_CURSO`                                       | El cuidador hace check-in `Fase 2`                                                    |
 | `FINALIZADA`                                     | El cuidador hace check-out y envía su reporte `Fase 2`                                |
 | `CERRADA`                                        | Pasan [48 h] desde el check-out sin disputa y se libera el pago al cuidador `Fase 2`  |
@@ -196,13 +196,16 @@ Una reserva es con un cuidador y un servicio, para una o varias mascotas. Tiene 
 
 ## 9. Pagos
 
-**En la demo:** cobro con Wompi en modo de prueba. El pago al cuidador se simula.
+**En la demo:** cobro con Wompi en modo de prueba (RN-PAG-01, RN-PAG-02 y RN-PAG-05 a RN-PAG-08). El pago al cuidador se simula.
 
 - **RN-PAG-01** La pasarela es **Wompi** (Banco Agrícola), con una comisión de [3.5%] por transacción. Stripe no acepta empresas de El Salvador. En la demo se usan transacciones de prueba (`esReal = false`).
 - **RN-PAG-02** El dueño paga el **total** para confirmar la reserva. Un pago cuenta como aprobado solo cuando llega el webhook de Wompi, no cuando el usuario vuelve a la app.
 - **RN-PAG-03** Pawie retiene el dinero y le paga al cuidador **[48 h]** después del check-out si nadie abrió una disputa. En la demo este pago es simulado. `Fase 2`
 - **RN-PAG-04** En estadías largas, el pago al cuidador se libera por semanas completadas. `Fase 2`
-- **RN-PAG-05** Los reembolsos se hacen por el mismo medio de pago. La API de Wompi no tiene un endpoint de reembolso, así que se hacen desde el panel de Wompi y el administrador los registra en Pawie.
+- **RN-PAG-05** Los reembolsos se hacen por el mismo medio de pago. La API de Wompi no tiene un endpoint de reembolso, así que se hacen desde el panel de Wompi y el administrador los registra en Pawie. Mientras tanto, el pago queda **por reembolsar**.
+- **RN-PAG-06** Si el pago se aprueba cuando la reserva ya venció, la reserva **se confirma si el horario sigue libre**. Si otra reserva tomó ese horario, la reserva sigue vencida y el pago se reembolsa (RN-PAG-05).
+- **RN-PAG-07** Una reserva se paga una sola vez. Un **segundo pago aprobado** de la misma reserva se reembolsa, y también el pago de una reserva que el dueño **ya canceló** (RN-CAN-07): se respeta que decidió cancelar.
+- **RN-PAG-08** El dueño paga en un **enlace de pago** de Wompi que acepta un solo pago y vence con el plazo de pago (RN-RES-07). Si vuelve a pagar mientras el enlace está pendiente, se usa el mismo; si su tarjeta es rechazada, puede reintentar ahí mismo.
 
 ## 10. Cancelaciones
 
@@ -217,7 +220,7 @@ Una reserva es con un cuidador y un servicio, para una o varias mascotas. Tiene 
 - **RN-CAN-04** Si el servicio ya empezó, no se devuelve nada por el tiempo restante, salvo que haya una disputa.
 - **RN-CAN-05** Si cancela el cuidador, no paga dinero, pero queda en su historial. Con **[3] cancelaciones en [90] días** se suspende por **[15 días]**. Si cancela un cuidado Especial con menos de 48 h de anticipación, se le suspende la ⭐ por **[30 días]**.
 - **RN-CAN-06** Cuando cancela el cuidador, Pawie busca un reemplazo con prioridad. Si no lo consigue, devuelve el 100% al dueño y le da un crédito del **[10%]** del valor de la reserva para la próxima.
-- **RN-CAN-07** Mientras la reserva está `SOLICITADA` o `PENDIENTE_DE_PAGO`, el dueño puede cancelarla sin costo, porque todavía no pagó nada. Pasa a `CANCELADA_POR_DUENO` y libera el horario del cuidador.
+- **RN-CAN-07** Mientras la reserva está `SOLICITADA` o `PENDIENTE_DE_PAGO`, el dueño puede cancelarla sin costo, porque todavía no pagó nada. Pasa a `CANCELADA_POR_DUENO` y libera el horario del cuidador. Si después llega un pago aprobado de esa reserva, se reembolsa (RN-PAG-07).
 
 ## 11. Ejecución del servicio `Fase 2`
 
@@ -318,16 +321,16 @@ Se guardan en la base de datos, no en el código. En la demo se cambian con un s
 
 ## 18. Pendientes por validar
 
-| Tema                            | Qué validar                                                                                                                                                                                                        | Con quién                   |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
-| Precios                         | Que los rangos de RN-PRE-01 funcionen                                                                                                                                                                              | Unos 10 dueños y 3 clínicas |
-| Laboral                         | Que los cuidadores no se consideren empleados                                                                                                                                                                      | Abogado                     |
-| Ejercicio profesional           | Qué puede hacer legalmente un estudiante sin licencia                                                                                                                                                              | Abogado y veterinario       |
-| Fondos de terceros              | Si Pawie puede retener el dinero de los cuidadores                                                                                                                                                                 | Abogado                     |
-| Impuestos                       | Cómo se aplica el IVA y cómo se factura a cuidadores informales                                                                                                                                                    | Contador                    |
-| Datos personales                | Cómo guardar antecedentes penales, DUI y direcciones                                                                                                                                                               | Abogado                     |
-| Verificación                    | Qué documentos de antecedentes se exigirán (RN-CUI-01)                                                                                                                                                             | Abogado                     |
-| Wompi                           | Qué piden para entregar credenciales de prueba (sin ellas no hay demo) y cómo pagar a los cuidadores. Ya confirmado en su documentación: no hay reembolsos por API y la tarjeta guardada pide el CVV en cada cobro | Wompi                       |
-| Garantía                        | Tope por evento (RN-FID-01)                                                                                                                                                                                        | Equipo y una aseguradora    |
-| Emergencias                     | Cómo cubrir el riesgo de que el dueño no pague un gasto que Pawie adelantó (RN-EME-04)                                                                                                                             | Equipo                      |
-| Seguro de responsabilidad civil | Costo de cubrir mordeduras y daños                                                                                                                                                                                 | Aseguradora                 |
+| Tema                            | Qué validar                                                                                                                                                                                           | Con quién                   |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| Precios                         | Que los rangos de RN-PRE-01 funcionen                                                                                                                                                                 | Unos 10 dueños y 3 clínicas |
+| Laboral                         | Que los cuidadores no se consideren empleados                                                                                                                                                         | Abogado                     |
+| Ejercicio profesional           | Qué puede hacer legalmente un estudiante sin licencia                                                                                                                                                 | Abogado y veterinario       |
+| Fondos de terceros              | Si Pawie puede retener el dinero de los cuidadores                                                                                                                                                    | Abogado                     |
+| Impuestos                       | Cómo se aplica el IVA y cómo se factura a cuidadores informales                                                                                                                                       | Contador                    |
+| Datos personales                | Cómo guardar antecedentes penales, DUI y direcciones                                                                                                                                                  | Abogado                     |
+| Verificación                    | Qué documentos de antecedentes se exigirán (RN-CUI-01)                                                                                                                                                | Abogado                     |
+| Wompi                           | Cómo pagar a los cuidadores. Ya confirmado en su documentación: no hay reembolsos por API, la tarjeta guardada pide el CVV en cada cobro y un negocio en desarrollo aprueba todos los pagos de prueba | Wompi                       |
+| Garantía                        | Tope por evento (RN-FID-01)                                                                                                                                                                           | Equipo y una aseguradora    |
+| Emergencias                     | Cómo cubrir el riesgo de que el dueño no pague un gasto que Pawie adelantó (RN-EME-04)                                                                                                                | Equipo                      |
+| Seguro de responsabilidad civil | Costo de cubrir mordeduras y daños                                                                                                                                                                    | Aseguradora                 |
