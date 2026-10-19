@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Solicitar visita</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6b3a8a}a:hover{color:#4f2a66}
+button,textarea,input{font-family:inherit}
+textarea::placeholder,input::placeholder{color:#6b6274}
+textarea:focus,input:focus{outline:3px solid #6b3a8a;outline-offset:1px}
+</style>
+</helmet>
+<div style="width: 390px; height: {{h}}px; box-sizing: border-box; position: relative; overflow: hidden; background: #fff8f0; color: #3b3346; font-family: Nunito, 'SF Pro Rounded', system-ui, sans-serif; display: flex; flex-direction: column; gap: 24px; padding: 16px 16px 120px">
+
+<header style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; gap: 12px">
+<a href="Perfil.dc.html" aria-label="Volver al perfil de Ana" style="width: 48px; height: 48px; flex-shrink: 0; border-radius: 999px; background: #ffffff; box-shadow: 0 6px 20px rgba(59, 51, 70, 0.08); display: flex; align-items: center; justify-content: center">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+</a>
+<h1 style="margin: 0; font-size: 24px; line-height: 30px; font-weight: 800">Solicitar visita</h1>
+</div>
+<ol aria-label="Pasos de la reserva" style="display: flex; gap: 8px; margin: 0; padding: 0; list-style: none">
+<li aria-current="step" style="flex: 1; display: flex; flex-direction: column; gap: 6px"><span style="height: 6px; border-radius: 999px; background: #6b3a8a"></span><span style="font-size: 13px; line-height: 18px; font-weight: 800">1. Solicitar</span></li>
+<li style="flex: 1; display: flex; flex-direction: column; gap: 6px"><span style="height: 6px; border-radius: 999px; background: #eadfd3"></span><span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">2. Ana responde</span></li>
+<li style="flex: 1; display: flex; flex-direction: column; gap: 6px"><span style="height: 6px; border-radius: 999px; background: #eadfd3"></span><span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">3. Pagar</span></li>
+</ol>
+</header>
+
+<section aria-label="Tu visita" style="display: flex; flex-direction: column; padding: 4px 16px; background: #ffffff; border-radius: 20px; box-shadow: 0 6px 20px rgba(59, 51, 70, 0.08)">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eadfd3">
+<div aria-hidden="true" style="width: 48px; height: 48px; border-radius: 999px; background: #e7d6f2; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; flex-shrink: 0">AM</div>
+<div style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 16px; line-height: 24px; font-weight: 700">Ana Martínez</span><span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">⭐ Certificada · Visita a domicilio</span></div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #eadfd3">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><circle cx="11" cy="4" r="2"></circle><circle cx="18" cy="8" r="2"></circle><circle cx="20" cy="16" r="2"></circle><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"></path></svg>
+<div style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">Para</span><span style="font-size: 16px; line-height: 24px; font-weight: 700">Luna</span></div>
+<a href="Main.dc.html" aria-label="Cambiar mascota" style="font-size: 15px; line-height: 20px; font-weight: 700; text-decoration: none; padding: 14px 0">Cambiar</a>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #eadfd3">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><rect x="3" y="4" width="18" height="18" rx="3"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+<div style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">Cuándo</span><span style="font-size: 16px; line-height: 24px; font-weight: 700">Lun 19 oct, 9:00–10:00</span></div>
+<a href="Main.dc.html" aria-label="Cambiar fecha y hora" style="font-size: 15px; line-height: 20px; font-weight: 700; text-decoration: none; padding: 14px 0">Cambiar</a>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 8px 0">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V20h14V9.5"></path></svg>
+<div style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">Dónde</span><span style="font-size: 16px; line-height: 24px; font-weight: 700">Casa · Col. Escalón</span></div>
+<a href="#" aria-label="Cambiar dirección" style="font-size: 15px; line-height: 20px; font-weight: 700; text-decoration: none; padding: 14px 0">Cambiar</a>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 8px">
+<label for="notas" style="font-size: 18px; line-height: 24px; font-weight: 700">Instrucciones para Ana <span style="font-size: 13px; font-weight: 600; color: #6b6274">(opcional)</span></label>
+<textarea id="notas" rows="3" placeholder="Ej.: Luna come a las 9:00 y le dan miedo los cohetes." style="box-sizing: border-box; width: 100%; min-height: 96px; resize: none; padding: 12px 16px; background: #ffffff; border: 1.5px solid #958879; border-radius: 12px; font-size: 16px; line-height: 24px; color: #3b3346"></textarea>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px">
+<div style="display: flex; flex-direction: column">
+<h2 style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 700">Si hay una emergencia</h2>
+<span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">{{emergencyHint}}</span>
+</div>
+<sc-if value="{{collapsed}}" hint-placeholder-val="{{true}}">
+<button onClick="{{expand}}" style="border: none; background: transparent; cursor: pointer; padding: 14px 0; color: #6b3a8a; font-size: 15px; line-height: 20px; font-weight: 700">Editar</button>
+</sc-if>
+</div>
+
+<sc-if value="{{collapsed}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; background: #ffffff; border-radius: 20px; box-shadow: 0 6px 20px rgba(59, 51, 70, 0.08); font-size: 16px; line-height: 24px">
+<span><strong>Mario López</strong> · 7123 4567</span>
+<span style="color: #6b6274; font-size: 13px; line-height: 18px; font-weight: 600">Veterinario: Clínica Patitas · Autorizas hasta $100</span>
+</div>
+</sc-if>
+
+<sc-if value="{{expanded}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 16px; padding: 16px; background: #ffffff; border-radius: 20px; box-shadow: 0 6px 20px rgba(59, 51, 70, 0.08)">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="contacto" style="font-size: 15px; line-height: 20px; font-weight: 700">Contacto de emergencia</label>
+<input id="contacto" placeholder="Nombre de alguien de confianza" style="height: 52px; box-sizing: border-box; width: 100%; padding: 0 16px; background: #ffffff; border: 1.5px solid #958879; border-radius: 12px; font-size: 16px; color: #3b3346">
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="contacto-tel" style="font-size: 15px; line-height: 20px; font-weight: 700">Su teléfono</label>
+<input id="contacto-tel" type="tel" placeholder="7000 0000" style="height: 52px; box-sizing: border-box; width: 100%; padding: 0 16px; background: #ffffff; border: 1.5px solid #958879; border-radius: 12px; font-size: 16px; color: #3b3346">
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="vet" style="font-size: 15px; line-height: 20px; font-weight: 700">Veterinario <span style="font-weight: 600; color: #6b6274">(opcional)</span></label>
+<input id="vet" placeholder="Clínica y teléfono" style="height: 52px; box-sizing: border-box; width: 100%; padding: 0 16px; background: #ffffff; border: 1.5px solid #958879; border-radius: 12px; font-size: 16px; color: #3b3346">
+</div>
+<fieldset style="margin: 0; padding: 0; border: none; display: flex; flex-direction: column; gap: 8px">
+<legend style="padding: 0 0 8px; font-size: 15px; line-height: 20px; font-weight: 700">Monto que autorizas para una clínica</legend>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{amounts}}" as="a" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{a.pressed}}" onClick="{{a.pick}}" style="height: 48px; border: none; border-radius: 999px; cursor: pointer; font-size: 15px; line-height: 20px; font-weight: 700; color: #3b3346; background: {{a.bg}}; box-shadow: {{a.ring}}">{{a.label}}</button>
+</sc-for>
+</div>
+<span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">No te cobramos nada ahora. Lo guardamos para tus próximas visitas.</span>
+</fieldset>
+</div>
+</sc-if>
+
+<label style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 12px; background: {{consentBg}}; font-size: 16px; line-height: 24px; cursor: pointer">
+<input type="checkbox" checked="{{consent}}" onChange="{{toggleConsent}}" style="width: 24px; height: 24px; margin: 0; flex-shrink: 0; accent-color: #6b3a8a">
+<span>Autorizo que lleven a Luna a una clínica si hay una emergencia.</span>
+</label>
+<sc-if value="{{noConsent}}" hint-placeholder-val="{{false}}">
+<p style="margin: -4px 0 0; display: flex; gap: 8px; align-items: center; font-size: 13px; line-height: 18px; font-weight: 600; color: #a2363f">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a2363f" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path></svg>
+Marca esta casilla para enviar la solicitud.</p>
+</sc-if>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; background: #ffffff; border-radius: 20px; box-shadow: 0 6px 20px rgba(59, 51, 70, 0.08)">
+<div style="display: flex; justify-content: space-between; font-size: 16px; line-height: 24px"><span>Visita normal</span><span>$12.00</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 16px; line-height: 24px"><span>Tarifa de servicio (10%)</span><span>$1.20</span></div>
+<div style="display: flex; justify-content: space-between; border-top: 1px solid #eadfd3; padding-top: 12px; margin-top: 4px; font-size: 18px; line-height: 24px; font-weight: 700"><span>Total</span><span>$13.20</span></div>
+</div>
+<div style="display: flex; gap: 12px; padding: 16px; background: #cfe6f7; border-radius: 20px">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>
+<p style="margin: 0; font-size: 16px; line-height: 24px">Todavía no pagas. Cuando Ana acepte, tendrás 2 horas para pagar.</p>
+</div>
+</section>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 16px 16px 28px; background: #ffffff; border-radius: 20px 20px 0 0; box-shadow: 0 -6px 20px rgba(59, 51, 70, 0.08); display: flex; align-items: center; gap: 16px">
+<div style="display: flex; flex-direction: column; flex-shrink: 0">
+<span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">Total</span>
+<span style="font-size: 18px; line-height: 24px; font-weight: 700">$13.20</span>
+</div>
+<sc-if value="{{consent}}" hint-placeholder-val="{{true}}">
+<a href="Esperando.dc.html" style="flex-grow: 1; height: 52px; border-radius: 999px; background: #6b3a8a; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 20px; font-weight: 700; text-decoration: none">Enviar solicitud</a>
+</sc-if>
+<sc-if value="{{noConsent}}" hint-placeholder-val="{{false}}">
+<button disabled="{{true}}" style="flex-grow: 1; height: 52px; border: none; border-radius: 999px; background: #eadfd3; color: #6b6274; font-size: 15px; line-height: 20px; font-weight: 700">Enviar solicitud</button>
+</sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"primeraReserva":{"editor":"boolean","default":false},"$preview":{"width":390,"height":1300}}'>
+class Component extends DCLogic {
+renderVals() {
+const s = this.state || {};
+const first = this.props.primeraReserva ?? false;
+const expanded = first || !!s.expanded;
+const consent = s.consent !== undefined ? s.consent : !first;
+const amount = s.amount || 100;
+const amounts = [50, 100, 200].map((v) => ({
+label: '$' + v,
+pressed: v === amount ? 'true' : 'false',
+bg: v === amount ? '#e7d6f2' : '#ffffff',
+ring: v === amount ? 'inset 0 0 0 2px #6b3a8a' : '0 6px 20px rgba(59, 51, 70, 0.08)',
+pick: () => this.setState({ amount: v })
+}));
+return {
+h: expanded ? 1640 : 1300,
+expanded, collapsed: !expanded, amounts, consent, noConsent: !consent,
+emergencyHint: expanded ? 'Solo se usan si Luna necesita atención urgente.' : 'Los mismos de tu última visita.',
+consentBg: consent ? '#ffffff' : '#f8d0d2',
+expand: () => this.setState({ expanded: true }),
+toggleConsent: () => this.setState({ consent: !consent })
+};
+}
+}
+</script>
+</body>
+</html>

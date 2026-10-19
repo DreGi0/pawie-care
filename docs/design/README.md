@@ -1,0 +1,61 @@
+# Diseño de la app móvil
+
+Mockups de alta fidelidad de la app del dueño (iPhone, 390 × 844) y tokens del design system **Pawie Care**. Son la referencia visual y de textos para `apps/mobile`.
+
+> **Los mockups son referencia, no código para copiar.** Están en HTML. La app se construye con Expo + React Native y Expo Router. Si un mockup contradice [las reglas de negocio](../reglas-de-negocio.md) o el contrato [`apps/api/openapi.json`](../../apps/api/openapi.json), mandan las reglas y el contrato.
+
+## Contenido
+
+| Archivo             | Qué es                                                                       |
+| ------------------- | ---------------------------------------------------------------------------- |
+| `tokens.json`       | Colores, tipografía (Nunito), espaciado, radios y sombra                     |
+| `screens/*.dc.html` | Una pantalla por archivo. El estilo está inline y los textos son los finales |
+
+## Pantallas y flujo
+
+```mermaid
+flowchart LR
+  B[Bienvenida] --> R[Registro] --> M[OnbMascota] --> D[OnbDireccion] --> I[Main · Buscar]
+  B --> L[Login] --> I
+  I --> P[Perfil] --> S[Reservar] --> E[Esperando] --> G[Pagar] --> C[Confirmada]
+  I --> V[Visitas]
+  V --> G
+  C --> V
+```
+
+| Archivo                | Pantalla                                          | Endpoints principales                                |
+| ---------------------- | ------------------------------------------------- | ---------------------------------------------------- |
+| `Bienvenida.dc.html`   | Bienvenida con Nimbus "hola"                      | (ninguno)                                            |
+| `Registro.dc.html`     | Crear cuenta                                      | `POST /v1/auth/register`                             |
+| `Login.dc.html`        | Iniciar sesión, con estado de error               | `POST /v1/auth/login`                                |
+| `OnbMascota.dc.html`   | Onboarding 1/2: registrar la mascota              | `GET /v1/catalog`, `POST /v1/pets`, `POST /v1/files` |
+| `OnbDireccion.dc.html` | Onboarding 2/2: dirección                         | `POST /v1/addresses`                                 |
+| `Main.dc.html`         | Pestaña Buscar: buscador y resultados             | `POST /v1/caregivers/search`                         |
+| `Perfil.dc.html`       | Perfil del cuidador con galería de 3 fotos        | `GET /v1/caregivers/{id}`                            |
+| `Reservar.dc.html`     | Paso 1: revisar y enviar la solicitud             | `POST /v1/bookings`                                  |
+| `Esperando.dc.html`    | Paso 2: el cuidador responde (`REQUESTED`)        | `GET /v1/bookings/{id}`                              |
+| `Pagar.dc.html`        | Paso 3: pagar (`PENDING_PAYMENT`)                 | `POST /v1/bookings/{id}/payments`                    |
+| `Confirmada.dc.html`   | Visita confirmada (`CONFIRMED`) con Nimbus "hola" | `GET /v1/bookings/{id}`                              |
+| `Visitas.dc.html`      | Pestaña Mis visitas, con estado vacío             | `GET /v1/bookings`                                   |
+
+## Reglas del design system
+
+- Cada pantalla tiene **un solo botón primario** (`grape-deep`).
+- No se usa naranja. `butter` es solo para la ⭐ y para avisos reales.
+- Los pasteles (`grape`, `sage`, `sky`) son superficies y siempre llevan texto `ink`.
+- El texto más pequeño es `caption` (13 px). Las áreas táctiles miden al menos 48 px.
+- Nimbus aparece como máximo una vez por pantalla, nunca en listas ni formularios.
+
+## Cómo leer los `.dc.html`
+
+- El bloque `<script type="text/x-dc">` es la lógica del prototipo. Muestra los estados interactivos: selección de mascotas, cálculo del precio, aceptación simulada a los 5 s.
+- `{{valor}}` es un dato que llega de ese script. En la app, ese dato viene de la API o del estado.
+- `<sc-if>` y `<sc-for>` son condicionales y listas.
+- Los props de `data-props` (`showError`, `primeraReserva`, `sinVisitas`) activan estados alternos: error de login, primera reserva y lista vacía.
+
+## Pendientes conocidos
+
+- **Galería de 3 fotos:** el backend solo tiene `photoUrl`. Falta agregar `photos: [{ fileId, caption }]` (máximo 3) a `CaregiverProfile`.
+- **Recuperar contraseña:** el enlace aparece en el login, pero el endpoint no existe.
+- **Nimbus:** está dibujado en SVG inline. Hay que reemplazarlo por los assets finales (`nimbus-hola.svg`, `nimbus-durmiendo.svg`).
+- **Fotos de cuidadores:** son marcadores `[Foto N]`.

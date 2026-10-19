@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Inicio</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6b3a8a}a:hover{color:#4f2a66}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #fff8f0; color: #3b3346; font-family: Nunito, 'SF Pro Rounded', system-ui, sans-serif; display: flex; flex-direction: column; gap: 16px; padding: 24px 16px 0">
+
+<header style="display: flex; flex-direction: column">
+<h1 style="margin: 0; font-size: 24px; line-height: 30px; font-weight: 800">Hola, Sofía</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px; color: #6b6274">¿A quién cuidamos esta vez?</p>
+</header>
+
+<section aria-label="Buscar cuidadores" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: #ffffff; border-radius: 20px; box-shadow: 0 6px 20px rgba(59, 51, 70, 0.08)">
+<div role="group" aria-label="Mascotas" style="display: flex; gap: 8px; align-items: center">
+<sc-for list="{{pets}}" as="p" hint-placeholder-count="2">
+<button aria-pressed="{{p.pressed}}" onClick="{{p.toggle}}" style="height: 48px; padding: 0; border: none; background: transparent; cursor: pointer; display: flex; align-items: center">
+<span style="height: 40px; padding: 0 16px 0 6px; border-radius: 999px; display: flex; align-items: center; gap: 8px; font-size: 15px; line-height: 20px; font-weight: 700; color: #3b3346; background: {{p.bg}}; box-shadow: {{p.ring}}">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 999px; background: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800">{{p.initial}}</span>{{p.name}}</span>
+</button>
+</sc-for>
+<a href="OnbMascota.dc.html" aria-label="Agregar mascota" style="width: 48px; height: 48px; border-radius: 999px; display: flex; align-items: center; justify-content: center">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b3a8a" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+</a>
+</div>
+<sc-if value="{{special}}" hint-placeholder-val="{{false}}">
+<p style="margin: -4px 0 0; padding: 8px 12px; border-radius: 12px; background: #e7d6f2; font-size: 13px; line-height: 18px; font-weight: 600">Mishi necesita cuidado especial: te mostramos solo cuidadores ⭐ Certificados.</p>
+</sc-if>
+
+<button aria-label="Cambiar servicio, distrito y fecha. Ahora: {{when}}" style="min-height: 56px; box-sizing: border-box; padding: 8px 12px; display: flex; align-items: center; gap: 12px; background: #fff8f0; border: 1.5px solid #958879; border-radius: 12px; cursor: pointer; text-align: left; color: #3b3346">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><rect x="3" y="4" width="18" height="18" rx="3"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+<span style="display: flex; flex-direction: column; flex-grow: 1; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 700">{{when}}</span><span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">San Salvador</span></span>
+<span style="font-size: 15px; line-height: 20px; font-weight: 700; color: #6b3a8a">Cambiar</span>
+</button>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column">
+<h2 style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 700">{{countLabel}}</h2>
+<span style="font-size: 13px; line-height: 18px; font-weight: 600; color: #6b6274">Ordenados por calificación</span>
+</div>
+<sc-for list="{{carers}}" as="c" hint-placeholder-count="3">
+<a href="Perfil.dc.html" style="display: flex; gap: 12px; padding: 16px; background: #ffffff; border-radius: 20px; box-shadow: 0 6px 20px rgba(59, 51, 70, 0.08); text-decoration: none; color: #3b3346">
+<div role="img" aria-label="Foto de {{c.name}}, tiene 3 fotos" style="position: relative; width: 80px; height: 80px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; background: {{c.photoBg}}">{{c.initials}}
+<span aria-hidden="true" style="position: absolute; right: 4px; bottom: 4px; display: flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 999px; background: #ffffff; font-size: 13px; line-height: 18px; font-weight: 700"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"></rect><circle cx="12" cy="12" r="3"></circle></svg>3</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px; min-width: 0; flex-grow: 1">
+<div style="display: flex; justify-content: space-between; gap: 8px">
+<span style="font-size: 16px; line-height: 24px; font-weight: 700">{{c.name}}</span>
+<span style="font-size: 16px; line-height: 24px; font-weight: 700; white-space: nowrap">{{c.price}}</span>
+</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<sc-if value="{{c.cert}}" hint-placeholder-val="{{true}}"><span style="font-size: 13px; line-height: 18px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: #ffe9a8">⭐ Certificada</span></sc-if>
+<sc-if value="{{c.student}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; line-height: 18px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: #cfe6f7">Estudiante de veterinaria</span></sc-if>
+</div>
+<span style="display: flex; align-items: center; gap: 4px; font-size: 13px; line-height: 18px; font-weight: 600">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="#3b3346" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"></path></svg>
+{{c.rating}} <span style="color: #6b6274">({{c.ratingCount}}) · {{c.done}} servicios · {{c.unit}}</span>
+</span>
+</div>
+</a>
+</sc-for>
+</section>
+
+<nav aria-label="Principal" style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; box-sizing: border-box; padding: 8px 16px 20px; background: #ffffff; border-radius: 20px 20px 0 0; box-shadow: 0 -6px 20px rgba(59, 51, 70, 0.08); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<a href="#" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; color: #3b3346; font-size: 13px; line-height: 18px; font-weight: 700">
+<span style="width: 56px; height: 32px; border-radius: 999px; background: #e7d6f2; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg></span>Buscar</a>
+<a href="Visitas.dc.html" aria-label="Visitas, 1 pendiente de pago" style="display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; color: #6b6274; font-size: 13px; line-height: 18px; font-weight: 600">
+<span style="position: relative; width: 56px; height: 32px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="3"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg><span aria-hidden="true" style="position: absolute; top: -2px; right: 8px; min-width: 18px; height: 18px; border-radius: 999px; background: #6b3a8a; color: #ffffff; font-size: 13px; line-height: 18px; font-weight: 800; text-align: center">1</span></span>Visitas</a>
+<a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; color: #6b6274; font-size: 13px; line-height: 18px; font-weight: 600">
+<span style="width: 56px; height: 32px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="4" r="2"></circle><circle cx="18" cy="8" r="2"></circle><circle cx="20" cy="16" r="2"></circle><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"></path></svg></span>Mascotas</a>
+<a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; color: #6b6274; font-size: 13px; line-height: 18px; font-weight: 600">
+<span style="width: 56px; height: 32px; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b3346" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span>Cuenta</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+const s = this.state || {};
+const sel = s.sel || { luna: true };
+const service = s.service || 'visit';
+const petData = [{ id: 'luna', name: 'Luna', special: false }, { id: 'mishi', name: 'Mishi', special: true }];
+const pets = petData.map((p) => {
+const on = !!sel[p.id];
+return {
+name: p.name, initial: p.name[0],
+pressed: on ? 'true' : 'false',
+bg: on ? '#e7d6f2' : '#fff8f0',
+ring: on ? 'inset 0 0 0 2px #6b3a8a' : 'inset 0 0 0 1.5px #958879',
+toggle: () => {
+const next = { ...sel, [p.id]: !on };
+if (Object.values(next).some(Boolean)) this.setState({ sel: next }); // ponytail: la búsqueda exige al menos 1 mascota
+}
+};
+});
+const chosen = petData.filter((p) => sel[p.id]);
+const special = chosen.some((p) => p.special);
+const services = [['visit', 'Visita a domicilio'], ['night', 'Pernocta']].map(([id, label]) => ({
+label, pressed: id === service ? 'true' : 'false',
+bg: id === service ? '#ffffff' : 'transparent',
+shadow: id === service ? '0 6px 20px rgba(59, 51, 70, 0.08)' : 'none',
+pick: () => this.setState({ service: id })
+}));
+// RN-PRE-01/02: precio del nivel; +50% por cada mascota adicional
+const all = [
+{ name: 'Ana Martínez', initials: 'AM', photoBg: '#e7d6f2', cert: true, student: true, rating: '4.9', ratingCount: 38, done: 126, p: { visit: [12, 17], night: [25, 35] } },
+{ name: 'Diego Flores', initials: 'DF', photoBg: '#cfe6f7', cert: true, student: false, rating: '4.8', ratingCount: 21, done: 64, p: { visit: [13, 18], night: [28, 38] } },
+{ name: 'Gabriela Rivas', initials: 'GR', photoBg: '#d6e6cc', cert: false, student: true, rating: '4.7', ratingCount: 12, done: 15, p: { visit: [10, 0], night: [22, 0] } }
+];
+const factor = 1 + 0.5 * (chosen.length - 1);
+const carers = all.filter((c) => !special || c.cert).map((c) => ({
+...c,
+price: '$' + (c.p[service][special ? 1 : 0] * factor).toFixed(2).replace('.00', ''),
+unit: service === 'visit' ? 'por visita' : 'por noche'
+}));
+return {
+pets, special, services, carers,
+when: service === 'visit' ? 'Visita · Lun 19 oct, 9:00' : 'Pernocta · Lun 19 oct',
+countLabel: carers.length + ' cuidadores disponibles'
+};
+}
+}
+</script>
+</body>
+</html>
