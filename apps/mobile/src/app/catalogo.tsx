@@ -6,12 +6,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/Avatar';
 import { Banner } from '@/components/Banner';
 import { Button } from '@/components/Button';
+import { BottomBar } from '@/components/BottomBar';
 import { Card } from '@/components/Card';
+import { Checkbox } from '@/components/Checkbox';
 import { Chip } from '@/components/Chip';
 import { Icon, type IconName } from '@/components/Icon';
 import { IconButton } from '@/components/IconButton';
 import { icons } from '@/components/icons.generated';
 import { Input } from '@/components/Input';
+import { Nimbus } from '@/components/Nimbus';
+import { Select } from '@/components/Select';
+import { Sheet } from '@/components/Sheet';
 import { StepBar } from '@/components/StepBar';
 import { Tag } from '@/components/Tag';
 import { Text } from '@/components/Text';
@@ -22,6 +27,9 @@ import { colors, space } from '@/theme/tokens';
 export default function ComponentCatalog() {
   const [showPassword, setShowPassword] = useState(false);
   const [species, setSpecies] = useState<'dog' | 'cat'>('dog');
+  const [approximate, setApproximate] = useState(true);
+  const [district, setDistrict] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -143,6 +151,45 @@ export default function ComponentCatalog() {
               <Chip label="Gato" selected={species === 'cat'} onPress={() => setSpecies('cat')} />
             </View>
           </View>
+        </Section>
+
+        <Section title="Checkbox">
+          <Checkbox
+            label="No sé la fecha exacta, es aproximada"
+            checked={approximate}
+            onChange={setApproximate}
+          />
+        </Section>
+
+        <Section title="Select y Sheet">
+          <Select
+            label="Distrito"
+            placeholder="Elige tu distrito"
+            value={district}
+            options={[
+              { value: 'san-salvador', label: 'San Salvador' },
+              { value: 'santa-tecla', label: 'Santa Tecla' },
+              { value: 'antiguo-cuscatlan', label: 'Antiguo Cuscatlán' },
+            ]}
+            onChange={setDistrict}
+          />
+          <Button variant="secondary" label="Abrir un Sheet" onPress={() => setSheetOpen(true)} />
+          <Sheet visible={sheetOpen} onClose={() => setSheetOpen(false)} title="Cambiar búsqueda">
+            <Text>El contenido se desplaza si no cabe.</Text>
+          </Sheet>
+        </Section>
+
+        <Section title="Nimbus">
+          <View style={styles.row}>
+            <Nimbus pose="hola" background="grape" size={96} />
+            <Nimbus pose="durmiendo" background="sky" size={96} />
+          </View>
+        </Section>
+
+        <Section title="BottomBar">
+          <BottomBar caption="Luna · 1 visita" amount="$12">
+            <Button label="Reservar visita" onPress={() => {}} />
+          </BottomBar>
         </Section>
 
         <Section title="Avatar">

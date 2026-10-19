@@ -18,6 +18,8 @@ let accessToken: string | null = null;
 let accessTokenExpiresAt = 0;
 let refreshToken: string | null = null;
 let renewal: Promise<string | null> | null = null;
+// A new account registers its first pet and address before reaching the tabs.
+let onboarding = false;
 const listeners = new Set<() => void>();
 
 export function getSessionStatus(): SessionStatus {
@@ -38,10 +40,21 @@ function setStatus(next: SessionStatus) {
   listeners.forEach((listener) => listener());
 }
 
-/** Keeps the session that a sign-in or a sign-up returned. */
-export async function signIn(session: AuthSession): Promise<void> {
+export function useOnboarding(): boolean {
+  return useSyncExternalStore(subscribeSession, () => onboarding);
+}
+
+/** Keeps the session that a sign-in or a sign-up returned. A sign-up goes to onboarding. */
+export async function signIn(session: AuthSession, { newAccount = false } = {}): Promise<void> {
   await keep(session);
+  onboarding = newAccount;
   setStatus('signedIn');
+}
+
+/** Takes the new account from onboarding to the tabs. */
+export function finishOnboarding(): void {
+  onboarding = false;
+  setStatus(status);
 }
 
 export async function signOut(): Promise<void> {

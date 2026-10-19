@@ -35,3 +35,11 @@ focusManager.setEventListener((setFocused) => {
   );
   return () => subscription.remove();
 });
+
+/** What to tell the person when a request fails. The API writes its messages in Spanish. */
+export function errorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return 'No pudimos conectarnos con Pawie. Revisa tu conexión e intenta de nuevo.';
+  }
+  return error.body?.message ?? 'Algo salió mal. Intenta de nuevo en un momento.';
+}

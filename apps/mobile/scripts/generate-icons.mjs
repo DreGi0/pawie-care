@@ -12,6 +12,7 @@ const names = [
   'calendar',
   'camera',
   'check',
+  'chevron-down',
   'chevron-left',
   'chevron-right',
   'circle-alert',
