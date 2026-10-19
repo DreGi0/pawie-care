@@ -24,7 +24,10 @@ export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 6: 24, 8: 32 } as const;
 
 export const radius = { sm: 12, md: 20, pill: 999 } as const;
 
-export const shadow = { soft: '0 6px 20px rgba(59, 51, 70, 0.08)' } as const;
+export const shadow = {
+  soft: '0 6px 20px rgba(59, 51, 70, 0.08)',
+  softUp: '0 -6px 20px rgba(59, 51, 70, 0.08)',
+} as const;
 
 /** Minimum size of anything tappable. */
 export const touchTarget = 48;
