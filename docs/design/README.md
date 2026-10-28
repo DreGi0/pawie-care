@@ -2,6 +2,8 @@
 
 Mockups de alta fidelidad de la app del dueño (iPhone, 390 × 844) y tokens del design system **Pawie Care**. Son la referencia visual y de textos para `apps/mobile`.
 
+> **Reglas v0.5:** los mockups de esta carpeta son de la v0.4. Antes de programar las etapas 6 a 12b de [plan-v0.5.md](../plan-v0.5.md) hay que actualizar los del dueño y crear los del cuidador. La lista está en [Pantallas para la v0.5](#pantallas-para-la-v05).
+
 > **Los mockups son referencia, no código para copiar.** Están en HTML. La app se construye con Expo + React Native y Expo Router. Si un mockup contradice [las reglas de negocio](../reglas-de-negocio.md) o el contrato [`apps/api/openapi.json`](../../apps/api/openapi.json), mandan las reglas y el contrato.
 
 ## Contenido
@@ -63,7 +65,7 @@ flowchart LR
 - **Perfil de la mascota:** OnbMascota dice "Agrégalo luego en su perfil", pero la app todavía no tiene la pantalla de la mascota con sus tareas de cuidado, vacunas e indicaciones del veterinario.
 - **Género en la ⭐:** el mockup dice "⭐ Certificada", pero la API no dice si el cuidador es hombre o mujer. La app muestra "⭐ Con certificación".
 - **Avisos:** Esperando y Confirmada dicen "Te avisamos", pero la app no tiene notificaciones push. Esperando dice que la pantalla cambia sola, porque vuelve a preguntar mientras está abierta.
-- **Precio en Reservar:** antes de crear la reserva, la app estima el total con el recargo por mascota (50%) y la tarifa de servicio (10%) de §15 de las reglas, porque la API no los publica. Pagar ya muestra los montos que guardó la reserva (RN-PRE-07). Si cambian esos parámetros, hay que cambiar `src/lib/price.ts` o publicarlos en `GET /v1/catalog`.
+- **Precio en Reservar:** hoy la app estima el total con el recargo por mascota (50%) y la tarifa de servicio (10%) de la v0.4, en `src/lib/price.ts`. En la v0.5 la tarifa es 15% y el primer servicio puede ir sin tarifa, así que la estimación se borra y el total sale de `POST /v1/bookings/quote` (RN-PRE-10, etapa 6).
 - **Varias visitas o noches:** la búsqueda pide una sola visita o una sola noche. La API acepta varias (RN-SER-03).
 - **Nombre de la dirección:** se guarda siempre como "Casa".
 - **Barra de pestañas:** en la app flota sobre el borde inferior, con las esquinas redondas, en lugar de pegarse al borde como en Main y Visitas.
@@ -71,3 +73,53 @@ flowchart LR
 - **Aviso de cuidado especial en Main:** el mockup nombra a la mascota ("Mishi necesita cuidado especial"), pero la búsqueda devuelve el `careLevel` de todas las mascotas juntas, no cuál es la especial.
 - **Nimbus:** está dibujado en SVG inline. Hay que reemplazarlo por los assets finales (`nimbus-hola.svg`, `nimbus-durmiendo.svg`).
 - **Fotos de cuidadores:** son marcadores `[Foto N]`.
+
+## Pantallas para la v0.5
+
+Mismo design system y mismas reglas de arriba. Cada pantalla nueva lleva su `.dc.html` en `screens/` y una fila en las tablas de [Pantallas y flujo](#pantallas-y-flujo) cuando esté lista.
+
+### Del dueño: cambiar
+
+| Pantalla              | Qué cambia                                                                                      | Reglas               | Etapa |
+| --------------------- | ----------------------------------------------------------------------------------------------- | -------------------- | ----- |
+| `Main`                | Filtros por nivel, certificaciones y calificación. Nivel en cada resultado. Paseo como servicio | RN-RES-10, RN-SER-05 | 6, 8  |
+| `Perfil`              | Nivel, insignias de verificación, certificaciones y habilidades declaradas, en ese orden        | RN-CUI-21, RN-CUI-19 | 6     |
+| `Reservar`            | Total desde la cotización y aviso de primer servicio sin tarifa                                 | RN-PRE-09, RN-PRE-10 | 6     |
+| `Pagar`               | Línea de la tarifa tachada en $0.00 con el texto "Primer servicio"                              | RN-PRE-09            | 6     |
+| `Esperando`           | Ya no simula la aceptación: espera la respuesta real del cuidador                               | RN-RES-06            | 9     |
+| `Bienvenida` o `Main` | Aviso "Tu primer servicio sin tarifa", con los días que quedan                                  | RN-PRE-09            | 6     |
+
+### Del dueño: nuevas
+
+| Pantalla        | Qué muestra                                                                                        | Reglas                | Etapa |
+| --------------- | -------------------------------------------------------------------------------------------------- | --------------------- | ----- |
+| `MascotaPerfil` | Ficha completa: datos, rutina, horarios de comida y medicinas, salud, tareas de cuidado y celo     | RN-MAS-02, RN-MAS-11  | 7     |
+| `Seguimiento`   | El servicio en una sola pantalla: estado, tareas hechas, fotos y, en un paseo, el mapa con la ruta | RN-EJE-05 a RN-EJE-07 | 10    |
+| `Calificar`     | Estrellas y comentario al terminar                                                                 | RN-RSE-01             | 10    |
+| `Ayuda`         | Asistente de opciones guiadas, con Nimbus, y el centro de ayuda                                    | §17                   | 12a   |
+| `Reclamo`       | Reclamar la garantía de una reserva, con el plazo que queda                                        | RN-GAR-01, RN-GAR-02  | 12b   |
+
+### Del cuidador: nuevas
+
+Las pestañas del modo cuidador son **Inicio**, **Agenda**, **Ganancias** y **Cuenta** (RN-CTA-06).
+
+| Pantalla        | Qué muestra                                                                                                    | Reglas               | Etapa |
+| --------------- | -------------------------------------------------------------------------------------------------------------- | -------------------- | ----- |
+| `CuiActivar`    | Desde Cuenta: qué pide Pawie para ser cuidador y botón para empezar                                            | RN-CTA-06            | 9     |
+| `CuiDocumentos` | Subir DUI, selfie y antecedentes, con el estado de la revisión                                                 | RN-CUI-01, RN-CUI-03 | 9     |
+| `CuiCurso`      | Módulos del curso de bienvenida y examen, con el resultado y la opción de repetir                              | RN-CUI-02            | 9     |
+| `CuiInicio`     | Nivel actual, lo que falta para el siguiente y las solicitudes pendientes, la más urgente primero              | RN-NIV-05, RN-RES-11 | 9     |
+| `CuiSolicitud`  | Mascotas con su ficha, celo o Especial, servicio, fechas, distrito y **lo que va a ganar**. Aceptar o rechazar | RN-RES-11, RN-CTA-04 | 9     |
+| `CuiAgenda`     | Próximos servicios por día, con "Agregar al calendario"                                                        | RN-CAL-01            | 9, 11 |
+| `CuiPerfil`     | Editar foto, descripción, habilidades, distritos, horario semanal, Reserva inmediata y pausa                   | RN-CUI-18, RN-CUI-20 | 9     |
+| `CuiPrecios`    | Precio por servicio con el rango de su nivel y el sugerido como guía                                           | RN-CUI-17, RN-PRE-01 | 9     |
+| `CuiServicio`   | Servicio en curso: check-in, ficha, tareas del tramo, fotos, ruta del paseo y check-out                        | §11                  | 10    |
+| `CuiGanancias`  | Por cobrar, pagado (simulado en la demo) y total del mes                                                       | RN-PAG-03, RN-PAG-10 | 9     |
+| `CuiCompartir`  | Vista previa del texto y botón para compartir el perfil                                                        | RN-CUI-22            | 11    |
+
+Reglas para las pantallas del cuidador:
+
+- **Un solo botón primario.** En `CuiSolicitud` es **Aceptar**; Rechazar va en secundario. En `CuiServicio` es la siguiente acción del tramo: Check-in, después Tomar foto y al final Check-out.
+- **Cuánto gana se muestra grande**, antes que los detalles. Es lo que decide si acepta en segundos.
+- **La ⭐ solo marca el cuidado especial.** El nivel no usa `butter`: es un `Tag` en `grape`, y las demás certificaciones también son `Tag`.
+- **Nimbus aparece** en `CuiInicio`, en el estado vacío de solicitudes, y en `CuiCurso` al aprobar. No aparece en `CuiServicio`, que tiene que ser rápida de leer.

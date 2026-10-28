@@ -1,11 +1,14 @@
 # Pawie Care
 
-Marketplace que conecta a dueños de mascotas con cuidadores en San Salvador, El Salvador. Los cuidadores con la certificación ⭐ pueden atender cuidados especiales: mascotas mayores, recién operadas o con condiciones de salud.
+Marketplace que conecta a dueños de perros y gatos con cuidadores verificados en San Salvador y Santa Tecla, El Salvador. Cada cuidador tiene un nivel (Nuevo, Confiable, Pro o Súper Cuidador), insignias y calificación, y cada servicio deja fotos, tareas y, en los paseos, la ruta.
 
 ## Documentación
 
-- [Reglas de negocio](docs/reglas-de-negocio.md)
-- [Arquitectura y stack técnico](docs/arquitectura.md)
+- [Reglas de negocio](docs/reglas-de-negocio.md) (v0.5): qué hace el producto. Es la fuente de verdad.
+- [Plan para la v0.5](docs/plan-v0.5.md): qué falta construir, por etapas. El código actual sigue las reglas v0.4.
+- [Arquitectura y stack técnico](docs/arquitectura.md): cómo se construye.
+- [Diseño](docs/design/README.md): mockups, tokens y pantallas pendientes.
+- [CLAUDE.md](CLAUDE.md): cómo trabajar en este repositorio con Claude Code.
 
 ## Estructura
 
