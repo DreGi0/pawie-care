@@ -6,9 +6,9 @@ Este plan lleva el código de las reglas v0.4 a las [reglas v0.5](reglas-de-nego
 
 **Dependencias:**
 
-- Cadena principal: 6 → 7 → 8 → 9 → 10 → 12b.
-- **12a** (asistente, centro de ayuda y casos) no depende de ninguna etapa y se puede adelantar. **12b** (garantía) depende de la 10 y de la 12a, porque el reclamo crea un caso de soporte.
-- La **base de la 11** (modelo `PushToken`, endpoint y envío por BullMQ) es independiente y se puede hacer en cualquier momento. Cada evento de RN-NOT se conecta en la etapa que lo dispara (9 o 10). Lo que usa la app (permisos, calendario y compartir) va con las pantallas que lo muestran.
+- Orden: 6 → 7 y 8 → 9 → base de la 11 → 10 → eventos de la 11 → 12b. Las etapas 7 y 8 no dependen entre sí, pero las dos van antes de la 10: la ruta del paseo necesita el paseo (8) y las tareas del tramo necesitan `PetScheduleItem` (7).
+- **12a** (asistente, centro de ayuda y casos) es independiente de la cadena y se puede adelantar. Solo reutiliza el correo al equipo de la base de la 11, que no depende de nada. **12b** (garantía) depende de la 10 y de la 12a, porque el reclamo crea un caso de soporte.
+- La **base de la 11** (modelo `PushToken`, endpoint, envío por BullMQ y correo al equipo) es independiente y se puede hacer en cualquier momento, pero la 10 la necesita. Los eventos de RN-NOT se conectan como indica la etapa 11. Lo que usa la app (permisos, calendario y compartir) va con las pantallas que lo muestran.
 
 ## 1. Brecha entre el código y la v0.5
 
@@ -83,7 +83,7 @@ Regla general: **no se renombra una clave si su significado no cambió**. Solo c
   - Seed de `CertificationType`: `SPECIAL_CARE` (la ⭐), `FIRST_AID`, `LARGE_DOGS` y `CATS`.
   - Enum `CaregiverSkill[]` en `CaregiverProfile` (habilidades declaradas, RN-CUI-19).
   - Insignias en las respuestas, derivadas de datos que ya existen: `IDENTITY_VERIFIED` y `BACKGROUND_CHECKED` salen del estado aprobado, y `VET_STUDENT` sale de `vetStudentUntil`.
-- Servicios completados: un contador en `CaregiverProfile`, junto a `ratingSum` y `ratingCount`. En la demo lo llena el seed; la etapa 10 lo incrementa al cerrar la reserva.
+- Servicios completados: `completedBookingCount`, `ratingSum` y `ratingCount` ya existen en `CaregiverProfile`. El seed los llena coherentes con cada nivel (RN-NIV-02); la etapa 10 incrementa `completedBookingCount` en el check-out final.
 - Seed: cuidadores en los cuatro niveles, con reseñas y certificaciones coherentes.
 
 **App:**
@@ -156,7 +156,8 @@ Regla general: **no se renombra una clave si su significado no cambió**. Solo c
   - `GET /v1/caregivers/me/bookings?status=` lista las reservas del cuidador.
   - `POST /v1/bookings/:id/accept` y `POST /v1/bookings/:id/reject` usan las transiciones que ya existen en `booking-status.ts`.
   - La respuesta muestra la dirección exacta solo si la reserva está `CONFIRMED` o en un estado posterior (RN-CTA-04).
-  - Conecta los eventos push de la etapa 9 (etapa 11, RN-NOT-01 y RN-NOT-02).
+  - Los eventos push de esta etapa se conectan en el paso "eventos de la 11", después de la 10.
+  - Desde esta etapa la búsqueda exige el curso de bienvenida aprobado (RN-CUI-03). Antes, solo exige perfil aprobado y activo.
 - **Seed:** los cuidadores de prueba quedan con el curso de bienvenida aprobado, o dejarían de salir en las búsquedas (RN-CUI-03).
 - **Progreso:** `GET /v1/caregivers/me/level` devuelve el nivel y lo que le falta, con la función de la etapa 6.
 - **Ganancias:** `GET /v1/caregivers/me/earnings` devuelve lo que tiene por cobrar, lo pagado y el total del mes. Hasta la etapa 10 no existe `Payout`, así que "pagado" es 0 y "por cobrar" sale de las reservas `CONFIRMED`; la etapa 10 completa el resto.
@@ -185,14 +186,14 @@ Regla general: **no se renombra una clave si su significado no cambió**. Solo c
 
 - **Check-in y check-out:** `POST /v1/bookings/:id/slots/:slotId/check-in` y `/check-out`, con hora y ubicación.
   - El primer check-in pasa la reserva a `IN_PROGRESS`, y el check-out del último tramo, a `COMPLETED`.
-  - El check-out exige las fotos mínimas.
+  - El check-out exige las fotos mínimas. El del último tramo incrementa `completedBookingCount` del cuidador y recalcula su nivel.
 - **Fotos:** `FilePurpose.CARE_LOG_PHOTO`, en `POST /v1/bookings/:id/slots/:slotId/photos`.
 - **Tareas del tramo:** `GET /v1/bookings/:id/slots/:slotId/tasks` arma la lista con `PetScheduleItem` y las tareas de cuidado activas. `POST …/tasks/:taskKey/done` marca una tarea como hecha.
 - **Ruta:** `POST /v1/bookings/:id/slots/:slotId/route` recibe lotes de puntos `{ lat, lng, recordedAt }`, y `GET …/route` los devuelve. Cada punto se guarda como una fila de `RoutePoint`.
 - **Colas:**
   - Una tarea diferida avisa si no hay check-in a los [30 min] (RN-EJE-02), por push al dueño (base de la etapa 11) y por correo al equipo.
-  - Otra pasa la reserva a `CLOSED` a las [48 h] del check-out si no está `DISPUTED`, crea un `Payout` con estado `SIMULATED` e incrementa los servicios completados del cuidador. La espera sale de `payments.payoutHoldMinutes`.
-- Conecta los eventos push de la etapa 10 (etapa 11).
+  - Otra pasa la reserva a `CLOSED` a las [48 h] del check-out si no está `DISPUTED`, crea un `Payout` con estado `SIMULATED`. La espera sale de `payments.payoutHoldMinutes`.
+- Conecta los eventos push de esta etapa con la base de la 11.
 - **Reseñas:** `POST /v1/bookings/:id/review`. En la misma transacción actualiza `ratingSum` y `ratingCount` y recalcula el nivel.
 
 **App:**
@@ -217,13 +218,14 @@ Regla general: **no se renombra una clave si su significado no cambió**. Solo c
 
 **Reglas:** RN-NOT-01 a RN-NOT-03, RN-CAL-01, RN-CUI-22.
 
-**Base, sin dependencias** (se puede hacer en cualquier momento):
+**Base, sin dependencias** (se puede hacer en cualquier momento; la 10 y la 12a la reutilizan):
 
 - Modelo `PushToken` y `POST /v1/users/me/push-tokens`.
 - Módulo `notifications`, que envía con la API HTTP del Expo Push Service usando el `fetch` de Node, sin SDK. El envío va por BullMQ para no frenar la petición.
 - App: pedir el permiso y registrar el token con `expo-notifications`, que necesita una development build. Si el usuario niega el permiso, nada falla (RN-NOT-03).
+- **Correo al equipo** en el mismo módulo `notifications` (arquitectura §5): Mailpit en local y Resend en la demo. Lo usan la 12a (casos fuera de horario) y RN-EJE-02 (etapa 10). No se crea otro mecanismo de correo.
 
-**Eventos de RN-NOT-01 y RN-NOT-02:** cada uno se conecta en la etapa que cambia el estado que lo dispara, llamando al módulo `notifications`:
+**Eventos de RN-NOT-01 y RN-NOT-02**, llamando al módulo `notifications` desde el servicio que cambia el estado. Los de la etapa 9 se conectan en el paso "eventos de la 11", después de la 10, porque la base aún no existía. Los de la 10 y la 12b se conectan en su propia etapa:
 
 | Evento                                                    | Etapa |
 | --------------------------------------------------------- | ----- |
@@ -231,8 +233,6 @@ Regla general: **no se renombra una clave si su significado no cambió**. Solo c
 | Reserva cancelada por el dueño                            | 9     |
 | Check-in, foto nueva y check-out                          | 10    |
 | Cambio de estado del reclamo                              | 12b   |
-
-Si la base de la 11 aún no existe cuando llega la etapa 9 o la 10, el evento queda como `TODO` con su ID de regla y se conecta cuando exista.
 
 **Con las pantallas del cuidador y del dueño** (después de la 9):
 
@@ -246,7 +246,7 @@ Si la base de la 11 aún no existe cuando llega la etapa 9 o la 10, el evento qu
 
 ### Etapa 12a: soporte y asistente
 
-**Reglas:** §17. No depende de ninguna etapa.
+**Reglas:** §17. Solo depende de la base de la 11 (correo al equipo).
 
 **API:**
 
@@ -256,7 +256,7 @@ Si la base de la 11 aún no existe cuando llega la etapa 9 o la 10, el evento qu
 - **Endpoints:**
   - `GET /v1/help?audience=` devuelve el árbol completo, que es corto y se guarda en caché.
   - `POST /v1/support/cases` responde con `{ caseNumber, whatsappUrl | null, withinHours }`.
-- **Horario:** la API decide si es dentro o fuera de horario con `support.hours`, en `America/El_Salvador`. Fuera de horario envía un correo al equipo (Mailpit en local, Resend en la demo).
+- **Horario:** la API decide si es dentro o fuera de horario con `support.hours`, en `America/El_Salvador`. Fuera de horario envía un correo al equipo con el módulo `notifications` de la base de la 11.
 - **WhatsApp:** `whatsappUrl` es `https://wa.me/<número>?text=Caso%20<n>`, y el número va en el setting `support.whatsappNumber`.
 - **Contenido:** el seed carga el árbol inicial de dueño y de cuidador.
 
