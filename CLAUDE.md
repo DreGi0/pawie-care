@@ -18,7 +18,7 @@ Los documentos de negocio del equipo (Buyer, Promesa, Vehículo y Pricing) **no 
 ## Estado actual
 
 - El código del commit `d088fba` implementa las **reglas v0.4**: precio por nivel de la mascota, tarifa de 10% y comisión de 15%, solo visita y pernocta, y sin app del cuidador.
-- Lo que falta para la v0.5 está en **[docs/plan-v0.5.md](docs/plan-v0.5.md)**, en las etapas 6 a 12.
+- Lo que falta para la v0.5 está en **[docs/plan-v0.5.md](docs/plan-v0.5.md)**, en las etapas 6 a 12b.
 - Si el código contradice las reglas v0.5, no es un bug que haya que respetar: es trabajo pendiente de una etapa. Revisa el plan antes de "arreglarlo" fuera de su etapa.
 
 ## Cómo trabajar una tarea
@@ -77,4 +77,5 @@ Los documentos de negocio del equipo (Buyer, Promesa, Vehículo y Pricing) **no 
 - **Código** (identificadores, tablas, endpoints, `errorCode`) en inglés. **Docs y textos de la app** en español. El glosario está en arquitectura §8.
 - **Dinero** en centavos enteros, porcentajes en puntos básicos (1500 = 15%), instantes en UTC (`timestamptz`) que se muestran en `America/El_Salvador`.
 - **IDs** UUIDv7 generados por PostgreSQL. **Errores** con la forma `{ statusCode, errorCode, message, details? }`.
+- **Estados de las reservas** en español en los docs (`SOLICITADA`…) y en inglés en el código (`REQUESTED`…). La tabla de equivalencias está en el glosario de arquitectura §8.
 - **Reservas:** solo cambian de estado con `BookingStateMachine` y las transiciones de `src/bookings/booking-status.ts`, cada una con su test.

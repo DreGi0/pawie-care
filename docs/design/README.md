@@ -2,7 +2,7 @@
 
 Mockups de alta fidelidad de la app del dueño (iPhone, 390 × 844) y tokens del design system **Pawie Care**. Son la referencia visual y de textos para `apps/mobile`.
 
-> **Reglas v0.5:** los mockups de esta carpeta son de la v0.4. Antes de programar las etapas 6 a 12 de [plan-v0.5.md](../plan-v0.5.md) hay que actualizar los del dueño y crear los del cuidador. La lista está en [Pantallas para la v0.5](#pantallas-para-la-v05).
+> **Reglas v0.5:** los mockups de esta carpeta son de la v0.4. Antes de programar las etapas 6 a 12b de [plan-v0.5.md](../plan-v0.5.md) hay que actualizar los del dueño y crear los del cuidador. La lista está en [Pantallas para la v0.5](#pantallas-para-la-v05).
 
 > **Los mockups son referencia, no código para copiar.** Están en HTML. La app se construye con Expo + React Native y Expo Router. Si un mockup contradice [las reglas de negocio](../reglas-de-negocio.md) o el contrato [`apps/api/openapi.json`](../../apps/api/openapi.json), mandan las reglas y el contrato.
 
@@ -96,8 +96,8 @@ Mismo design system y mismas reglas de arriba. Cada pantalla nueva lleva su `.dc
 | `MascotaPerfil` | Ficha completa: datos, rutina, horarios de comida y medicinas, salud, tareas de cuidado y celo     | RN-MAS-02, RN-MAS-11  | 7     |
 | `Seguimiento`   | El servicio en una sola pantalla: estado, tareas hechas, fotos y, en un paseo, el mapa con la ruta | RN-EJE-05 a RN-EJE-07 | 10    |
 | `Calificar`     | Estrellas y comentario al terminar                                                                 | RN-RSE-01             | 10    |
-| `Ayuda`         | Asistente de opciones guiadas, con Nimbus, y el centro de ayuda                                    | §17                   | 12    |
-| `Reclamo`       | Reclamar la garantía de una reserva, con el plazo que queda                                        | RN-GAR-01, RN-GAR-02  | 12    |
+| `Ayuda`         | Asistente de opciones guiadas, con Nimbus, y el centro de ayuda                                    | §17                   | 12a   |
+| `Reclamo`       | Reclamar la garantía de una reserva, con el plazo que queda                                        | RN-GAR-01, RN-GAR-02  | 12b   |
 
 ### Del cuidador: nuevas
 

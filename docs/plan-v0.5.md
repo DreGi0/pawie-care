@@ -2,7 +2,13 @@
 
 **Fecha:** 2026-10-28 · **Punto de partida:** commit `d088fba` (código según las reglas v0.4)
 
-Este plan lleva el código de las reglas v0.4 a las [reglas v0.5](reglas-de-negocio.md). Cada etapa es un PR que deja el CI en verde. Las etapas siguen el orden de las dependencias. Las etapas 11 y 12 no dependen de las otras y se pueden adelantar.
+Este plan lleva el código de las reglas v0.4 a las [reglas v0.5](reglas-de-negocio.md). Cada etapa es un PR que deja el CI en verde.
+
+**Dependencias:**
+
+- Cadena principal: 6 → 7 → 8 → 9 → 10 → 12b.
+- **12a** (asistente, centro de ayuda y casos) no depende de ninguna etapa y se puede adelantar. **12b** (garantía) depende de la 10 y de la 12a, porque el reclamo crea un caso de soporte.
+- La **base de la 11** (modelo `PushToken`, endpoint y envío por BullMQ) es independiente y se puede hacer en cualquier momento. Cada evento de RN-NOT se conecta en la etapa que lo dispara (9 o 10). Lo que usa la app (permisos, calendario y compartir) va con las pantallas que lo muestran.
 
 ## 1. Brecha entre el código y la v0.5
 
@@ -11,14 +17,15 @@ Este plan lleva el código de las reglas v0.4 a las [reglas v0.5](reglas-de-nego
 | Precios                | Rangos por servicio y **nivel de la mascota**; tarifa 10%, comisión 15% | Rangos por **nivel del cuidador**; tarifa 15%, comisión 0%; primer servicio sin tarifa; cotización en la API | 6     |
 | Niveles                | No existen                                                              | Nivel calculado, requisitos y progreso                                                                       | 6     |
 | Búsqueda               | Mascota, servicio, fecha y distrito                                     | Filtros por nivel, certificaciones y calificación; nivel e insignias en los resultados                       | 6     |
-| Certificaciones        | Solo la ⭐ (`CertificationType` ya es catálogo)                         | Tipos Primeros auxilios, Perros grandes y Gatos; insignias de verificación                                   | 7     |
+| Certificaciones        | Solo la ⭐ (`CertificationType` ya es catálogo)                         | Tipos Primeros auxilios, Perros grandes y Gatos; insignias de verificación; habilidades declaradas           | 6     |
 | Ficha                  | Datos, salud, vacunas, indicaciones y tareas de cuidado                 | Alimento, horarios de comida y medicinas, premios, rutina y celo; pantalla de la mascota                     | 7     |
 | Servicios              | Visita y pernocta                                                       | Paseo                                                                                                        | 8     |
 | App del cuidador       | No existe; cuidadores del seed                                          | Modo cuidador, alta, verificación, curso de bienvenida, perfil, solicitudes, agenda y ganancias              | 9     |
 | Aceptar o rechazar     | La máquina de estados lo permite, pero no hay endpoints                 | Endpoints y pantalla de solicitudes                                                                          | 9     |
 | Ejecución              | Estados `IN_PROGRESS` a `CLOSED` sin transiciones                       | Check-in, tareas, fotos, ruta, check-out, cierre a las 48 h, pago simulado y reseñas                         | 10    |
-| Avisos e integraciones | Nada                                                                    | Push, agregar al calendario y compartir perfil                                                               | 11    |
-| Soporte y garantía     | Nada                                                                    | Asistente, centro de ayuda, casos, WhatsApp y reclamo de garantía                                            | 12    |
+| Avisos e integraciones | Nada                                                                    | Push (base, y eventos en las etapas 9 y 10), agregar al calendario y compartir perfil                        | 11    |
+| Soporte                | Nada                                                                    | Asistente, centro de ayuda, casos y WhatsApp                                                                 | 12a   |
+| Garantía               | Nada                                                                    | Reclamo, estado `DISPUTED` y resolución                                                                      | 12b   |
 
 ## 2. IDs de reglas que cambiaron
 
@@ -36,11 +43,23 @@ Al tocar el código que los cita, se actualiza el comentario.
 | RN-FID-01            | RN-GAR-01 y RN-GAR-04                                                   |
 | "§15" en comentarios | Sigue siendo §15                                                        |
 
+### Settings que cambian
+
+Regla general: **no se renombra una clave si su significado no cambió**. Solo cambian la regla que cita.
+
+| Clave actual                                       | En la v0.5                                                                                                                                            | Etapa |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| `certifications.specialCareMinExamScoreBp`         | `certifications.minExamScoreBp`, para todas las certificaciones (RN-CUI-08)                                                                           | 6     |
+| `certifications.specialCareValidityMonths`         | `certifications.validityMonths`, para todas las certificaciones (RN-CUI-09)                                                                           | 6     |
+| `certifications.specialCareMinAverageRatingTenths` | Sin cambio: sigue siendo solo de la ⭐ (RN-CUI-10)                                                                                                    | —     |
+| `disputes.resolutionBusinessDays`                  | `guarantee.resolutionBusinessDays` (RN-GAR-03). Cambia el significado, porque ahora es el plazo de la garantía                                        | 12b   |
+| `payments.payoutHoldMinutes`                       | **No se renombra.** Sigue en minutos, porque el registry guarda los plazos así. Solo cambia la regla que cita: de `RN-DIS-01` a RN-PAG-03 y RN-GAR-02 | 10    |
+
 ## 3. Etapas
 
 ### Etapa 6: precios por nivel del cuidador
 
-**Reglas:** RN-NIV-01 a RN-NIV-06, RN-PRE-01 a RN-PRE-04, RN-PRE-07, RN-PRE-09, RN-PRE-10, RN-RES-10, RN-CUI-21.
+**Reglas:** RN-NIV-01 a RN-NIV-06, RN-PRE-01 a RN-PRE-04, RN-PRE-07, RN-PRE-09, RN-PRE-10, RN-RES-10, RN-CUI-05 a RN-CUI-07, RN-CUI-09, RN-CUI-11, RN-CUI-19, RN-CUI-21.
 
 **API:**
 
@@ -48,7 +67,8 @@ Al tocar el código que los cita, se actualiza el comentario.
 - Función pura `src/caregivers/caregiver-level.ts`: recibe reseñas, promedio, servicios completados y certificaciones vigentes, y devuelve el nivel y lo que falta para el siguiente. Con su `.spec.ts`. Se llama en la misma transacción que cambie cualquiera de esos datos, y desde un script `caregivers:recalculate-levels`.
 - `CaregiverServicePrice` deja de tener `careLevel`: la llave pasa a ser cuidador y servicio.
 - Settings:
-  - `pricing.priceRanges` por servicio y nivel del cuidador.
+  - `pricing.priceRanges` por servicio y nivel del cuidador. Solo visita y pernocta: el paseo suma su rango en la etapa 8.
+  - `certifications.minExamScoreBp` y `certifications.validityMonths` reemplazan a las claves `specialCare*` (ver §2).
   - `pricing.ownerServiceFeeBp = 1500` y `pricing.caregiverCommissionBp = 0`.
   - Nuevos: `pricing.firstServiceWindowDays = 15` y `levels.requirements`.
 - `Booking` guarda `caregiverLevel` y `firstServiceFeeWaived`. La tarifa en 0 queda en el snapshot (RN-PRE-07).
@@ -59,12 +79,17 @@ Al tocar el código que los cita, se actualiza el comentario.
   - Respuesta con `level`, `badges` y `certifications`.
   - `hasSpecialCareCertification` se queda, porque Especial sigue exigiendo la ⭐.
 - `GET /v1/users/me` agrega `firstServiceFeeWaiverEndsAt`, que es null si ya no aplica.
+- **Certificaciones, insignias y habilidades:**
+  - Seed de `CertificationType`: `SPECIAL_CARE` (la ⭐), `FIRST_AID`, `LARGE_DOGS` y `CATS`.
+  - Enum `CaregiverSkill[]` en `CaregiverProfile` (habilidades declaradas, RN-CUI-19).
+  - Insignias en las respuestas, derivadas de datos que ya existen: `IDENTITY_VERIFIED` y `BACKGROUND_CHECKED` salen del estado aprobado, y `VET_STUDENT` sale de `vetStudentUntil`.
+- Servicios completados: un contador en `CaregiverProfile`, junto a `ratingSum` y `ratingCount`. En la demo lo llena el seed; la etapa 10 lo incrementa al cerrar la reserva.
 - Seed: cuidadores en los cuatro niveles, con reseñas y certificaciones coherentes.
 
 **App:**
 
 - Main: filtros y nivel en cada resultado.
-- Perfil: nivel, insignias, certificaciones y habilidades.
+- Perfil: nivel, insignias, certificaciones y habilidades declaradas, en ese orden.
 - Reservar: el total viene de `/quote`. Se borra `estimatePrice` de `src/lib/price.ts`.
 - Pagar: la tarifa aparece tachada en $0.00 con el texto "Primer servicio".
 - Aviso "Tu primer servicio sin tarifa" con los días que quedan.
@@ -74,21 +99,17 @@ Al tocar el código que los cita, se actualiza el comentario.
 - Hay tests de los cuatro niveles y sus bordes, y de que un nivel puede bajar.
 - El total de `/quote` es igual al de la reserva creada.
 - El beneficio no se duplica con dos reservas activas, y vuelve a estar disponible si la primera vence.
-- El ejemplo de RN-PRE (cuidador Confiable a $6.50: el dueño paga $7.48 y el cuidador recibe $6.50) es un test.
+- El ejemplo de RN-PRE (cuidador Confiable a $6.50: el dueño paga $7.48 y el cuidador recibe $6.50) es un test de las funciones de `src/pricing/` con el precio en centavos. Como el paseo llega en la etapa 8, el test no usa el servicio.
+- Las insignias y las certificaciones salen en la búsqueda y en el perfil.
 
 ### Etapa 7: ficha ampliada y certificaciones
 
-**Reglas:** RN-MAS-02, RN-MAS-11, RN-CUI-05 a RN-CUI-11, RN-CUI-19, RN-CUI-21.
+**Reglas:** RN-MAS-02, RN-MAS-11.
 
 **API:**
 
 - `Pet` agrega `foodDescription`, `foodPortion`, `allowedTreats`, `dailyRoutine`, `heatStartsOn` y `heatEndsOn` (`date`).
 - `PetScheduleItem` con `petId`, `kind` (`MEAL` o `MEDICATION`), `minuteOfDay`, `label` y `dose?`. Sirve para la ficha y para las tareas del tramo de la etapa 10.
-- Seed de `CertificationType`: `SPECIAL_CARE` (la ⭐), `FIRST_AID`, `LARGE_DOGS` y `CATS`.
-- Habilidades declaradas: enum `CaregiverSkill[]` en `CaregiverProfile`.
-- Insignias en las respuestas, derivadas de datos que ya existen:
-  - `IDENTITY_VERIFIED` y `BACKGROUND_CHECKED` salen del estado aprobado.
-  - `VET_STUDENT` sale de `vetStudentUntil`.
 
 **App:** pantalla **Perfil de la mascota**, que ya estaba pendiente en `docs/design/README.md`. Muestra y edita la ficha: rutina, horarios, salud, tareas de cuidado e indicaciones, y el celo.
 
@@ -96,7 +117,6 @@ Al tocar el código que los cita, se actualiza el comentario.
 
 - Un horario de comida a las 7:00 aparece en la ficha.
 - Una mascota en celo no cambia su `careLevel`.
-- Las insignias salen en la búsqueda y en el perfil.
 
 ### Etapa 8: servicio de paseo
 
@@ -136,8 +156,10 @@ Al tocar el código que los cita, se actualiza el comentario.
   - `GET /v1/caregivers/me/bookings?status=` lista las reservas del cuidador.
   - `POST /v1/bookings/:id/accept` y `POST /v1/bookings/:id/reject` usan las transiciones que ya existen en `booking-status.ts`.
   - La respuesta muestra la dirección exacta solo si la reserva está `CONFIRMED` o en un estado posterior (RN-CTA-04).
+  - Conecta los eventos push de la etapa 9 (etapa 11, RN-NOT-01 y RN-NOT-02).
+- **Seed:** los cuidadores de prueba quedan con el curso de bienvenida aprobado, o dejarían de salir en las búsquedas (RN-CUI-03).
 - **Progreso:** `GET /v1/caregivers/me/level` devuelve el nivel y lo que le falta, con la función de la etapa 6.
-- **Ganancias:** `GET /v1/caregivers/me/earnings` devuelve lo que tiene por cobrar, lo pagado y el total del mes.
+- **Ganancias:** `GET /v1/caregivers/me/earnings` devuelve lo que tiene por cobrar, lo pagado y el total del mes. Hasta la etapa 10 no existe `Payout`, así que "pagado" es 0 y "por cobrar" sale de las reservas `CONFIRMED`; la etapa 10 completa el resto.
 
 **App:**
 
@@ -168,8 +190,9 @@ Al tocar el código que los cita, se actualiza el comentario.
 - **Tareas del tramo:** `GET /v1/bookings/:id/slots/:slotId/tasks` arma la lista con `PetScheduleItem` y las tareas de cuidado activas. `POST …/tasks/:taskKey/done` marca una tarea como hecha.
 - **Ruta:** `POST /v1/bookings/:id/slots/:slotId/route` recibe lotes de puntos `{ lat, lng, recordedAt }`, y `GET …/route` los devuelve. Cada punto se guarda como una fila de `RoutePoint`.
 - **Colas:**
-  - Una tarea diferida avisa si no hay check-in a los [30 min].
-  - Otra pasa la reserva a `CLOSED` a las [48 h] del check-out si no está `DISPUTED`, y crea un `Payout` con estado `SIMULATED`.
+  - Una tarea diferida avisa si no hay check-in a los [30 min] (RN-EJE-02), por push al dueño (base de la etapa 11) y por correo al equipo.
+  - Otra pasa la reserva a `CLOSED` a las [48 h] del check-out si no está `DISPUTED`, crea un `Payout` con estado `SIMULATED` e incrementa los servicios completados del cuidador. La espera sale de `payments.payoutHoldMinutes`.
+- Conecta los eventos push de la etapa 10 (etapa 11).
 - **Reseñas:** `POST /v1/bookings/:id/review`. En la misma transacción actualiza `ratingSum` y `ratingCount` y recalcula el nivel.
 
 **App:**
@@ -194,54 +217,77 @@ Al tocar el código que los cita, se actualiza el comentario.
 
 **Reglas:** RN-NOT-01 a RN-NOT-03, RN-CAL-01, RN-CUI-22.
 
-**API:**
+**Base, sin dependencias** (se puede hacer en cualquier momento):
 
 - Modelo `PushToken` y `POST /v1/users/me/push-tokens`.
-- Módulo `notifications`, que envía con la API HTTP del Expo Push Service usando el `fetch` de Node, sin SDK.
-- Los eventos de RN-NOT-01 y RN-NOT-02 salen de los mismos servicios que cambian el estado. El envío va por BullMQ para no frenar la petición.
+- Módulo `notifications`, que envía con la API HTTP del Expo Push Service usando el `fetch` de Node, sin SDK. El envío va por BullMQ para no frenar la petición.
+- App: pedir el permiso y registrar el token con `expo-notifications`, que necesita una development build. Si el usuario niega el permiso, nada falla (RN-NOT-03).
 
-**App:**
+**Eventos de RN-NOT-01 y RN-NOT-02:** cada uno se conecta en la etapa que cambia el estado que lo dispara, llamando al módulo `notifications`:
 
-- Notificaciones con `expo-notifications`, que necesita una development build.
-- "Agregar al calendario" con `expo-calendar`.
-- "Compartir perfil" con `Share` de React Native.
+| Evento                                                    | Etapa |
+| --------------------------------------------------------- | ----- |
+| Solicitud nueva, aceptada o rechazada; reserva confirmada | 9     |
+| Reserva cancelada por el dueño                            | 9     |
+| Check-in, foto nueva y check-out                          | 10    |
+| Cambio de estado del reclamo                              | 12b   |
+
+Si la base de la 11 aún no existe cuando llega la etapa 9 o la 10, el evento queda como `TODO` con su ID de regla y se conecta cuando exista.
+
+**Con las pantallas del cuidador y del dueño** (después de la 9):
+
+- "Agregar al calendario" con `expo-calendar`, en `CuiAgenda` y en el detalle de la reserva.
+- "Compartir perfil" con `Share` de React Native, en `CuiCompartir`.
 
 **Terminado cuando:**
 
 - Aceptar una solicitud le llega como push al dueño en el emulador.
 - Si el usuario niega el permiso, nada falla.
 
-### Etapa 12: soporte, asistente y garantía
+### Etapa 12a: soporte y asistente
 
-**Reglas:** §14 y §17.
+**Reglas:** §17. No depende de ninguna etapa.
 
 **API:**
 
 - **Módulo `support`:**
   - `HelpNode` con `parentId`, `audience` (`OWNER` o `CAREGIVER`), `label`, `answer`, `action` (`NONE`, `WHATSAPP`, `CREATE_CASE` o `VET_EMERGENCY`) y `sortOrder`.
-  - `SupportCase` con un número correlativo, usuario, `bookingId?`, `type`, `path` (las opciones que recorrió) y `status`.
+  - `SupportCase` con un número correlativo, usuario, `bookingId?`, `type` (`QUESTION`, `PROBLEM` o `GUARANTEE_CLAIM`), `path` (las opciones que recorrió) y `status`.
 - **Endpoints:**
   - `GET /v1/help?audience=` devuelve el árbol completo, que es corto y se guarda en caché.
   - `POST /v1/support/cases` responde con `{ caseNumber, whatsappUrl | null, withinHours }`.
 - **Horario:** la API decide si es dentro o fuera de horario con `support.hours`, en `America/El_Salvador`. Fuera de horario envía un correo al equipo (Mailpit en local, Resend en la demo).
 - **WhatsApp:** `whatsappUrl` es `https://wa.me/<número>?text=Caso%20<n>`, y el número va en el setting `support.whatsappNumber`.
-- **Garantía:**
-  - `POST /v1/bookings/:id/claims` crea un caso `GUARANTEE_CLAIM` y pasa la reserva a `DISPUTED` si está dentro del plazo.
-  - El script `claims:resolve <case> approve|reject` la pasa a `CLOSED` o deja el pago en `REFUND_PENDING`.
 - **Contenido:** el seed carga el árbol inicial de dueño y de cuidador.
 
 **App:**
 
 - Pantalla `ayuda` que muestra el árbol como burbujas, con Nimbus una sola vez.
 - Abre WhatsApp con `Linking.openURL`.
-- Acceso desde Cuenta, desde el detalle de la reserva ("Tengo un problema") y desde el centro de ayuda.
+- Acceso desde Cuenta del dueño y desde el centro de ayuda. Los accesos que dependen de otras etapas se agregan en ellas: "Tengo un problema" en el detalle de la reserva (12b) y Cuenta del cuidador (9).
 
 **Terminado cuando:**
 
 - Hay tests de dentro y fuera de horario con un reloj fijo.
-- Un reclamo fuera de plazo responde 422.
-- Un reclamo congela el cierre de la etapa 10.
 - El nodo de emergencia muestra el teléfono del veterinario de la ficha.
+
+### Etapa 12b: garantía
+
+**Reglas:** §14. **Depende de** la etapa 10 (check-out, `CLOSED` y `Payout`) y de la 12a (`SupportCase`).
+
+**API:**
+
+- `POST /v1/bookings/:id/claims` crea un caso `GUARANTEE_CLAIM` y pasa la reserva a `DISPUTED` si está dentro del plazo. Agrega las filas de `DISPUTED` a `booking-status.ts`, cada una con su test.
+- El script `claims:resolve <case> approve|reject` la pasa a `CLOSED` o deja el pago en `REFUND_PENDING`.
+- El setting `disputes.resolutionBusinessDays` pasa a `guarantee.resolutionBusinessDays` (ver §2).
+
+**App:** pantalla `Reclamo`, con el plazo que queda, y "Tengo un problema" en el detalle de la reserva, que abre el asistente o el reclamo.
+
+**Terminado cuando:**
+
+- Un reclamo fuera de plazo responde 422.
+- Un reclamo congela el cierre de la etapa 10: la reserva `DISPUTED` no pasa a `CLOSED` a las 48 h.
+- Aprobar un reclamo deja el pago en `REFUND_PENDING` y el cuidador no recibe ese pago.
 
 ## 4. Decisiones abiertas
 
@@ -253,7 +299,7 @@ Las que bloquean una etapa están marcadas.
 | Umbrales de los niveles               | 6                                   | Los de RN-NIV-02                       |
 | Documentos exactos de antecedentes    | 9                                   | DUI, selfie y antecedentes o solvencia |
 | Contenido del curso de bienvenida     | 9 (**bloquea**)                     | Ninguno: lo escribe el equipo          |
-| Número de WhatsApp Business           | 12                                  | Un número de prueba en el seed         |
-| Contenido del asistente               | 12 (**bloquea**)                    | Ninguno: lo escribe el equipo          |
+| Número de WhatsApp Business           | 12a                                 | Un número de prueba en el seed         |
+| Contenido del asistente               | 12a (**bloquea**)                   | Ninguno: lo escribe el equipo          |
 | URL para compartir el perfil          | 11                                  | `https://pawieapp.com`                 |
 | Clave de Google Maps para Android     | 10 (**bloquea** el mapa en Android) | Ninguno                                |

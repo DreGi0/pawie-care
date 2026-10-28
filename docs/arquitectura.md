@@ -1,10 +1,10 @@
 # Pawie Care: arquitectura y stack técnico
 
-**Versión:** 0.4 · **Fecha:** 2026-10-28 · **Estado:** alineado con las reglas v0.5
+**Versión del documento:** 0.4 · **Implementa las reglas v0.5** · **Fecha:** 2026-10-28
 
 Las reglas de negocio están en [reglas-de-negocio.md](reglas-de-negocio.md) y el orden de construcción en [plan-v0.5.md](plan-v0.5.md). Este documento cubre cómo se construye.
 
-> **Ojo:** el código del commit `d088fba` implementa las reglas v0.4. Lo que este documento describe para la v0.5 (niveles, paseo, app del cuidador, ejecución, push y soporte) se construye en las etapas 6 a 12 del plan.
+> **Ojo:** el código del commit `d088fba` implementa las reglas v0.4. Lo que este documento describe para la v0.5 (niveles, paseo, app del cuidador, ejecución, push y soporte) se construye en las etapas 6 a 12b del plan.
 
 ## 1. Resumen
 
