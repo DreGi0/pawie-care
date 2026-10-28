@@ -6,17 +6,19 @@
       "outputs": ["src/generated/**"]
     },
     "build": {
-      "dependsOn": ["^build", "generate"],
+      "dependsOn": ["^build", "generate", "^generate"],
       "outputs": ["dist/**"]
     },
+    // "^generate" makes a package wait for the generation of the packages it imports. Without it,
+    // the app's typecheck ran while Orval was rewriting packages/api-client/src/generated.
     "lint": {
-      "dependsOn": ["generate"]
+      "dependsOn": ["generate", "^generate"]
     },
     "typecheck": {
-      "dependsOn": ["generate"]
+      "dependsOn": ["generate", "^generate"]
     },
     "test": {
-      "dependsOn": ["generate"],
+      "dependsOn": ["generate", "^generate"],
       // The settings registry test compares the registry with §15 of the rules.
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docs/reglas-de-negocio.md"]
     },
