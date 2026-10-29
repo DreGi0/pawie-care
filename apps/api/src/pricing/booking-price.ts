@@ -118,6 +118,11 @@ export interface PricingSnapshot {
   caregiverLevel: CaregiverLevel;
   /** RN-PRE-09: when true, `rates.ownerServiceFeeBp` is 0. */
   firstServiceFeeWaived: boolean;
+  /**
+   * RN-PRE-09: what the service fee would have been at the standard rate; 0 when it
+   * wasn't waived. The app shows it crossed out beside the $0.00.
+   */
+  waivedServiceFeeCents: number;
   petCount: number;
   prices: (CaregiverServicePrice & {
     /** caregiverPriceCents, or the suggested one, kept within the range (RN-CUI-17). */
@@ -166,13 +171,17 @@ export function quoteBooking<S extends { serviceCode: ServiceCode }>({
     return { ...slot, unitPriceCents };
   });
 
+  const priced = priceBooking(withUnitPrices, petCount, rates);
   return {
-    ...priceBooking(withUnitPrices, petCount, rates),
+    ...priced,
     snapshot: {
       version: 2,
       rounding: 'HALF_UP_ONCE_PER_AMOUNT',
       caregiverLevel,
       firstServiceFeeWaived,
+      waivedServiceFeeCents: firstServiceFeeWaived
+        ? applyBasisPoints(priced.amounts.subtotalCents, standardRates.ownerServiceFeeBp)
+        : 0,
       petCount,
       prices: resolved,
       rates,

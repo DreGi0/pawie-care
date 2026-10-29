@@ -15,9 +15,15 @@ export type PriceCardProps = {
   price: BookingPrice;
 };
 
-/** The breakdown of Reservar and Pagar. RN-PRE-09: the waived fee is crossed out at $0.00. */
+/** The breakdown of Reservar and Pagar. RN-PRE-09: the fee it would have cost, crossed out, and $0.00. */
 export function PriceCard({ lines, price }: PriceCardProps) {
-  const { firstServiceFeeWaived, serviceFeeBp, serviceFeeCents, totalCents } = price;
+  const {
+    firstServiceFeeWaived,
+    waivedServiceFeeCents,
+    serviceFeeBp,
+    serviceFeeCents,
+    totalCents,
+  } = price;
 
   return (
     <Card style={styles.card}>
@@ -26,7 +32,15 @@ export function PriceCard({ lines, price }: PriceCardProps) {
       ))}
       {firstServiceFeeWaived ? (
         <View style={styles.waived}>
-          <Line label="Tarifa de servicio" amount={formatMoney(serviceFeeCents)} struck />
+          <View style={styles.line}>
+            <Text style={styles.label}>Tarifa de servicio</Text>
+            {waivedServiceFeeCents > 0 && (
+              <Text color="inkMuted" style={styles.struck}>
+                {formatMoney(waivedServiceFeeCents)}
+              </Text>
+            )}
+            <Text>{formatMoney(serviceFeeCents)}</Text>
+          </View>
           <Tag tone="success" label="Primer servicio" />
         </View>
       ) : (
@@ -43,24 +57,11 @@ export function PriceCard({ lines, price }: PriceCardProps) {
   );
 }
 
-function Line({
-  label,
-  amount,
-  struck = false,
-}: {
-  label: string;
-  amount: string;
-  struck?: boolean;
-}) {
-  const style = struck ? styles.struck : undefined;
+function Line({ label, amount }: { label: string; amount: string }) {
   return (
     <View style={styles.line}>
-      <Text color={struck ? 'inkMuted' : 'ink'} style={[styles.label, style]}>
-        {label}
-      </Text>
-      <Text color={struck ? 'inkMuted' : 'ink'} style={style}>
-        {amount}
-      </Text>
+      <Text style={styles.label}>{label}</Text>
+      <Text>{amount}</Text>
     </View>
   );
 }

@@ -65,7 +65,7 @@ flowchart LR
 - **Perfil de la mascota:** OnbMascota dice "Agrégalo luego en su perfil", pero la app todavía no tiene la pantalla de la mascota con sus tareas de cuidado, vacunas e indicaciones del veterinario.
 - **Género en la ⭐:** el mockup dice "⭐ Certificada", pero la API no dice si el cuidador es hombre o mujer. La app muestra "⭐ Con certificación".
 - **Avisos:** Esperando y Confirmada dicen "Te avisamos", pero la app no tiene notificaciones push. Esperando dice que la pantalla cambia sola, porque vuelve a preguntar mientras está abierta.
-- **Mockups de la etapa 6:** `Main`, `Perfil`, `Reservar` y `Pagar` siguen en la v0.4. La app ya tiene los filtros (una hoja con nivel mínimo, certificaciones y calificación mínima), el nivel en cada resultado, el perfil con nivel, insignias, certificaciones y habilidades, la tarifa tachada en $0.00 con "Primer servicio" y el aviso con los días que quedan; falta dibujarlos en `screens/`.
+- **Mockups de la etapa 6:** `Main`, `Perfil`, `Reservar` y `Pagar` siguen en la v0.4. La app ya tiene los filtros (una hoja con nivel mínimo, certificaciones y calificación mínima), el nivel en cada resultado, el perfil con nivel, insignias, certificaciones y habilidades, la tarifa que habría costado tachada, $0.00 al lado y "Primer servicio" debajo y el aviso con los días que quedan; falta dibujarlos en `screens/`.
 - **Varias visitas o noches:** la búsqueda pide una sola visita o una sola noche. La API acepta varias (RN-SER-03).
 - **Nombre de la dirección:** se guarda siempre como "Casa".
 - **Barra de pestañas:** en la app flota sobre el borde inferior, con las esquinas redondas, en lugar de pegarse al borde como en Main y Visitas.

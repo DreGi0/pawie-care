@@ -179,7 +179,12 @@ export const BookingsCreateResponse = zod.object({
     firstServiceFeeWaived: zod
       .boolean()
       .describe(
-        'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00.',
+        'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada, con $0.00 al lado.',
+      ),
+    waivedServiceFeeCents: zod
+      .int()
+      .describe(
+        'RN-PRE-09: lo que habría costado la tarifa de servicio. Es 0 si no es el primer servicio sin tarifa. La app lo muestra tachado junto al $0.00.',
       ),
   }),
   payment: zod
@@ -316,7 +321,12 @@ export const BookingsListResponseItem = zod.object({
     firstServiceFeeWaived: zod
       .boolean()
       .describe(
-        'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00.',
+        'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada, con $0.00 al lado.',
+      ),
+    waivedServiceFeeCents: zod
+      .int()
+      .describe(
+        'RN-PRE-09: lo que habría costado la tarifa de servicio. Es 0 si no es el primer servicio sin tarifa. La app lo muestra tachado junto al $0.00.',
       ),
   }),
   payment: zod
@@ -400,7 +410,12 @@ export const BookingsQuoteResponse = zod.object({
   firstServiceFeeWaived: zod
     .boolean()
     .describe(
-      'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00.',
+      'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada, con $0.00 al lado.',
+    ),
+  waivedServiceFeeCents: zod
+    .int()
+    .describe(
+      'RN-PRE-09: lo que habría costado la tarifa de servicio. Es 0 si no es el primer servicio sin tarifa. La app lo muestra tachado junto al $0.00.',
     ),
 });
 
@@ -512,7 +527,12 @@ export const BookingsGetResponse = zod.object({
     firstServiceFeeWaived: zod
       .boolean()
       .describe(
-        'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00.',
+        'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada, con $0.00 al lado.',
+      ),
+    waivedServiceFeeCents: zod
+      .int()
+      .describe(
+        'RN-PRE-09: lo que habría costado la tarifa de servicio. Es 0 si no es el primer servicio sin tarifa. La app lo muestra tachado junto al $0.00.',
       ),
   }),
   payment: zod
@@ -663,7 +683,12 @@ export const BookingsCancelResponse = zod.object({
     firstServiceFeeWaived: zod
       .boolean()
       .describe(
-        'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00.',
+        'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada, con $0.00 al lado.',
+      ),
+    waivedServiceFeeCents: zod
+      .int()
+      .describe(
+        'RN-PRE-09: lo que habría costado la tarifa de servicio. Es 0 si no es el primer servicio sin tarifa. La app lo muestra tachado junto al $0.00.',
       ),
   }),
   payment: zod
