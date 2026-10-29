@@ -1,4 +1,4 @@
-import { CareLevel, ServiceCode } from '../generated/prisma/enums.js';
+import { CaregiverLevel, ServiceCode } from '../generated/prisma/enums.js';
 import {
   applyBasisPoints,
   type PricingRates,
@@ -9,8 +9,8 @@ import {
 // The initial values of §15.
 const RATES: PricingRates = {
   additionalPetSurchargeBp: 5000,
-  ownerServiceFeeBp: 1000,
-  caregiverCommissionBp: 1500,
+  ownerServiceFeeBp: 1500,
+  caregiverCommissionBp: 0,
   guaranteeFundBp: 200,
   vatBp: 1300,
   gatewayFeeBp: 350,
@@ -19,17 +19,23 @@ const RATES: PricingRates = {
 const visit = (unitPriceCents: number) => ({ unitPriceCents });
 
 describe('priceBooking', () => {
-  it('reproduces the example of RN-PRE: a $17 Special visit', () => {
-    const { amounts } = priceBooking([visit(1700)], 1, RATES);
+  it('reproduces the example of RN-PRE: a $6.50 service pays $7.48 and the caregiver gets $6.50', () => {
+    const { amounts } = priceBooking([visit(650)], 1, RATES);
 
-    // The owner pays $18.70 and the caregiver gets $14.45.
+    // The fee is 650 × 15% = 97.5, which rounds half up to 98 (RN-PRE-03, RN-PRE-08).
     expect(amounts).toEqual({
-      subtotalCents: 1700,
-      ownerServiceFeeCents: 170,
-      totalCents: 1870,
-      caregiverCommissionCents: 255,
-      caregiverPayoutCents: 1445,
+      subtotalCents: 650,
+      ownerServiceFeeCents: 98,
+      totalCents: 748,
+      caregiverCommissionCents: 0,
+      caregiverPayoutCents: 650,
     });
+  });
+
+  it('takes the commission from the caregiver when the parameter is above 0 (RN-PRE-04)', () => {
+    const { amounts } = priceBooking([visit(1700)], 1, { ...RATES, caregiverCommissionBp: 1500 });
+
+    expect(amounts).toMatchObject({ caregiverCommissionCents: 255, caregiverPayoutCents: 1445 });
   });
 
   it('adds 50% of the caregiver’s price for each additional pet (RN-PRE-02)', () => {
@@ -43,24 +49,24 @@ describe('priceBooking', () => {
 
   it('rounds half up, once per amount (RN-PRE-08)', () => {
     // Each slot: 1235 × 1.5 = 1852.5 → 1853. The fee comes from the subtotal, 3706 ×
-    // 10% = 370.6 → 371, not from adding up the fee of each slot (185 + 185).
+    // 15% = 555.9 → 556, not from adding up the fee of each slot (278 + 278).
     const { slots, amounts } = priceBooking([visit(1235), visit(1235)], 2, RATES);
 
     expect(slots.map(({ subtotalCents }) => subtotalCents)).toEqual([1853, 1853]);
     expect(amounts).toEqual({
       subtotalCents: 3706,
-      ownerServiceFeeCents: 371,
-      totalCents: 4077,
-      // 3706 × 15% = 555.9 → 556
-      caregiverCommissionCents: 556,
-      caregiverPayoutCents: 3150,
+      ownerServiceFeeCents: 556,
+      totalCents: 4262,
+      caregiverCommissionCents: 0,
+      caregiverPayoutCents: 3706,
     });
   });
 
   it('keeps total = subtotal + fee and payout = subtotal − commission', () => {
+    const rates = { ...RATES, caregiverCommissionBp: 1500 };
     for (const unitPriceCents of [1000, 1001, 1333, 1705, 4499]) {
       for (const petCount of [1, 2, 3]) {
-        const { amounts } = priceBooking([visit(unitPriceCents)], petCount, RATES);
+        const { amounts } = priceBooking([visit(unitPriceCents)], petCount, rates);
 
         expect(amounts.totalCents).toBe(amounts.subtotalCents + amounts.ownerServiceFeeCents);
         expect(amounts.caregiverPayoutCents).toBe(
@@ -86,7 +92,8 @@ describe('quoteBooking', () => {
   it('prices the daytime visits of a stay at the visit price (RN-SER-03), and saves why', () => {
     const quote = quoteBooking({
       slots: [{ serviceCode: OVERNIGHT_STAY }, { serviceCode: HOME_VISIT }],
-      careLevel: CareLevel.STANDARD,
+      caregiverLevel: CaregiverLevel.TRUSTED,
+      firstServiceFeeWaived: false,
       petCount: 2,
       prices: [
         { serviceCode: OVERNIGHT_STAY, caregiverPriceCents: 2800, range: ranges[OVERNIGHT_STAY] },
@@ -100,11 +107,13 @@ describe('quoteBooking', () => {
       { serviceCode: OVERNIGHT_STAY, unitPriceCents: 2800, subtotalCents: 4200 },
       { serviceCode: HOME_VISIT, unitPriceCents: 1400, subtotalCents: 2100 },
     ]);
-    expect(quote.amounts).toMatchObject({ subtotalCents: 6300, totalCents: 6930 });
+    // 6300 × 15% = 945
+    expect(quote.amounts).toMatchObject({ subtotalCents: 6300, totalCents: 7245 });
     expect(quote.snapshot).toEqual({
-      version: 1,
+      version: 2,
       rounding: 'HALF_UP_ONCE_PER_AMOUNT',
-      careLevel: 'STANDARD',
+      caregiverLevel: 'TRUSTED',
+      firstServiceFeeWaived: false,
       petCount: 2,
       prices: [
         {
@@ -127,7 +136,8 @@ describe('quoteBooking', () => {
   it('uses the suggested price when the caregiver set none', () => {
     const quote = quoteBooking({
       slots: [{ serviceCode: HOME_VISIT }],
-      careLevel: CareLevel.STANDARD,
+      caregiverLevel: CaregiverLevel.NEW,
+      firstServiceFeeWaived: false,
       petCount: 1,
       prices: [{ serviceCode: HOME_VISIT, caregiverPriceCents: null, range: ranges[HOME_VISIT] }],
       rates: RATES,
@@ -136,11 +146,40 @@ describe('quoteBooking', () => {
     expect(quote.slots[0].unitPriceCents).toBe(1200);
   });
 
+  it('charges no service fee on the first service and keeps the zero in the snapshot (RN-PRE-09, RN-PRE-07)', () => {
+    const quote = quoteBooking({
+      slots: [{ serviceCode: HOME_VISIT }],
+      caregiverLevel: CaregiverLevel.TRUSTED,
+      firstServiceFeeWaived: true,
+      petCount: 1,
+      prices: [
+        {
+          serviceCode: HOME_VISIT,
+          caregiverPriceCents: 650,
+          range: { minCents: 500, suggestedCents: 650, maxCents: 800 },
+        },
+      ],
+      rates: RATES,
+    });
+
+    expect(quote.amounts).toMatchObject({
+      subtotalCents: 650,
+      ownerServiceFeeCents: 0,
+      totalCents: 650,
+      caregiverPayoutCents: 650,
+    });
+    expect(quote.snapshot).toMatchObject({
+      firstServiceFeeWaived: true,
+      rates: { ...RATES, ownerServiceFeeBp: 0 },
+    });
+  });
+
   it('refuses a slot whose service has no price', () => {
     expect(() =>
       quoteBooking({
         slots: [{ serviceCode: OVERNIGHT_STAY }],
-        careLevel: CareLevel.STANDARD,
+        caregiverLevel: CaregiverLevel.NEW,
+        firstServiceFeeWaived: false,
         petCount: 1,
         prices: [],
         rates: RATES,

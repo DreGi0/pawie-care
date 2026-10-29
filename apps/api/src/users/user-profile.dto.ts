@@ -29,3 +29,15 @@ export class UserProfile {
   })
   roles: Role[];
 }
+
+/** `GET /v1/users/me`: the account plus what depends on the owner's history. */
+export class MeResponse extends UserProfile {
+  @ApiProperty({
+    type: String,
+    format: 'date-time',
+    nullable: true,
+    description:
+      'RN-PRE-09: hasta cuándo el dueño puede crear su primer servicio sin tarifa. Null si ya no aplica: venció el plazo, ya pagó una reserva o una reserva activa tiene el beneficio.',
+  })
+  firstServiceFeeWaiverEndsAt: string | null;
+}

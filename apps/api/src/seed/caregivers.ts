@@ -1,4 +1,4 @@
-import { CaregiverSkill, CareLevel, ServiceCode } from '../generated/prisma/enums.js';
+import { CaregiverSkill, ServiceCode } from '../generated/prisma/enums.js';
 import type { CertificationCode, DistrictSlug } from './catalog.js';
 
 export interface AvailabilityWindow {
@@ -26,8 +26,11 @@ export interface DemoCaregiver {
   /** Months the student ID is still valid for. Absent for caregivers who aren't vet students. */
   vetStudentMonthsLeft?: number;
   districts: DistrictSlug[];
-  /** Price in cents for each service and level offered; null takes the suggested one. */
-  prices: Partial<Record<ServiceCode, Partial<Record<CareLevel, number | null>>>>;
+  /**
+   * Price in cents for each service offered, within the range of the caregiver's level
+   * (RN-PRE-01); null takes the suggested one.
+   */
+  prices: Partial<Record<ServiceCode, number | null>>;
   availability: AvailabilityWindow[];
   /** Fake ratings (RN-RSE, after the demo): count and sum of stars. */
   ratings: { count: number; sum: number; specialCount: number; specialSum: number };
@@ -53,7 +56,6 @@ function minutesOf(time: string): number {
 
 const { HOME_VISIT, OVERNIGHT_STAY } = ServiceCode;
 const { LARGE_DOGS, CATS, PUPPIES, SENIOR_PETS, DIFFICULT_BEHAVIOR } = CaregiverSkill;
-const { STANDARD, SPECIAL } = CareLevel;
 
 /**
  * Demo caregivers: approved, with instant booking (docs/reglas-de-negocio.md §2).
@@ -74,8 +76,8 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     vetStudentMonthsLeft: 8,
     districts: ['san-salvador', 'antiguo-cuscatlan', 'santa-tecla'],
     prices: {
-      [HOME_VISIT]: { [STANDARD]: 1300, [SPECIAL]: 1800 },
-      [OVERNIGHT_STAY]: { [STANDARD]: 2800, [SPECIAL]: 4000 },
+      [HOME_VISIT]: 1800,
+      [OVERNIGHT_STAY]: 4000,
     },
     availability: [
       ...every(MONDAY_TO_FRIDAY, '14:00', '19:00'),
@@ -95,8 +97,8 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     skills: [SENIOR_PETS],
     districts: ['santa-tecla', 'antiguo-cuscatlan', 'san-salvador'],
     prices: {
-      [HOME_VISIT]: { [STANDARD]: null, [SPECIAL]: null },
-      [OVERNIGHT_STAY]: { [STANDARD]: 2600, [SPECIAL]: 3800 },
+      [HOME_VISIT]: null,
+      [OVERNIGHT_STAY]: 3000,
     },
     availability: [...every(EVERY_DAY, '07:00', '19:00'), ...every(EVERY_DAY, '19:00', '08:00')],
     ratings: { count: 71, sum: 337, specialCount: 30, specialSum: 144 },
@@ -112,8 +114,8 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     skills: [CATS, PUPPIES],
     districts: ['mejicanos', 'san-salvador', 'ayutuxtepeque'],
     prices: {
-      [HOME_VISIT]: { [STANDARD]: 1100 },
-      [OVERNIGHT_STAY]: { [STANDARD]: 2200 },
+      [HOME_VISIT]: 1100,
+      [OVERNIGHT_STAY]: 2200,
     },
     availability: [
       ...every(MONDAY_TO_FRIDAY, '15:00', '19:00'),
@@ -132,8 +134,8 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     skills: [LARGE_DOGS, DIFFICULT_BEHAVIOR],
     districts: ['soyapango', 'ilopango', 'san-martin'],
     prices: {
-      [HOME_VISIT]: { [STANDARD]: 1000 },
-      [OVERNIGHT_STAY]: { [STANDARD]: 2000 },
+      [HOME_VISIT]: 1000,
+      [OVERNIGHT_STAY]: 2000,
     },
     availability: [
       ...every([1, 2, 3, 4, 5, 6], '06:00', '18:00'),
@@ -151,7 +153,7 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     certifications: { SPECIAL_CARE: 2, FIRST_AID: 1 },
     skills: [SENIOR_PETS],
     districts: ['san-salvador', 'ciudad-delgado', 'cuscatancingo', 'mejicanos'],
-    prices: { [HOME_VISIT]: { [STANDARD]: 1400, [SPECIAL]: 2000 } },
+    prices: { [HOME_VISIT]: 1400 },
     availability: every(MONDAY_TO_FRIDAY, '07:00', '17:00'),
     ratings: { count: 58, sum: 281, specialCount: 25, specialSum: 122 },
     completedBookings: 64,
@@ -164,7 +166,7 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     bio: 'Estudiante de veterinaria. Por las clases solo hago visitas: paseos cortos y compañía para perros con mucha energía.',
     vetStudentMonthsLeft: 4,
     districts: ['antiguo-cuscatlan', 'santa-tecla'],
-    prices: { [HOME_VISIT]: { [STANDARD]: null } },
+    prices: { [HOME_VISIT]: null },
     availability: [...every([1, 3, 5], '12:00', '18:00'), ...every(WEEKEND, '09:00', '17:00')],
     ratings: { count: 5, sum: 23, specialCount: 0, specialSum: 0 },
     completedBookings: 6,
@@ -178,8 +180,8 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     skills: [CATS, PUPPIES],
     districts: ['santa-tecla', 'antiguo-cuscatlan'],
     prices: {
-      [HOME_VISIT]: { [STANDARD]: 1200 },
-      [OVERNIGHT_STAY]: { [STANDARD]: 3000 },
+      [HOME_VISIT]: 1200,
+      [OVERNIGHT_STAY]: 2800,
     },
     availability: [...every(EVERY_DAY, '08:00', '19:00'), ...every([4, 5, 6, 7], '19:00', '08:00')],
     ratings: { count: 20, sum: 96, specialCount: 0, specialSum: 0 },
@@ -195,8 +197,8 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     vetStudentMonthsLeft: 6,
     districts: ['apopa', 'nejapa', 'mejicanos', 'san-salvador'],
     prices: {
-      [HOME_VISIT]: { [STANDARD]: 1000, [SPECIAL]: 1500 },
-      [OVERNIGHT_STAY]: { [STANDARD]: 2000, [SPECIAL]: 3000 },
+      [HOME_VISIT]: 1000,
+      [OVERNIGHT_STAY]: 2000,
     },
     availability: [
       ...every(MONDAY_TO_FRIDAY, '17:00', '19:00'),
@@ -214,7 +216,7 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     bio: 'Soy nueva en Pawie. Vivo con dos gatos y hago visitas por la tarde y los fines de semana.',
     skills: [CATS],
     districts: ['soyapango', 'ilopango', 'tonacatepeque'],
-    prices: { [HOME_VISIT]: { [STANDARD]: 1000 } },
+    prices: { [HOME_VISIT]: 800 },
     availability: [
       ...every(MONDAY_TO_FRIDAY, '16:00', '19:00'),
       ...every(WEEKEND, '08:00', '18:00'),
@@ -233,8 +235,8 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     skills: [LARGE_DOGS, SENIOR_PETS, CATS],
     districts: ['san-marcos', 'san-salvador', 'ilopango'],
     prices: {
-      [HOME_VISIT]: { [STANDARD]: 1300, [SPECIAL]: 1900 },
-      [OVERNIGHT_STAY]: { [STANDARD]: 2700, [SPECIAL]: 4500 },
+      [HOME_VISIT]: 1300,
+      [OVERNIGHT_STAY]: 2700,
     },
     availability: [...every(EVERY_DAY, '06:00', '19:00'), ...every(EVERY_DAY, '19:00', '08:00')],
     ratings: { count: 104, sum: 497, specialCount: 47, specialSum: 226 },

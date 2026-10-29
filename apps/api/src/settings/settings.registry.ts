@@ -1,4 +1,4 @@
-import { CaregiverLevel, CareLevel, ServiceCode } from '../generated/prisma/enums.js';
+import { CaregiverLevel, ServiceCode } from '../generated/prisma/enums.js';
 import {
   basisPoints,
   integer,
@@ -52,8 +52,10 @@ const priceRange = refine(
   'debe cumplir minCents ≤ suggestedCents ≤ maxCents.',
 );
 const priceRangesByLevel = object({
-  [CareLevel.STANDARD]: priceRange,
-  [CareLevel.SPECIAL]: priceRange,
+  [CaregiverLevel.NEW]: priceRange,
+  [CaregiverLevel.TRUSTED]: priceRange,
+  [CaregiverLevel.PRO]: priceRange,
+  [CaregiverLevel.SUPER]: priceRange,
 });
 
 /**
@@ -65,20 +67,25 @@ const priceRangesByLevel = object({
 export const SETTINGS = {
   // ─── Prices and fees ───
   'pricing.priceRanges': setting({
-    description: 'Rangos y precios sugeridos por servicio y nivel, en centavos',
+    description: 'Rangos y precios sugeridos por servicio y nivel del cuidador, en centavos',
     rules: ['RN-PRE-01', 'RN-CUI-17'],
     parse: object({
       [ServiceCode.HOME_VISIT]: priceRangesByLevel,
       [ServiceCode.OVERNIGHT_STAY]: priceRangesByLevel,
     }),
+    // The walk joins in stage 8 (RN-PRE-01).
     initialValue: {
       HOME_VISIT: {
-        STANDARD: { minCents: 1000, suggestedCents: 1200, maxCents: 1400 },
-        SPECIAL: { minCents: 1500, suggestedCents: 1700, maxCents: 2000 },
+        NEW: { minCents: 600, suggestedCents: 700, maxCents: 900 },
+        TRUSTED: { minCents: 800, suggestedCents: 1000, maxCents: 1200 },
+        PRO: { minCents: 1100, suggestedCents: 1300, maxCents: 1500 },
+        SUPER: { minCents: 1500, suggestedCents: 1700, maxCents: 2000 },
       },
       OVERNIGHT_STAY: {
-        STANDARD: { minCents: 2000, suggestedCents: 2500, maxCents: 3000 },
-        SPECIAL: { minCents: 3000, suggestedCents: 3500, maxCents: 4500 },
+        NEW: { minCents: 1500, suggestedCents: 1800, maxCents: 2200 },
+        TRUSTED: { minCents: 2000, suggestedCents: 2400, maxCents: 2800 },
+        PRO: { minCents: 2600, suggestedCents: 3000, maxCents: 3500 },
+        SUPER: { minCents: 3200, suggestedCents: 3800, maxCents: 4500 },
       },
     },
   }),
@@ -92,13 +99,19 @@ export const SETTINGS = {
     description: 'Tarifa de servicio al dueño',
     rules: ['RN-PRE-03'],
     parse: basisPoints,
-    initialValue: 1000,
+    initialValue: 1500,
+  }),
+  'pricing.firstServiceWindowDays': setting({
+    description: 'Días desde el registro para usar el primer servicio sin tarifa',
+    rules: ['RN-PRE-09'],
+    parse: days,
+    initialValue: 15,
   }),
   'pricing.caregiverCommissionBp': setting({
     description: 'Comisión al cuidador',
     rules: ['RN-PRE-04'],
     parse: basisPoints,
-    initialValue: 1500,
+    initialValue: 0,
   }),
   'pricing.guaranteeFundBp': setting({
     description: 'Fondo de Garantía Pawie, sobre lo que paga el dueño',

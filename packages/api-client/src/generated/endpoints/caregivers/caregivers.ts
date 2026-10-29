@@ -50,7 +50,7 @@ export const getCaregiversSearchUrl = () => {
 };
 
 /**
- * RN-RES-01. Va por POST porque lleva las mascotas y los horarios; no cambia nada. Devuelve el nivel de la reserva, los tramos y los cuidadores disponibles.
+ * RN-RES-01. Va por POST porque lleva las mascotas y los horarios; no cambia nada. Acepta los filtros `minLevel`, `certificationCodes` y `minRating`. Devuelve el nivel de la reserva, los tramos y los cuidadores disponibles, con su nivel, insignias, certificaciones y habilidades.
  * @summary Buscar cuidadores
  */
 export const caregiversSearch = async (

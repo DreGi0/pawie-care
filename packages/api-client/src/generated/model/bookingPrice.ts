@@ -9,9 +9,11 @@
 export interface BookingPrice {
   /** Lo que cobra el cuidador: la suma de los tramos. */
   subtotalCents: number;
-  /** Tarifa de servicio, en puntos básicos. */
+  /** Tarifa de servicio, en puntos básicos. Es 0 en el primer servicio (RN-PRE-09). */
   serviceFeeBp: number;
   serviceFeeCents: number;
   /** Lo que paga el dueño. */
   totalCents: number;
+  /** RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00. */
+  firstServiceFeeWaived: boolean;
 }

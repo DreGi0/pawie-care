@@ -5,7 +5,11 @@
  * API REST de Pawie Care. Las reglas de negocio están en docs/reglas-de-negocio.md y el diseño en docs/arquitectura.md. Los errores siempre tienen la forma de `ErrorResponse`.
  * OpenAPI spec version: 1
  */
+import type { CaregiverBadge } from './caregiverBadge';
+import type { CaregiverCertificationSummary } from './caregiverCertificationSummary';
+import type { CaregiverLevel } from './caregiverLevel';
 import type { CaregiverPrice } from './caregiverPrice';
+import type { CaregiverSkill } from './caregiverSkill';
 import type { DistrictOption } from './districtOption';
 
 export interface CaregiverProfileResponse {
@@ -17,6 +21,14 @@ export interface CaregiverProfileResponse {
    * @nullable
    */
   photoUrl: string | null;
+  /** RN-NIV-01: lo calcula el sistema. */
+  level: CaregiverLevel;
+  /** Insignias de verificación (RN-CUI-03, RN-CUI-05). */
+  badges: CaregiverBadge[];
+  /** Certificaciones vigentes, la ⭐ incluida (RN-CUI-07). */
+  certifications: CaregiverCertificationSummary[];
+  /** Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19). */
+  skills: CaregiverSkill[];
   /** Tiene la ⭐ de cuidado especial vigente (RN-CUI-07). */
   hasSpecialCareCertification: boolean;
   /** Insignia "Estudiante de veterinaria" vigente (RN-CUI-05). */
@@ -34,6 +46,6 @@ export interface CaregiverProfileResponse {
   /** @nullable */
   bio: string | null;
   districts: DistrictOption[];
-  /** Los servicios que ofrece. Los de nivel Especial solo aparecen si tiene la ⭐. */
+  /** Los servicios que ofrece, al rango de su nivel (RN-PRE-01). */
   prices: CaregiverPrice[];
 }

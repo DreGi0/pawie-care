@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { Clock } from '../common/time/clock.js';
 import { Role, type User } from '../generated/prisma/client.js';
+import { firstServiceFeeWaiverEndsAt } from '../pricing/first-service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SettingsService } from '../settings/settings.service.js';
 import type { UserProfile } from './user-profile.dto.js';
 
 /** Emails are stored trimmed and lowercased, and a CHECK constraint enforces it. */
@@ -31,7 +34,11 @@ export interface NewOwner {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: SettingsService,
+    private readonly clock: Clock,
+  ) {}
 
   findById(id: string): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { id } });
@@ -46,5 +53,17 @@ export class UsersService {
     return this.prisma.user.create({
       data: { ...owner, email: normalizeEmail(email), roles: [Role.OWNER] },
     });
+  }
+
+  /** RN-PRE-09: the end of the owner's first-service window, as an ISO instant, or null. */
+  async firstServiceFeeWaiverEndsAt(ownerId: string): Promise<string | null> {
+    const windowDays = await this.settings.get('pricing.firstServiceWindowDays');
+    const endsAt = await firstServiceFeeWaiverEndsAt(
+      this.prisma,
+      ownerId,
+      windowDays,
+      this.clock.now(),
+    );
+    return endsAt?.toISOString() ?? null;
   }
 }

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { verifyPassword } from '../src/auth/passwords.js';
 import { formatDateOnly } from '../src/common/time/calendar.js';
 import { caregiverLevel } from '../src/caregivers/caregiver-level.js';
-import { CaregiverLevel, CareLevel, ServiceCode } from '../src/generated/prisma/client.js';
+import { CaregiverLevel, ServiceCode } from '../src/generated/prisma/client.js';
 import { careLevelOn } from '../src/pets/care-level.js';
 import { seedDatabase, type SeedSummary } from '../src/seed/seed-database.js';
 import { SETTING_KEYS } from '../src/settings/settings.registry.js';
@@ -285,9 +285,6 @@ describe('seed', () => {
 
     for (const caregiver of await caregivers()) {
       const name = caregiver.user.firstName;
-      const hasStar = caregiver.certifications.some(({ certificationType }) =>
-        isSpecialCare(certificationType),
-      );
 
       expect(caregiver.districts.length, name).toBeGreaterThan(0);
       expect(caregiver.availability.length, name).toBeGreaterThan(0);
@@ -299,15 +296,12 @@ describe('seed', () => {
       );
       expect(homeVisit.length, name).toBeGreaterThan(0);
 
-      for (const { service, careLevel, priceCents } of caregiver.servicePrices) {
-        // RN-RES-01: only caregivers with the ⭐ offer the Special level.
-        expect(careLevel === CareLevel.STANDARD || hasStar, name).toBe(true);
+      for (const { service, priceCents } of caregiver.servicePrices) {
         if (priceCents !== null) {
-          const { minCents, maxCents } = ranges[service.code][careLevel];
-          expect(priceCents, `${name} ${service.code} ${careLevel}`).toBeGreaterThanOrEqual(
-            minCents,
-          );
-          expect(priceCents, `${name} ${service.code} ${careLevel}`).toBeLessThanOrEqual(maxCents);
+          // RN-PRE-01: the range of the caregiver's level.
+          const { minCents, maxCents } = ranges[service.code][caregiver.level];
+          expect(priceCents, `${name} ${service.code}`).toBeGreaterThanOrEqual(minCents);
+          expect(priceCents, `${name} ${service.code}`).toBeLessThanOrEqual(maxCents);
         }
       }
     }

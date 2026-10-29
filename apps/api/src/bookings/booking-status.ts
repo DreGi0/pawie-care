@@ -54,8 +54,11 @@ export function canTransition(from: BookingStatus, to: BookingStatus): boolean {
   return BOOKING_TRANSITIONS[from].includes(to);
 }
 
-/** Statuses that free the caregiver's time. The CHECK bookings_blocks_calendar_check repeats them. */
-const NON_BLOCKING_STATUSES: readonly BookingStatus[] = [
+/**
+ * Statuses that free the caregiver's time. The CHECK bookings_blocks_calendar_check repeats
+ * them. They also release the first-service incentive (RN-PRE-09).
+ */
+export const NON_BLOCKING_STATUSES: readonly BookingStatus[] = [
   REJECTED,
   EXPIRED,
   CANCELLED_BY_OWNER,

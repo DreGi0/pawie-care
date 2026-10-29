@@ -45,7 +45,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserProfile"
+                  "$ref": "#/components/schemas/MeResponse"
                 }
               }
             }
@@ -1513,6 +1513,74 @@
         ]
       }
     },
+    "/v1/bookings/quote": {
+      "post": {
+        "description": "RN-PRE-10. Mismo cuerpo y mismas validaciones que `POST /v1/bookings`; devuelve el precio que se cobraría ahora, con el primer servicio sin tarifa si aplica (RN-PRE-09), y no guarda nada.",
+        "operationId": "Bookings_quote",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingPrice"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`ADDRESS_NOT_FOUND` o `PET_NOT_FOUND`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`SLOT_TAKEN` o `CAREGIVER_UNAVAILABLE`, como al reservar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Los mismos de la búsqueda: `TOO_MANY_PETS`, `INVALID_SCHEDULE`, `TOO_SOON` o `PET_NOT_BOOKABLE`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cotizar una reserva",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
     "/v1/bookings/{bookingId}": {
       "get": {
         "description": "El teléfono del cuidador aparece cuando está confirmada (RN-CTA-04).",
@@ -1629,7 +1697,7 @@
     },
     "/v1/caregivers/search": {
       "post": {
-        "description": "RN-RES-01. Va por POST porque lleva las mascotas y los horarios; no cambia nada. Devuelve el nivel de la reserva, los tramos y los cuidadores disponibles.",
+        "description": "RN-RES-01. Va por POST porque lleva las mascotas y los horarios; no cambia nada. Acepta los filtros `minLevel`, `certificationCodes` y `minRating`. Devuelve el nivel de la reserva, los tramos y los cuidadores disponibles, con su nivel, insignias, certificaciones y habilidades.",
         "operationId": "Caregivers_search",
         "parameters": [],
         "requestBody": {
@@ -1920,7 +1988,7 @@
         ],
         "description": "RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez."
       },
-      "UserProfile": {
+      "MeResponse": {
         "type": "object",
         "properties": {
           "id": {
@@ -1955,6 +2023,12 @@
               "$ref": "#/components/schemas/Role"
             },
             "description": "RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez."
+          },
+          "firstServiceFeeWaiverEndsAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "RN-PRE-09: hasta cuándo el dueño puede crear su primer servicio sin tarifa. Null si ya no aplica: venció el plazo, ya pagó una reserva o una reserva activa tiene el beneficio."
           }
         },
         "required": [
@@ -1964,7 +2038,8 @@
           "lastName",
           "birthDate",
           "phone",
-          "roles"
+          "roles",
+          "firstServiceFeeWaiverEndsAt"
         ]
       },
       "RegisterRequest": {
@@ -2010,6 +2085,53 @@
           "firstName",
           "lastName",
           "birthDate"
+        ]
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "example": "daniela@example.com"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "Daniela"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Pérez"
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "example": "1992-05-20"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "example": "+503 7000 0000"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Role"
+            },
+            "description": "RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez."
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "firstName",
+          "lastName",
+          "birthDate",
+          "phone",
+          "roles"
         ]
       },
       "AuthSession": {
@@ -3131,7 +3253,7 @@
           "STANDARD",
           "SPECIAL"
         ],
-        "description": "RN-PRE-02: Especial si alguna mascota lo es."
+        "description": "RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio."
       },
       "BookingCaregiver": {
         "type": "object",
@@ -3299,7 +3421,7 @@
           "serviceFeeBp": {
             "type": "integer",
             "example": 1000,
-            "description": "Tarifa de servicio, en puntos básicos."
+            "description": "Tarifa de servicio, en puntos básicos. Es 0 en el primer servicio (RN-PRE-09)."
           },
           "serviceFeeCents": {
             "type": "integer",
@@ -3309,13 +3431,18 @@
             "type": "integer",
             "example": 1870,
             "description": "Lo que paga el dueño."
+          },
+          "firstServiceFeeWaived": {
+            "type": "boolean",
+            "description": "RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00."
           }
         },
         "required": [
           "subtotalCents",
           "serviceFeeBp",
           "serviceFeeCents",
-          "totalCents"
+          "totalCents",
+          "firstServiceFeeWaived"
         ]
       },
       "PaymentStatus": {
@@ -3398,7 +3525,7 @@
             ]
           },
           "careLevel": {
-            "description": "RN-PRE-02: Especial si alguna mascota lo es.",
+            "description": "RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/CareLevel"
@@ -3502,6 +3629,16 @@
           }
         }
       },
+      "CaregiverLevel": {
+        "type": "string",
+        "enum": [
+          "NEW",
+          "TRUSTED",
+          "PRO",
+          "SUPER"
+        ],
+        "description": "Solo cuidadores de este nivel o uno más alto."
+      },
       "SearchCaregiversRequest": {
         "type": "object",
         "properties": {
@@ -3551,6 +3688,32 @@
             "type": "string",
             "format": "uuid",
             "description": "Uno de los distritos de GET /v1/catalog."
+          },
+          "minLevel": {
+            "description": "Solo cuidadores de este nivel o uno más alto.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CaregiverLevel"
+              }
+            ]
+          },
+          "certificationCodes": {
+            "maxItems": 10,
+            "example": [
+              "FIRST_AID"
+            ],
+            "description": "Códigos de certificación que debe tener vigentes todo el servicio.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "minRating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5,
+            "example": 4.5,
+            "description": "Calificación mínima, de 1 a 5. Deja fuera a quien aún no tiene calificaciones."
           }
         },
         "required": [
@@ -3584,6 +3747,50 @@
           "endsAt"
         ]
       },
+      "CaregiverBadge": {
+        "type": "string",
+        "enum": [
+          "IDENTITY_VERIFIED",
+          "BACKGROUND_CHECKED",
+          "VET_STUDENT"
+        ],
+        "description": "Insignias de verificación (RN-CUI-03, RN-CUI-05)."
+      },
+      "CaregiverCertificationSummary": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "FIRST_AID",
+            "description": "Código del tipo de certificación."
+          },
+          "name": {
+            "type": "string",
+            "example": "Primeros auxilios"
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date",
+            "description": "Último día de vigencia (RN-CUI-09)."
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "validUntil"
+        ]
+      },
+      "CaregiverSkill": {
+        "type": "string",
+        "enum": [
+          "LARGE_DOGS",
+          "CATS",
+          "PUPPIES",
+          "SENIOR_PETS",
+          "DIFFICULT_BEHAVIOR"
+        ],
+        "description": "Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19)."
+      },
       "CaregiverPrice": {
         "type": "object",
         "properties": {
@@ -3591,13 +3798,6 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/ServiceCode"
-              }
-            ]
-          },
-          "careLevel": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/CareLevel"
               }
             ]
           },
@@ -3609,7 +3809,6 @@
         },
         "required": [
           "serviceCode",
-          "careLevel",
           "priceCents"
         ]
       },
@@ -3629,6 +3828,35 @@
             "type": "string",
             "nullable": true,
             "description": "URL firmada que vence en 10 minutos."
+          },
+          "level": {
+            "description": "RN-NIV-01: lo calcula el sistema.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CaregiverLevel"
+              }
+            ]
+          },
+          "badges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverBadge"
+            },
+            "description": "Insignias de verificación (RN-CUI-03, RN-CUI-05)."
+          },
+          "certifications": {
+            "description": "Certificaciones vigentes, la ⭐ incluida (RN-CUI-07).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverCertificationSummary"
+            }
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverSkill"
+            },
+            "description": "Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19)."
           },
           "hasSpecialCareCertification": {
             "type": "boolean",
@@ -3656,7 +3884,7 @@
             "description": "RN-CUI-16: las solicitudes se confirman sin esperar al cuidador."
           },
           "prices": {
-            "description": "Sus precios para lo que se buscó, en el nivel de la reserva.",
+            "description": "Sus precios para lo que se buscó (RN-PRE-01).",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CaregiverPrice"
@@ -3667,6 +3895,10 @@
           "id",
           "displayName",
           "photoUrl",
+          "level",
+          "badges",
+          "certifications",
+          "skills",
           "hasSpecialCareCertification",
           "isVetStudent",
           "rating",
@@ -3680,7 +3912,7 @@
         "type": "object",
         "properties": {
           "careLevel": {
-            "description": "RN-MAS-05, RN-PRE-02: Especial si alguna mascota lo es en esas fechas.",
+            "description": "RN-MAS-05, RN-MAS-06: Especial si alguna mascota lo es en esas fechas. Exige la ⭐, pero no cambia el precio.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/CareLevel"
@@ -3725,6 +3957,35 @@
             "nullable": true,
             "description": "URL firmada que vence en 10 minutos."
           },
+          "level": {
+            "description": "RN-NIV-01: lo calcula el sistema.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CaregiverLevel"
+              }
+            ]
+          },
+          "badges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverBadge"
+            },
+            "description": "Insignias de verificación (RN-CUI-03, RN-CUI-05)."
+          },
+          "certifications": {
+            "description": "Certificaciones vigentes, la ⭐ incluida (RN-CUI-07).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverCertificationSummary"
+            }
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverSkill"
+            },
+            "description": "Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19)."
+          },
           "hasSpecialCareCertification": {
             "type": "boolean",
             "description": "Tiene la ⭐ de cuidado especial vigente (RN-CUI-07)."
@@ -3761,7 +4022,7 @@
             }
           },
           "prices": {
-            "description": "Los servicios que ofrece. Los de nivel Especial solo aparecen si tiene la ⭐.",
+            "description": "Los servicios que ofrece, al rango de su nivel (RN-PRE-01).",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CaregiverPrice"
@@ -3772,6 +4033,10 @@
           "id",
           "displayName",
           "photoUrl",
+          "level",
+          "badges",
+          "certifications",
+          "skills",
           "hasSpecialCareCertification",
           "isVetStudent",
           "rating",

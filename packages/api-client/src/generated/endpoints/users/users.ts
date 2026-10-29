@@ -18,7 +18,7 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
-import type { ErrorResponse, UserProfile } from '../../model';
+import type { ErrorResponse, MeResponse } from '../../model';
 
 import { customFetch } from '../../../fetcher';
 import type { ErrorType } from '../../../fetcher';
@@ -48,10 +48,8 @@ export const getUsersMeUrl = () => {
  * Los datos de la cuenta que inició sesión.
  * @summary Mi cuenta
  */
-export const usersMe = async (
-  options?: Parameters<typeof customFetch>[1],
-): Promise<UserProfile> => {
-  return customFetch<UserProfile>(getUsersMeUrl(), {
+export const usersMe = async (options?: Parameters<typeof customFetch>[1]): Promise<MeResponse> => {
+  return customFetch<MeResponse>(getUsersMeUrl(), {
     ...options,
     method: 'GET',
   });

@@ -7,7 +7,7 @@
  */
 
 /**
- * RN-PRE-02: Especial si alguna mascota lo es.
+ * RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.
  */
 export type CareLevel = (typeof CareLevel)[keyof typeof CareLevel];
 

@@ -5,7 +5,7 @@ type LevelRequirements = SettingValue<'levels.requirements'>;
 
 /** Above NEW, from the lowest. NEW asks for nothing (RN-NIV-02). */
 const UPPER_LEVELS = [CaregiverLevel.TRUSTED, CaregiverLevel.PRO, CaregiverLevel.SUPER] as const;
-const RANKED_LEVELS = [CaregiverLevel.NEW, ...UPPER_LEVELS] as const;
+export const RANKED_LEVELS = [CaregiverLevel.NEW, ...UPPER_LEVELS] as const;
 
 /** What the level of a caregiver depends on (RN-NIV-02). */
 export interface LevelInput {

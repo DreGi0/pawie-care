@@ -223,7 +223,7 @@ export class BookingEmergency {
   clinicConsent: boolean;
 }
 
-/** What the owner pays, in cents (RN-PRE-03). */
+/** What the owner pays, in cents (RN-PRE-03, RN-PRE-09). */
 export class BookingPrice {
   @ApiProperty({
     type: 'integer',
@@ -235,7 +235,7 @@ export class BookingPrice {
   @ApiProperty({
     type: 'integer',
     example: 1000,
-    description: 'Tarifa de servicio, en puntos básicos.',
+    description: 'Tarifa de servicio, en puntos básicos. Es 0 en el primer servicio (RN-PRE-09).',
   })
   serviceFeeBp: number;
 
@@ -244,6 +244,12 @@ export class BookingPrice {
 
   @ApiProperty({ type: 'integer', example: 1870, description: 'Lo que paga el dueño.' })
   totalCents: number;
+
+  @ApiProperty({
+    description:
+      'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00.',
+  })
+  firstServiceFeeWaived: boolean;
 }
 
 export class BookingResponse {
@@ -259,7 +265,8 @@ export class BookingResponse {
   @ApiProperty({
     enum: CareLevel,
     enumName: 'CareLevel',
-    description: 'RN-PRE-02: Especial si alguna mascota lo es.',
+    description:
+      'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
   })
   careLevel: CareLevel;
 

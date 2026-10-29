@@ -25,4 +25,10 @@ export const UsersMeResponse = zod.object({
         .describe('RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez.'),
     )
     .describe('RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez.'),
+  firstServiceFeeWaiverEndsAt: zod.iso
+    .datetime({ offset: true })
+    .nullable()
+    .describe(
+      'RN-PRE-09: hasta cuándo el dueño puede crear su primer servicio sin tarifa. Null si ya no aplica: venció el plazo, ya pagó una reserva o una reserva activa tiene el beneficio.',
+    ),
 });

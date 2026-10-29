@@ -3,7 +3,6 @@ import { recalculateLevel } from '../caregivers/recalculate-level.js';
 import { addDays, addMonths, dateInElSalvador } from '../common/time/calendar.js';
 import {
   CaregiverStatus,
-  CareLevel,
   CertificationStatus,
   FilePurpose,
   type PrismaClient,
@@ -326,14 +325,11 @@ async function seedCaregiver(
 
     await tx.caregiverServicePrice.deleteMany({ where: { caregiverId } });
     await tx.caregiverServicePrice.createMany({
-      data: Object.entries(caregiver.prices).flatMap(([service, levels]) =>
-        Object.entries(levels).map(([careLevel, priceCents]) => ({
-          caregiverId,
-          serviceId: required(serviceIds.get(service as ServiceCode), service),
-          careLevel: careLevel as CareLevel,
-          priceCents,
-        })),
-      ),
+      data: Object.entries(caregiver.prices).map(([service, priceCents]) => ({
+        caregiverId,
+        serviceId: required(serviceIds.get(service as ServiceCode), service),
+        priceCents,
+      })),
     });
 
     await tx.caregiverAvailability.deleteMany({ where: { caregiverId } });

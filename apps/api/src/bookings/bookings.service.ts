@@ -18,13 +18,14 @@ import { currentPayment } from '../payments/booking-payment.js';
 import { activeOn } from '../pets/care-level.js';
 import { CARE_TASK_GROUPS } from '../pets/care-tasks.js';
 import { PRICING_SETTING_KEYS, quoteBooking, ratesFrom } from '../pricing/booking-price.js';
+import { firstServiceFeeWaiverEndsAt } from '../pricing/first-service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { bookingNotFound, isSlotOverlap, slotTaken } from './booking-errors.js';
 import { BookingDeadlines } from './booking-deadlines.js';
 import { BookingStateMachine } from './booking-state-machine.js';
 import { blocksCalendar, canTransition, revealsContact } from './booking-status.js';
-import type { BookingResponse, CreateBookingRequest } from './bookings.dto.js';
+import type { BookingPrice, BookingResponse, CreateBookingRequest } from './bookings.dto.js';
 import { paymentDeadline, responseDeadline } from './deadlines.js';
 
 /** Everything a booking request reads from the settings (§15), in one query. */
@@ -65,33 +66,12 @@ export class BookingsService {
    * slots. The booking copies the address (RN-CTA-04), the prices and rates in force
    * (RN-PRE-07), and the vet instructions of the clinical tasks active on its dates.
    * With instant booking it waits for payment (RN-CUI-16, RN-RES-07); otherwise, for
-   * the caregiver's answer (RN-RES-06).
+   * the caregiver's answer (RN-RES-06). It also copies the caregiver's level (RN-NIV-06)
+   * and whether it took the first service without a fee (RN-PRE-09).
    */
   async create(ownerId: string, request: CreateBookingRequest): Promise<BookingResponse> {
-    const now = this.clock.now();
-    const address = await this.addresses.findOwn(ownerId, request.addressId);
-    const settings = await this.settings.getMany(BOOKING_SETTING_KEYS);
-    const { serviceCode, nights, visits, petIds } = request;
-    const plan = await this.caregivers.planBooking(
-      ownerId,
-      { serviceCode, nights, visits, petIds, districtId: address.districtId },
-      settings,
-      now,
-    );
-    const caregiver = await this.caregivers.bookableCaregiver(
-      ownerId,
-      request.caregiverId,
-      plan,
-      settings,
-      now,
-    );
-    const quote = quoteBooking({
-      slots: plan.slots,
-      careLevel: plan.careLevel,
-      petCount: plan.pets.length,
-      prices: caregiver.prices,
-      rates: ratesFrom(settings),
-    });
+    const prepared = await this.prepare(ownerId, request);
+    const { now, address, settings, plan, caregiver } = prepared;
 
     const startsAt = plan.slots[0].startsAt;
     const status = caregiver.instantBooking
@@ -103,12 +83,18 @@ export class BookingsService {
     let booking: Booking;
     try {
       booking = await this.prisma.$transaction(async (tx) => {
+        // RN-PRE-09: with the owner locked, two requests at once can't both take the
+        // incentive; the second one waits and finds it taken.
+        await tx.$queryRaw`SELECT 1 FROM users WHERE id = ${ownerId}::uuid FOR UPDATE`;
+        const quote = await this.quoteFor(tx, ownerId, prepared);
         const created = await tx.booking.create({
           data: {
             ownerId,
             caregiverId: caregiver.caregiverId,
-            serviceId: serviceIds[serviceCode],
+            serviceId: serviceIds[request.serviceCode],
             careLevel: plan.careLevel,
+            caregiverLevel: caregiver.level,
+            firstServiceFeeWaived: quote.snapshot.firstServiceFeeWaived,
             status,
             blocksCalendar: blocksCalendar(status),
             startsAt,
@@ -175,6 +161,20 @@ export class BookingsService {
     }
     await this.deadlines.schedule(booking);
     return this.get(ownerId, booking.id);
+  }
+
+  /**
+   * RN-PRE-10: the price create() would charge now, with the same checks and the same
+   * pricing functions, and nothing saved.
+   */
+  async quote(ownerId: string, request: CreateBookingRequest): Promise<BookingPrice> {
+    const prepared = await this.prepare(ownerId, request);
+    const { amounts, snapshot } = await this.quoteFor(this.prisma, ownerId, prepared);
+    return toPrice({
+      ...amounts,
+      ownerServiceFeeBp: snapshot.rates.ownerServiceFeeBp,
+      firstServiceFeeWaived: snapshot.firstServiceFeeWaived,
+    });
   }
 
   /** The owner's bookings, the latest service first. */
@@ -248,6 +248,50 @@ export class BookingsService {
     });
   }
 
+  /** What create() and quote() check before pricing: the address, the plan and the caregiver. */
+  private async prepare(ownerId: string, request: CreateBookingRequest) {
+    const now = this.clock.now();
+    const address = await this.addresses.findOwn(ownerId, request.addressId);
+    const settings = await this.settings.getMany(BOOKING_SETTING_KEYS);
+    const { serviceCode, nights, visits, petIds } = request;
+    const plan = await this.caregivers.planBooking(
+      ownerId,
+      { serviceCode, nights, visits, petIds, districtId: address.districtId },
+      settings,
+      now,
+    );
+    const caregiver = await this.caregivers.bookableCaregiver(
+      ownerId,
+      request.caregiverId,
+      plan,
+      settings,
+      now,
+    );
+    return { now, address, settings, plan, caregiver };
+  }
+
+  /** The one place a booking is priced, so the quote and the booking agree (RN-PRE-10). */
+  private async quoteFor(
+    db: Pick<Prisma.TransactionClient, 'user' | 'booking'>,
+    ownerId: string,
+    { now, settings, plan, caregiver }: Awaited<ReturnType<BookingsService['prepare']>>,
+  ) {
+    const waiverEndsAt = await firstServiceFeeWaiverEndsAt(
+      db,
+      ownerId,
+      settings['pricing.firstServiceWindowDays'],
+      now,
+    );
+    return quoteBooking({
+      slots: plan.slots,
+      caregiverLevel: caregiver.level,
+      firstServiceFeeWaived: waiverEndsAt !== null,
+      petCount: plan.pets.length,
+      prices: caregiver.prices,
+      rates: ratesFrom(settings),
+    });
+  }
+
   private async findOwn(where: { id: string; ownerId?: string; caregiverId?: string }) {
     const booking = await this.prisma.booking.findFirst({ where });
     if (!booking) {
@@ -318,16 +362,27 @@ export class BookingsService {
         preauthorizedCents: booking.emergencyPreauthorizedCents,
         clinicConsent: booking.emergencyClinicConsent,
       },
-      price: {
-        subtotalCents: booking.subtotalCents,
-        serviceFeeBp: booking.ownerServiceFeeBp,
-        serviceFeeCents: booking.ownerServiceFeeCents,
-        totalCents: booking.totalCents,
-      },
+      price: toPrice(booking),
       payment: currentPayment(booking.payments),
       createdAt: booking.createdAt.toISOString(),
     };
   }
+}
+
+function toPrice(amounts: {
+  subtotalCents: number;
+  ownerServiceFeeBp: number;
+  ownerServiceFeeCents: number;
+  totalCents: number;
+  firstServiceFeeWaived: boolean;
+}): BookingPrice {
+  return {
+    subtotalCents: amounts.subtotalCents,
+    serviceFeeBp: amounts.ownerServiceFeeBp,
+    serviceFeeCents: amounts.ownerServiceFeeCents,
+    totalCents: amounts.totalCents,
+    firstServiceFeeWaived: amounts.firstServiceFeeWaived,
+  };
 }
 
 /**

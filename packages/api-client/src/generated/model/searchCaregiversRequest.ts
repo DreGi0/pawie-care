@@ -5,6 +5,7 @@
  * API REST de Pawie Care. Las reglas de negocio están en docs/reglas-de-negocio.md y el diseño en docs/arquitectura.md. Los errores siempre tienen la forma de `ErrorResponse`.
  * OpenAPI spec version: 1
  */
+import type { CaregiverLevel } from './caregiverLevel';
 import type { ServiceCode } from './serviceCode';
 
 export interface SearchCaregiversRequest {
@@ -27,4 +28,17 @@ export interface SearchCaregiversRequest {
   petIds: string[];
   /** Uno de los distritos de GET /v1/catalog. */
   districtId: string;
+  /** Solo cuidadores de este nivel o uno más alto. */
+  minLevel?: CaregiverLevel;
+  /**
+   * Códigos de certificación que debe tener vigentes todo el servicio.
+   * @maxItems 10
+   */
+  certificationCodes?: string[];
+  /**
+   * Calificación mínima, de 1 a 5. Deja fuera a quien aún no tiene calificaciones.
+   * @minimum 1
+   * @maximum 5
+   */
+  minRating?: number;
 }

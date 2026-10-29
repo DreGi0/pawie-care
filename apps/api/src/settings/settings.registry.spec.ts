@@ -22,8 +22,27 @@ function section15Rows(): string[][] {
 
 describe('settings registry', () => {
   it('has one setting per parameter of §15, citing its rule first', () => {
-    const rulesInDocument = section15Rows().map(([, , rule]) => rule);
-    const rulesInRegistry = SETTING_KEYS.map((key) => SETTINGS[key].rules[0]);
+    // §15 already lists the parameters of the later stages (docs/plan-v0.5.md). Remove each
+    // rule from here when its stage adds the setting.
+    const comesLater = [
+      'RN-SER-05', // stage 8
+      'RN-EJE-03', // stage 10
+      'RN-EJE-06', // stage 10
+      'RN-SOP-03', // stage 12a
+      'RN-GAR-01', // stage 12b
+      'RN-GAR-03', // stage 12b
+    ];
+    // Replaced by the stage that renames them (§2 of the plan): disputes.resolutionBusinessDays.
+    const replacedLater = ['RN-DIS-02'];
+
+    const rulesInRegistry: string[] = SETTING_KEYS.map((key) => SETTINGS[key].rules[0]).filter(
+      (rule) => !replacedLater.includes(rule),
+    );
+    // A row can cite several rules; the setting cites one of them first.
+    const rulesInDocument = section15Rows()
+      .map(([, , rule]) => rule.split(',').map((id) => id.trim()))
+      .filter((ids) => !ids.some((id) => comesLater.includes(id)))
+      .map((ids) => ids.find((id) => rulesInRegistry.includes(id)) ?? ids[0]);
 
     expect(rulesInDocument.length).toBeGreaterThan(20);
     expect(rulesInRegistry.toSorted()).toEqual(rulesInDocument.toSorted());
@@ -53,11 +72,11 @@ describe('settings registry', () => {
   describe('validators', () => {
     it('rejects a price range out of order (RN-PRE-01)', () => {
       const ranges = structuredClone(SETTINGS['pricing.priceRanges'].initialValue);
-      ranges.HOME_VISIT.SPECIAL.suggestedCents = 2500;
+      ranges.HOME_VISIT.SUPER.suggestedCents = 2500;
 
       expect(() => parseSettingValue('pricing.priceRanges', ranges)).toThrow(
         new InvalidSettingValueError(
-          'pricing.priceRanges.HOME_VISIT.SPECIAL: debe cumplir minCents ≤ suggestedCents ≤ maxCents.',
+          'pricing.priceRanges.HOME_VISIT.SUPER: debe cumplir minCents ≤ suggestedCents ≤ maxCents.',
         ),
       );
     });

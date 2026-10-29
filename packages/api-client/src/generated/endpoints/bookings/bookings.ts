@@ -22,6 +22,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BookingPrice,
   BookingResponse,
   CancelBookingRequest,
   CreateBookingRequest,
@@ -266,6 +267,110 @@ export function useBookingsList<
   return withQueryKey(query, queryOptions.queryKey);
 }
 
+export const getBookingsQuoteUrl = () => {
+  return `/v1/bookings/quote`;
+};
+
+/**
+ * RN-PRE-10. Mismo cuerpo y mismas validaciones que `POST /v1/bookings`; devuelve el precio que se cobraría ahora, con el primer servicio sin tarifa si aplica (RN-PRE-09), y no guarda nada.
+ * @summary Cotizar una reserva
+ */
+export const bookingsQuote = async (
+  createBookingRequest: CreateBookingRequest,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<BookingPrice> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<BookingPrice>(getBookingsQuoteUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createBookingRequest),
+  });
+};
+
+export const getBookingsQuoteMutationKey = () => ['bookingsQuote'] as const;
+
+export const getBookingsQuoteMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof bookingsQuote>>,
+    TError,
+    BookingsQuoteMutationVariables,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof bookingsQuote>>,
+  TError,
+  BookingsQuoteMutationVariables,
+  TContext
+> => {
+  const mutationKey = getBookingsQuoteMutationKey();
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof bookingsQuote>>,
+    BookingsQuoteMutationVariables
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return bookingsQuote(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type BookingsQuoteMutationResult = NonNullable<Awaited<ReturnType<typeof bookingsQuote>>>;
+export type BookingsQuoteMutationBody = CreateBookingRequest;
+export type BookingsQuoteMutationError = ErrorType<ErrorResponse>;
+export type BookingsQuoteMutationVariables = { data: CreateBookingRequest };
+
+/**
+ * @summary Cotizar una reserva
+ */
+export const useBookingsQuote = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof bookingsQuote>>,
+      TError,
+      BookingsQuoteMutationVariables,
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof bookingsQuote>>,
+  TError,
+  BookingsQuoteMutationVariables,
+  TContext
+> => {
+  return useMutation(getBookingsQuoteMutationOptions(options), queryClient);
+};
 export const getBookingsGetUrl = (bookingId: string) => {
   return `/v1/bookings/${bookingId}`;
 };
