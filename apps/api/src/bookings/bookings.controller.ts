@@ -21,7 +21,12 @@ import {
 import type { AuthenticatedUser } from '../auth/authenticated-user.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { ErrorResponse } from '../common/errors/error-response.dto.js';
-import { BookingResponse, CancelBookingRequest, CreateBookingRequest } from './bookings.dto.js';
+import {
+  BookingPrice,
+  BookingResponse,
+  CancelBookingRequest,
+  CreateBookingRequest,
+} from './bookings.dto.js';
 import { BookingsService } from './bookings.service.js';
 
 const bookingId = () => Param('bookingId', ParseUUIDPipe);
@@ -58,6 +63,34 @@ export class BookingsController {
     @Body() body: CreateBookingRequest,
   ): Promise<BookingResponse> {
     return this.bookings.create(user.id, body);
+  }
+
+  @Post('quote')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Cotizar una reserva',
+    description:
+      'RN-PRE-10. Mismo cuerpo y mismas validaciones que `POST /v1/bookings`; devuelve el precio que se cobraría ahora, con el primer servicio sin tarifa si aplica (RN-PRE-09), y no guarda nada.',
+  })
+  @ApiOkResponse({ type: BookingPrice })
+  @ApiNotFoundResponse({
+    type: ErrorResponse,
+    description: '`ADDRESS_NOT_FOUND` o `PET_NOT_FOUND`.',
+  })
+  @ApiConflictResponse({
+    type: ErrorResponse,
+    description: '`SLOT_TAKEN` o `CAREGIVER_UNAVAILABLE`, como al reservar.',
+  })
+  @ApiUnprocessableEntityResponse({
+    type: ErrorResponse,
+    description:
+      'Los mismos de la búsqueda: `TOO_MANY_PETS`, `INVALID_SCHEDULE`, `TOO_SOON` o `PET_NOT_BOOKABLE`.',
+  })
+  quote(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: CreateBookingRequest,
+  ): Promise<BookingPrice> {
+    return this.bookings.quote(user.id, body);
   }
 
   @Get()

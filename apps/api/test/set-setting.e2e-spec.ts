@@ -71,7 +71,7 @@ describe('pnpm settings:set', () => {
     expect(result.error).toEqual([
       'No se guardó: pricing.ownerServiceFeeBp debe ser un número entero entre 0 y 10000.',
     ]);
-    expect(await settings.get('pricing.ownerServiceFeeBp')).toBe(1000);
+    expect(await settings.get('pricing.ownerServiceFeeBp')).toBe(1500);
     expect(await lastChange('pricing.ownerServiceFeeBp')).toEqual(before);
   });
 

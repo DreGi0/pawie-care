@@ -175,6 +175,30 @@ enum CareLevel {
   @@map("care_level")
 }
 
+/// RN-NIV-01: computed by the system from the reviews, the completed services and the
+/// certifications (RN-NIV-02), never chosen by the caregiver. The order is the order
+/// of the levels, so SQL can compare them.
+enum CaregiverLevel {
+  NEW
+  TRUSTED
+  PRO
+  SUPER
+
+  @@map("caregiver_level")
+}
+
+/// RN-CUI-18: skills the caregiver declares, from a catalog. Nobody verifies them
+/// (RN-CUI-19), so they are labels, not badges, and searches don't filter by them.
+enum CaregiverSkill {
+  LARGE_DOGS
+  CATS
+  PUPPIES
+  SENIOR_PETS
+  DIFFICULT_BEHAVIOR
+
+  @@map("caregiver_skill")
+}
+
 /// The caregiver side of an account. The ⭐ is a CaregiverCertification (RN-CUI-11).
 model CaregiverProfile {
   userId                String          @id @map("user_id") @db.Uuid
@@ -198,6 +222,11 @@ model CaregiverProfile {
   specialRatingSum      Int             @default(0) @map("special_rating_sum")
   /// RN-RES-02: number of services completed in Pawie.
   completedBookingCount Int             @default(0) @map("completed_booking_count")
+  /// RN-NIV-04: stored so searches can filter and sort by it in SQL. Recalculate it in
+  /// the same transaction that changes the ratings, the completed services or the
+  /// certifications (src/caregivers/recalculate-level.ts).
+  level                 CaregiverLevel  @default(NEW)
+  skills                CaregiverSkill[] @default([])
   /// RN-CAN-05: hidden from searches until then.
   suspendedUntil        DateTime?       @map("suspended_until") @db.Timestamptz(3)
   createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -227,14 +256,13 @@ model CaregiverDistrict {
   @@map("caregiver_districts")
 }
 
-/// RN-CUI-17, RN-PRE-01. A row means the caregiver offers that service at that level.
-/// A SPECIAL row only counts while the caregiver holds a valid ⭐ (RN-RES-01).
+/// RN-CUI-17, RN-PRE-01. A row means the caregiver offers that service. The price
+/// range depends on the caregiver's level, not on the pets' (RN-PRE-01).
 model CaregiverServicePrice {
   caregiverId String    @map("caregiver_id") @db.Uuid
   serviceId   String    @map("service_id") @db.Uuid
-  careLevel   CareLevel @map("care_level")
-  /// Price for one pet, before fees. Null means the suggested price in force
-  /// (setting pricing.priceRanges). The range can change after the caregiver sets a
+  /// Price for one pet, before fees. Null means the suggested price in force for the
+  /// caregiver's level (setting pricing.priceRanges, RN-PRE-01). The range can change after the caregiver sets a
   /// price, so it isn't a CHECK: pricing clamps the price to the current range.
   priceCents  Int?      @map("price_cents")
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -243,8 +271,8 @@ model CaregiverServicePrice {
   caregiver CaregiverProfile @relation(fields: [caregiverId], references: [userId], onDelete: Cascade)
   service   Service          @relation(fields: [serviceId], references: [id])
 
-  @@id([caregiverId, serviceId, careLevel])
-  @@index([serviceId, careLevel])
+  @@id([caregiverId, serviceId])
+  @@index([serviceId])
   @@map("caregiver_service_prices")
 }
 
@@ -537,8 +565,13 @@ model Booking {
   /// The booked service. An overnight booking can also have home visit slots for the
   /// daytime (RN-SER-03), priced as visits at the booking's level.
   serviceId                   String        @map("service_id") @db.Uuid
-  /// RN-MAS-05, RN-PRE-02: SPECIAL if any pet is Special on the booking's dates.
+  /// RN-MAS-05, RN-MAS-06: SPECIAL if any pet is Special on the booking's dates. It
+  /// requires the ⭐ but doesn't change the price.
   careLevel                   CareLevel     @map("care_level")
+  /// RN-NIV-06, RN-PRE-07: the caregiver's level when the booking was created.
+  caregiverLevel              CaregiverLevel @map("caregiver_level")
+  /// RN-PRE-09: the booking took the owner's first service without a service fee.
+  firstServiceFeeWaived       Boolean       @default(false) @map("first_service_fee_waived")
   status                      BookingStatus
   blocksCalendar              Boolean       @map("blocks_calendar")
   /// Start of the first slot and end of the last one. CHECK: startsAt < endsAt.

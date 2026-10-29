@@ -10,9 +10,9 @@ import { type PlannedSlot, planSlots, serviceDates } from '../bookings/slot-plan
 import { dateInElSalvador } from '../common/time/calendar.js';
 import { FilesService } from '../files/files.service.js';
 import {
+  CaregiverLevel,
   CaregiverStatus,
   CareLevel,
-  CertificationStatus,
   Prisma,
   type ServiceCode,
 } from '../generated/prisma/client.js';
@@ -24,6 +24,9 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import type { SettingValue } from '../settings/settings.registry.js';
 import { SettingsService, type SettingValues } from '../settings/settings.service.js';
 import { overlaps, scheduleCovers } from './availability.js';
+import { badgesOf } from './badges.js';
+import { RANKED_LEVELS } from './caregiver-level.js';
+import { validCertification } from './certifications.js';
 import type {
   CaregiverPrice,
   CaregiverProfileResponse,
@@ -32,24 +35,26 @@ import type {
   CaregiverSummary,
   SearchCaregiversRequest,
 } from './caregivers.dto.js';
-import { resolvePrice } from './prices.js';
+import { type PriceRange, resolvePrice } from './prices.js';
 import { SPECIAL_CARE_CERTIFICATION } from './special-care.js';
 
-const CAREGIVER_INCLUDE = {
-  user: true,
-  photoFile: true,
-  districts: { include: { district: true } },
-  servicePrices: { include: { service: true } },
-  availability: true,
-  certifications: {
-    where: {
-      status: CertificationStatus.ACTIVE,
-      certificationType: { code: SPECIAL_CARE_CERTIFICATION.code },
+/** Certifications that count today (RN-CUI-09, RN-CUI-10), which the badges and the ⭐ read. */
+const caregiverInclude = (now: Date) =>
+  ({
+    user: true,
+    photoFile: true,
+    districts: { include: { district: true } },
+    servicePrices: { include: { service: true } },
+    availability: true,
+    certifications: {
+      where: validCertification(dateInElSalvador(now), now),
+      include: { certificationType: true },
     },
-  },
-} satisfies Prisma.CaregiverProfileInclude;
+  }) satisfies Prisma.CaregiverProfileInclude;
 
-type Caregiver = Prisma.CaregiverProfileGetPayload<{ include: typeof CAREGIVER_INCLUDE }>;
+type Caregiver = Prisma.CaregiverProfileGetPayload<{
+  include: ReturnType<typeof caregiverInclude>;
+}>;
 type PriceRanges = SettingValue<'pricing.priceRanges'>;
 
 /** The settings a search or a booking request is checked against (§15). */
@@ -80,7 +85,7 @@ export interface BookingPlan {
   /** The first and last date of the service in El Salvador, both inclusive (RN-MAS-05). */
   dates: { from: Date; to: Date };
   pets: BookingPlanPet[];
-  /** RN-MAS-05, RN-PRE-02: SPECIAL if any pet is Special on those dates. */
+  /** RN-MAS-05, RN-MAS-06: SPECIAL, which requires the ⭐ but does not change the price, if any pet is Special on those dates. */
   careLevel: CareLevel;
   districtId: string;
   /** The services of the slots: an overnight stay can have daytime visits (RN-SER-03). */
@@ -90,6 +95,8 @@ export interface BookingPlan {
 /** A caregiver who can take a booking, with their price for each of its services. */
 export interface BookableCaregiver {
   caregiverId: string;
+  /** RN-NIV-06: the level the booking will copy. */
+  level: CaregiverLevel;
   /** RN-CUI-16 */
   instantBooking: boolean;
   prices: CaregiverServicePrice[];
@@ -111,7 +118,7 @@ export class CaregiversService {
     const now = new Date();
     const caregiver = await this.prisma.caregiverProfile.findFirst({
       where: { userId: caregiverId, ...visibleAt(now) },
-      include: CAREGIVER_INCLUDE,
+      include: caregiverInclude(now),
     });
     if (!caregiver) {
       throw new NotFoundException({
@@ -120,7 +127,6 @@ export class CaregiversService {
       });
     }
     const ranges = await this.settings.get('pricing.priceRanges');
-    const certified = hasSpecialCare(caregiver, dateInElSalvador(now), now);
 
     return Object.assign(await this.summary(caregiver, now), {
       bio: caregiver.bio,
@@ -128,19 +134,18 @@ export class CaregiversService {
         .map(({ district }) => ({ id: district.id, slug: district.slug, name: district.name }))
         .toSorted((a, b) => spanish.compare(a.name, b.name)),
       prices: caregiver.servicePrices
-        .filter(({ careLevel }) => careLevel === CareLevel.STANDARD || certified)
-        .map((row) => price(row.service.code, row.careLevel, row.priceCents, ranges))
-        .toSorted(
-          (a, b) =>
-            a.serviceCode.localeCompare(b.serviceCode) || a.careLevel.localeCompare(b.careLevel),
-        ),
+        .map((row) =>
+          price(row.service.code, row.priceCents, ranges[row.service.code][caregiver.level]),
+        )
+        .toSorted((a, b) => a.serviceCode.localeCompare(b.serviceCode)),
     });
   }
 
   /**
    * RN-RES-01: approved and active caregivers who cover the district, offer every
-   * service of the slots at the booking's level, are free on every slot and, for a
-   * Special booking, hold a ⭐ valid through its last day.
+   * service of the slots, are free on every slot and, for a Special booking, hold a ⭐
+   * valid through its last day (RN-MAS-06). The filters narrow it down: the minimum
+   * level, the certifications and the minimum rating.
    */
   async search(
     ownerId: string,
@@ -150,7 +155,7 @@ export class CaregiversService {
     const settings = await this.settings.getMany(BOOKING_PLAN_SETTING_KEYS);
     const plan = await this.planBooking(ownerId, request, settings, now);
 
-    const candidates = await this.eligibleCaregivers(ownerId, plan, now);
+    const candidates = await this.eligibleCaregivers(ownerId, plan, now, undefined, request);
     const booked = await this.blockingSlots(
       candidates.map(({ userId }) => userId),
       plan.slots,
@@ -165,19 +170,28 @@ export class CaregiversService {
         ),
     );
 
-    const results: CaregiverSearchResult[] = await Promise.all(
-      available.map(async (caregiver) =>
-        Object.assign(await this.summary(caregiver, now), {
+    const summaries = await Promise.all(
+      available.map(async (caregiver) => ({
+        caregiver,
+        summary: await this.summary(caregiver, now),
+      })),
+    );
+    const results: CaregiverSearchResult[] = summaries
+      .filter(
+        ({ summary }) =>
+          request.minRating === undefined ||
+          (summary.rating !== null && summary.rating >= request.minRating),
+      )
+      .map(({ caregiver, summary }) =>
+        Object.assign(summary, {
           prices: servicePrices(caregiver, plan, settings['pricing.priceRanges']).map(
             ({ serviceCode, caregiverPriceCents, range }) => ({
               serviceCode,
-              careLevel: plan.careLevel,
               priceCents: resolvePrice(caregiverPriceCents, range),
             }),
           ),
         }),
-      ),
-    );
+      );
     return {
       careLevel: plan.careLevel,
       slots: plan.slots.map(({ serviceCode, startsAt, endsAt }): SlotResponse => ({
@@ -226,7 +240,7 @@ export class CaregiversService {
       slots,
       dates,
       pets,
-      // RN-PRE-02: one Special pet makes the whole booking Special.
+      // RN-MAS-06: one Special pet makes the whole booking Special.
       careLevel: pets.some(({ careLevel }) => careLevel === CareLevel.SPECIAL)
         ? CareLevel.SPECIAL
         : CareLevel.STANDARD,
@@ -261,6 +275,7 @@ export class CaregiversService {
     }
     return {
       caregiverId,
+      level: caregiver.level,
       instantBooking: caregiver.instantBooking,
       prices: servicePrices(caregiver, plan, settings['pricing.priceRanges']),
     };
@@ -268,14 +283,16 @@ export class CaregiversService {
 
   /**
    * Who could take the booking, before looking at their schedule and other bookings:
-   * visible, covering the district, offering each service at the booking's level and,
-   * for a Special booking, holding a ⭐ valid through its last day (RN-CUI-09).
+   * visible, covering the district, offering each service and, for a Special booking,
+   * holding a ⭐ valid through its last day (RN-CUI-09), and meeting the search filters,
+   * which a booking doesn't have.
    */
   private eligibleCaregivers(
     ownerId: string,
     plan: BookingPlan,
     now: Date,
     caregiverId?: string,
+    filters: Pick<SearchCaregiversRequest, 'minLevel' | 'certificationCodes'> = {},
   ): Promise<Caregiver[]> {
     return this.prisma.caregiverProfile.findMany({
       where: {
@@ -283,14 +300,27 @@ export class CaregiversService {
         // RN-CTA-01: an owner who is also a caregiver doesn't find or book themselves.
         userId: { not: ownerId, ...(caregiverId !== undefined && { equals: caregiverId }) },
         districts: { some: { districtId: plan.districtId } },
-        AND: plan.serviceCodes.map((code) => ({
-          servicePrices: { some: { careLevel: plan.careLevel, service: { code } } },
-        })),
-        ...(plan.careLevel === CareLevel.SPECIAL && {
-          certifications: { some: validSpecialCare(plan.dates.to, now) },
+        AND: [
+          ...plan.serviceCodes.map((code) => ({
+            servicePrices: { some: { service: { code } } },
+          })),
+          ...(plan.careLevel === CareLevel.SPECIAL
+            ? [{ certifications: { some: validSpecialCare(plan.dates.to, now) } }]
+            : []),
+          ...(filters.certificationCodes ?? []).map((code) => ({
+            certifications: {
+              some: {
+                ...validCertification(plan.dates.to, now),
+                certificationType: { code },
+              },
+            },
+          })),
+        ],
+        ...(filters.minLevel && {
+          level: { in: RANKED_LEVELS.slice(RANKED_LEVELS.indexOf(filters.minLevel)) },
         }),
       },
-      include: CAREGIVER_INCLUDE,
+      include: caregiverInclude(now),
     });
   }
 
@@ -355,11 +385,24 @@ export class CaregiversService {
   private async summary(caregiver: Caregiver, now: Date): Promise<CaregiverSummary> {
     const today = dateInElSalvador(now);
     const { ratingCount, ratingSum } = caregiver;
+    const certifications = caregiver.certifications
+      .map(({ certificationType, validUntil }) => ({
+        code: certificationType.code,
+        name: certificationType.name,
+        validUntil: validUntil.toISOString().slice(0, 10),
+      }))
+      .toSorted((a, b) => spanish.compare(a.name, b.name));
     return {
       id: caregiver.userId,
       displayName: caregiverDisplayName(caregiver.user),
       photoUrl: await this.files.downloadUrl(caregiver.photoFile),
-      hasSpecialCareCertification: hasSpecialCare(caregiver, today, now),
+      level: caregiver.level,
+      badges: badgesOf(caregiver, today),
+      certifications,
+      skills: caregiver.skills,
+      hasSpecialCareCertification: certifications.some(
+        ({ code }) => code === SPECIAL_CARE_CERTIFICATION.code,
+      ),
       isVetStudent: caregiver.vetStudentUntil !== null && caregiver.vetStudentUntil >= today,
       rating: ratingCount === 0 ? null : Math.round((ratingSum * 10) / ratingCount) / 10,
       ratingCount,
@@ -381,18 +424,9 @@ function visibleAt(now: Date) {
 /** An active ⭐ that isn't suspended and lasts through `lastDate` (RN-CUI-09, RN-CUI-10). */
 function validSpecialCare(lastDate: Date, now: Date) {
   return {
-    status: CertificationStatus.ACTIVE,
+    ...validCertification(lastDate, now),
     certificationType: { code: SPECIAL_CARE_CERTIFICATION.code },
-    validUntil: { gte: lastDate },
-    OR: [{ suspendedUntil: null }, { suspendedUntil: { lte: now } }],
   } satisfies Prisma.CaregiverCertificationWhereInput;
-}
-
-function hasSpecialCare(caregiver: Caregiver, today: Date, now: Date): boolean {
-  return caregiver.certifications.some(
-    ({ validUntil, suspendedUntil }) =>
-      validUntil >= today && (suspendedUntil === null || suspendedUntil <= now),
-  );
 }
 
 /** Whether the weekly schedule covers every slot. */
@@ -401,36 +435,29 @@ function coversEverySlot(caregiver: Caregiver, slots: readonly PlannedSlot[]): b
 }
 
 /**
- * The caregiver's price for each service of the booking at its level, as the
- * caregiver set it (null for the suggested one), with the range in force. Eligible
- * caregivers offer every service of the booking at its level.
+ * The caregiver's price for each service of the booking, as the caregiver set it (null
+ * for the suggested one), with the range of their level (RN-PRE-01). Eligible
+ * caregivers offer every service of the booking.
  */
 function servicePrices(
   caregiver: Caregiver,
-  { serviceCodes, careLevel }: BookingPlan,
+  { serviceCodes }: BookingPlan,
   ranges: PriceRanges,
 ): CaregiverServicePrice[] {
   return serviceCodes.map((serviceCode) => ({
     serviceCode,
     caregiverPriceCents:
-      caregiver.servicePrices.find(
-        (row) => row.service.code === serviceCode && row.careLevel === careLevel,
-      )?.priceCents ?? null,
-    range: ranges[serviceCode][careLevel],
+      caregiver.servicePrices.find((row) => row.service.code === serviceCode)?.priceCents ?? null,
+    range: ranges[serviceCode][caregiver.level],
   }));
 }
 
 function price(
   serviceCode: ServiceCode,
-  careLevel: CareLevel,
   priceCents: number | null,
-  ranges: PriceRanges,
+  range: PriceRange,
 ): CaregiverPrice {
-  return {
-    serviceCode,
-    careLevel,
-    priceCents: resolvePrice(priceCents, ranges[serviceCode][careLevel]),
-  };
+  return { serviceCode, priceCents: resolvePrice(priceCents, range) };
 }
 
 /** Best rated first, then the most experienced; caregivers without ratings go last. */

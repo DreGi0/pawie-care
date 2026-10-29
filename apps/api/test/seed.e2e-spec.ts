@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { verifyPassword } from '../src/auth/passwords.js';
 import { formatDateOnly } from '../src/common/time/calendar.js';
-import { CareLevel, CertificationStatus, ServiceCode } from '../src/generated/prisma/client.js';
+import { caregiverLevel } from '../src/caregivers/caregiver-level.js';
+import { CaregiverLevel, ServiceCode } from '../src/generated/prisma/client.js';
 import { careLevelOn } from '../src/pets/care-level.js';
 import { seedDatabase, type SeedSummary } from '../src/seed/seed-database.js';
 import { SETTING_KEYS } from '../src/settings/settings.registry.js';
@@ -94,6 +95,8 @@ describe('seed', () => {
       db.prisma.setting.count(),
     ]);
   }
+
+  const isSpecialCare = ({ code }: { code: string }) => code === 'SPECIAL_CARE';
 
   function caregivers() {
     return db.prisma.caregiverProfile.findMany({
@@ -256,7 +259,9 @@ describe('seed', () => {
     const all = await caregivers();
     const profiles = new Set(
       all.map(({ certifications, vetStudentUntil }) => {
-        const star = certifications.some(({ status }) => status === CertificationStatus.ACTIVE);
+        const star = certifications.some(({ certificationType }) =>
+          isSpecialCare(certificationType),
+        );
         const student = vetStudentUntil !== null && vetStudentUntil >= TODAY;
         return `${star ? '⭐' : '-'} ${student ? 'student' : '-'}`;
       }),
@@ -280,7 +285,6 @@ describe('seed', () => {
 
     for (const caregiver of await caregivers()) {
       const name = caregiver.user.firstName;
-      const hasStar = caregiver.certifications.length > 0;
 
       expect(caregiver.districts.length, name).toBeGreaterThan(0);
       expect(caregiver.availability.length, name).toBeGreaterThan(0);
@@ -292,15 +296,12 @@ describe('seed', () => {
       );
       expect(homeVisit.length, name).toBeGreaterThan(0);
 
-      for (const { service, careLevel, priceCents } of caregiver.servicePrices) {
-        // RN-RES-01: only caregivers with the ⭐ offer the Special level.
-        expect(careLevel === CareLevel.STANDARD || hasStar, name).toBe(true);
+      for (const { service, priceCents } of caregiver.servicePrices) {
         if (priceCents !== null) {
-          const { minCents, maxCents } = ranges[service.code][careLevel];
-          expect(priceCents, `${name} ${service.code} ${careLevel}`).toBeGreaterThanOrEqual(
-            minCents,
-          );
-          expect(priceCents, `${name} ${service.code} ${careLevel}`).toBeLessThanOrEqual(maxCents);
+          // RN-PRE-01: the range of the caregiver's level.
+          const { minCents, maxCents } = ranges[service.code][caregiver.level];
+          expect(priceCents, `${name} ${service.code}`).toBeGreaterThanOrEqual(minCents);
+          expect(priceCents, `${name} ${service.code}`).toBeLessThanOrEqual(maxCents);
         }
       }
     }
@@ -321,12 +322,11 @@ describe('seed', () => {
     }
   });
 
-  it('keeps every ⭐ valid today, for the configured months (RN-CUI-09)', async () => {
-    const validityMonths = await settings.get('certifications.specialCareValidityMonths');
+  it('keeps every certification valid today, for the configured months (RN-CUI-09)', async () => {
+    const validityMonths = await settings.get('certifications.validityMonths');
 
     for (const { certifications, user } of await caregivers()) {
-      for (const { certificationType, obtainedOn, validUntil } of certifications) {
-        expect(certificationType.code).toBe('SPECIAL_CARE');
+      for (const { obtainedOn, validUntil } of certifications) {
         expect(obtainedOn <= TODAY && validUntil >= TODAY, user.firstName).toBe(true);
         const months =
           (validUntil.getUTCFullYear() - obtainedOn.getUTCFullYear()) * 12 +
@@ -335,5 +335,70 @@ describe('seed', () => {
         expect(months, user.firstName).toBeLessThanOrEqual(validityMonths);
       }
     }
+  });
+
+  it('loads the four certification types (RN-CUI-07)', async () => {
+    const types = await db.prisma.certificationType.findMany({ orderBy: { code: 'asc' } });
+
+    expect(types.map(({ code, name }) => [code, name])).toEqual([
+      ['CATS', 'Gatos'],
+      ['FIRST_AID', 'Primeros auxilios'],
+      ['LARGE_DOGS', 'Perros grandes'],
+      ['SPECIAL_CARE', 'Cuidado especial'],
+    ]);
+  });
+
+  describe('levels (RN-NIV-02)', () => {
+    const { NEW, TRUSTED, PRO, SUPER } = CaregiverLevel;
+
+    it('has caregivers in the four levels', async () => {
+      const levels = (await caregivers()).map(({ user, level }) => [user.firstName, level]);
+
+      expect(Object.fromEntries(levels)).toEqual({
+        Valeria: SUPER,
+        Carlos: PRO,
+        Gabriela: PRO,
+        Ricardo: PRO,
+        Andrea: TRUSTED,
+        José: TRUSTED,
+        Diego: TRUSTED,
+        'María José': TRUSTED,
+        Fernando: TRUSTED,
+        Sofía: NEW,
+      });
+    });
+
+    it('stores what the ratings, services and certifications earn, not what the seed says', async () => {
+      const requirements = await settings.get('levels.requirements');
+
+      for (const caregiver of await caregivers()) {
+        const { level } = caregiverLevel(
+          {
+            ...caregiver,
+            certificationCodes: caregiver.certifications.map(
+              ({ certificationType }) => certificationType.code,
+            ),
+          },
+          requirements,
+        );
+
+        expect(caregiver.level, caregiver.user.firstName).toBe(level);
+      }
+    });
+
+    it('gives Ricardo three certifications, none of them Primeros auxilios', async () => {
+      const ricardo = (await caregivers()).find(({ user }) => user.firstName === 'Ricardo');
+      const codes = ricardo?.certifications.map(({ certificationType }) => certificationType.code);
+
+      expect(codes?.toSorted()).toEqual(['CATS', 'LARGE_DOGS', 'SPECIAL_CARE']);
+    });
+
+    it('declares skills without verifying them (RN-CUI-19)', async () => {
+      const ricardo = await db.prisma.caregiverProfile.findFirstOrThrow({
+        where: { user: { firstName: 'Ricardo' } },
+      });
+
+      expect(ricardo.skills.toSorted()).toEqual(['CATS', 'LARGE_DOGS', 'SENIOR_PETS']);
+    });
   });
 });

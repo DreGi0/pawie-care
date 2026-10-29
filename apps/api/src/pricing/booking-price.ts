@@ -1,5 +1,5 @@
 import { type PriceRange, resolvePrice } from '../caregivers/prices.js';
-import type { CareLevel, ServiceCode } from '../generated/prisma/enums.js';
+import type { CaregiverLevel, ServiceCode } from '../generated/prisma/enums.js';
 import type { SettingValues } from '../settings/settings.service.js';
 
 /** 10 000 basis points are 100%. */
@@ -9,7 +9,7 @@ const WHOLE_BP = 10_000;
 export interface PricingRates {
   /** RN-PRE-02 */
   additionalPetSurchargeBp: number;
-  /** RN-PRE-03 */
+  /** RN-PRE-03, or 0 for the first service (RN-PRE-09). */
   ownerServiceFeeBp: number;
   /** RN-PRE-04 */
   caregiverCommissionBp: number;
@@ -25,6 +25,7 @@ export const PRICING_SETTING_KEYS = [
   'pricing.additionalPetSurchargeBp',
   'pricing.ownerServiceFeeBp',
   'pricing.caregiverCommissionBp',
+  'pricing.firstServiceWindowDays',
   'pricing.guaranteeFundBp',
   'pricing.vatBp',
   'payments.gatewayFeeBp',
@@ -97,12 +98,12 @@ export function priceBooking<S extends { unitPriceCents: number }>(
   };
 }
 
-/** The caregiver's price for one service at the booking's level. */
+/** The caregiver's price for one service, with the range of their level (RN-PRE-01). */
 export interface CaregiverServicePrice {
   serviceCode: ServiceCode;
   /** What the caregiver set. Null means the suggested price. */
   caregiverPriceCents: number | null;
-  /** The range in force for the service and level (RN-PRE-01). */
+  /** The range in force for the service and the caregiver's level (RN-PRE-01). */
   range: PriceRange;
 }
 
@@ -111,9 +112,12 @@ export interface CaregiverServicePrice {
  * the amounts can be explained later even if the settings change (RN-PRE-07).
  */
 export interface PricingSnapshot {
-  version: 1;
+  version: 2;
   rounding: 'HALF_UP_ONCE_PER_AMOUNT';
-  careLevel: CareLevel;
+  /** RN-NIV-06 */
+  caregiverLevel: CaregiverLevel;
+  /** RN-PRE-09: when true, `rates.ownerServiceFeeBp` is 0. */
+  firstServiceFeeWaived: boolean;
   petCount: number;
   prices: (CaregiverServicePrice & {
     /** caregiverPriceCents, or the suggested one, kept within the range (RN-CUI-17). */
@@ -124,18 +128,22 @@ export interface PricingSnapshot {
 
 /**
  * Prices the slots of a booking: each slot takes the caregiver's price for its
- * service, so the daytime visits of an overnight stay go at the visit price of the
- * same level (RN-SER-03).
+ * service, so the daytime visits of an overnight stay go at the caregiver's visit
+ * price (RN-SER-03). The first service has no service fee (RN-PRE-09): the zero rate
+ * is what the booking keeps (RN-PRE-07). The pets' care level doesn't change the price
+ * (RN-PRE-02).
  */
 export function quoteBooking<S extends { serviceCode: ServiceCode }>({
   slots,
-  careLevel,
+  caregiverLevel,
+  firstServiceFeeWaived,
   petCount,
   prices,
-  rates,
+  rates: standardRates,
 }: {
   slots: readonly S[];
-  careLevel: CareLevel;
+  caregiverLevel: CaregiverLevel;
+  firstServiceFeeWaived: boolean;
   petCount: number;
   prices: readonly CaregiverServicePrice[];
   rates: PricingRates;
@@ -144,6 +152,7 @@ export function quoteBooking<S extends { serviceCode: ServiceCode }>({
   amounts: BookingAmounts;
   snapshot: PricingSnapshot;
 } {
+  const rates = firstServiceFeeWaived ? { ...standardRates, ownerServiceFeeBp: 0 } : standardRates;
   const resolved = prices.map((price) => ({
     ...price,
     unitPriceCents: resolvePrice(price.caregiverPriceCents, price.range),
@@ -160,9 +169,10 @@ export function quoteBooking<S extends { serviceCode: ServiceCode }>({
   return {
     ...priceBooking(withUnitPrices, petCount, rates),
     snapshot: {
-      version: 1,
+      version: 2,
       rounding: 'HALF_UP_ONCE_PER_AMOUNT',
-      careLevel,
+      caregiverLevel,
+      firstServiceFeeWaived,
       petCount,
       prices: resolved,
       rates,

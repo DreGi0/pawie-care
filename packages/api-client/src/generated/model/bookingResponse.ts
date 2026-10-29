@@ -21,7 +21,7 @@ export interface BookingResponse {
   /** Sección 8.2. */
   status: BookingStatus;
   serviceCode: ServiceCode;
-  /** RN-PRE-02: Especial si alguna mascota lo es. */
+  /** RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio. */
   careLevel: CareLevel;
   /** Inicio del primer tramo. */
   startsAt: string;

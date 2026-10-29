@@ -5,12 +5,10 @@
  * API REST de Pawie Care. Las reglas de negocio están en docs/reglas-de-negocio.md y el diseño en docs/arquitectura.md. Los errores siempre tienen la forma de `ErrorResponse`.
  * OpenAPI spec version: 1
  */
-import type { CareLevel } from './careLevel';
 import type { ServiceCode } from './serviceCode';
 
 export interface CaregiverPrice {
   serviceCode: ServiceCode;
-  careLevel: CareLevel;
   /** Precio del cuidador por una mascota, en centavos, sin la tarifa de servicio (RN-PRE-01). */
   priceCents: number;
 }

@@ -8,7 +8,7 @@
 import * as zod from 'zod';
 
 /**
- * RN-RES-01. Va por POST porque lleva las mascotas y los horarios; no cambia nada. Devuelve el nivel de la reserva, los tramos y los cuidadores disponibles.
+ * RN-RES-01. Va por POST porque lleva las mascotas y los horarios; no cambia nada. Acepta los filtros `minLevel`, `certificationCodes` y `minRating`. Devuelve el nivel de la reserva, los tramos y los cuidadores disponibles, con su nivel, insignias, certificaciones y habilidades.
  * @summary Buscar cuidadores
  */
 export const caregiversSearchBodyNightsMax = 31;
@@ -16,6 +16,10 @@ export const caregiversSearchBodyNightsMax = 31;
 export const caregiversSearchBodyVisitsMax = 62;
 
 export const caregiversSearchBodyPetIdsMax = 10;
+
+export const caregiversSearchBodyCertificationCodesMax = 10;
+
+export const caregiversSearchBodyMinRatingMax = 5;
 
 export const CaregiversSearchBody = zod.object({
   serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
@@ -37,13 +41,33 @@ export const CaregiversSearchBody = zod.object({
     .max(caregiversSearchBodyPetIdsMax)
     .describe('Mascotas del dueño.'),
   districtId: zod.uuid().describe('Uno de los distritos de GET /v1/catalog.'),
+  minLevel: zod
+    .enum(['NEW', 'TRUSTED', 'PRO', 'SUPER'])
+    .describe('Solo cuidadores de este nivel o uno más alto.')
+    .optional()
+    .describe('Solo cuidadores de este nivel o uno más alto.'),
+  certificationCodes: zod
+    .array(zod.string())
+    .max(caregiversSearchBodyCertificationCodesMax)
+    .optional()
+    .describe('Códigos de certificación que debe tener vigentes todo el servicio.'),
+  minRating: zod
+    .number()
+    .min(1)
+    .max(caregiversSearchBodyMinRatingMax)
+    .optional()
+    .describe('Calificación mínima, de 1 a 5. Deja fuera a quien aún no tiene calificaciones.'),
 });
 
 export const CaregiversSearchResponse = zod.object({
   careLevel: zod
     .enum(['STANDARD', 'SPECIAL'])
-    .describe('RN-PRE-02: Especial si alguna mascota lo es.')
-    .describe('RN-MAS-05, RN-PRE-02: Especial si alguna mascota lo es en esas fechas.'),
+    .describe(
+      'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+    )
+    .describe(
+      'RN-MAS-05, RN-MAS-06: Especial si alguna mascota lo es en esas fechas. Exige la ⭐, pero no cambia el precio.',
+    ),
   slots: zod
     .array(
       zod.object({
@@ -59,6 +83,33 @@ export const CaregiversSearchResponse = zod.object({
         id: zod.uuid(),
         displayName: zod.string().describe('Nombre e inicial del apellido.'),
         photoUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
+        level: zod
+          .enum(['NEW', 'TRUSTED', 'PRO', 'SUPER'])
+          .describe('Solo cuidadores de este nivel o uno más alto.')
+          .describe('RN-NIV-01: lo calcula el sistema.'),
+        badges: zod
+          .array(
+            zod
+              .enum(['IDENTITY_VERIFIED', 'BACKGROUND_CHECKED', 'VET_STUDENT'])
+              .describe('Insignias de verificación (RN-CUI-03, RN-CUI-05).'),
+          )
+          .describe('Insignias de verificación (RN-CUI-03, RN-CUI-05).'),
+        certifications: zod
+          .array(
+            zod.object({
+              code: zod.string().describe('Código del tipo de certificación.'),
+              name: zod.string(),
+              validUntil: zod.iso.date().describe('Último día de vigencia (RN-CUI-09).'),
+            }),
+          )
+          .describe('Certificaciones vigentes, la ⭐ incluida (RN-CUI-07).'),
+        skills: zod
+          .array(
+            zod
+              .enum(['LARGE_DOGS', 'CATS', 'PUPPIES', 'SENIOR_PETS', 'DIFFICULT_BEHAVIOR'])
+              .describe('Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19).'),
+          )
+          .describe('Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19).'),
         hasSpecialCareCertification: zod
           .boolean()
           .describe('Tiene la ⭐ de cuidado especial vigente (RN-CUI-07).'),
@@ -78,9 +129,6 @@ export const CaregiversSearchResponse = zod.object({
           .array(
             zod.object({
               serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
-              careLevel: zod
-                .enum(['STANDARD', 'SPECIAL'])
-                .describe('RN-PRE-02: Especial si alguna mascota lo es.'),
               priceCents: zod
                 .int()
                 .describe(
@@ -88,7 +136,7 @@ export const CaregiversSearchResponse = zod.object({
                 ),
             }),
           )
-          .describe('Sus precios para lo que se buscó, en el nivel de la reserva.'),
+          .describe('Sus precios para lo que se buscó (RN-PRE-01).'),
       }),
     )
     .describe('Ordenados por calificación y después por cantidad de servicios.'),
@@ -106,6 +154,33 @@ export const CaregiversProfileResponse = zod.object({
   id: zod.uuid(),
   displayName: zod.string().describe('Nombre e inicial del apellido.'),
   photoUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
+  level: zod
+    .enum(['NEW', 'TRUSTED', 'PRO', 'SUPER'])
+    .describe('Solo cuidadores de este nivel o uno más alto.')
+    .describe('RN-NIV-01: lo calcula el sistema.'),
+  badges: zod
+    .array(
+      zod
+        .enum(['IDENTITY_VERIFIED', 'BACKGROUND_CHECKED', 'VET_STUDENT'])
+        .describe('Insignias de verificación (RN-CUI-03, RN-CUI-05).'),
+    )
+    .describe('Insignias de verificación (RN-CUI-03, RN-CUI-05).'),
+  certifications: zod
+    .array(
+      zod.object({
+        code: zod.string().describe('Código del tipo de certificación.'),
+        name: zod.string(),
+        validUntil: zod.iso.date().describe('Último día de vigencia (RN-CUI-09).'),
+      }),
+    )
+    .describe('Certificaciones vigentes, la ⭐ incluida (RN-CUI-07).'),
+  skills: zod
+    .array(
+      zod
+        .enum(['LARGE_DOGS', 'CATS', 'PUPPIES', 'SENIOR_PETS', 'DIFFICULT_BEHAVIOR'])
+        .describe('Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19).'),
+    )
+    .describe('Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19).'),
   hasSpecialCareCertification: zod
     .boolean()
     .describe('Tiene la ⭐ de cuidado especial vigente (RN-CUI-07).'),
@@ -131,9 +206,6 @@ export const CaregiversProfileResponse = zod.object({
     .array(
       zod.object({
         serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
-        careLevel: zod
-          .enum(['STANDARD', 'SPECIAL'])
-          .describe('RN-PRE-02: Especial si alguna mascota lo es.'),
         priceCents: zod
           .int()
           .describe(
@@ -141,5 +213,5 @@ export const CaregiversProfileResponse = zod.object({
           ),
       }),
     )
-    .describe('Los servicios que ofrece. Los de nivel Especial solo aparecen si tiene la ⭐.'),
+    .describe('Los servicios que ofrece, al rango de su nivel (RN-PRE-01).'),
 });

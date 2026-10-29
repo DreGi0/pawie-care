@@ -152,15 +152,6 @@ export default function CaregiverProfileScreen() {
               Precios
             </Text>
             <Card style={styles.prices}>
-              <View style={[styles.priceRow, styles.priceHead]}>
-                <View style={styles.flex} />
-                <Text variant="caption" color="inkMuted" style={styles.priceCell}>
-                  Normal
-                </Text>
-                <Text variant="caption" color="inkMuted" style={styles.priceCell}>
-                  Especial
-                </Text>
-              </View>
               {(['HOME_VISIT', 'OVERNIGHT_STAY'] as const).map((code, index) => (
                 <PriceRow
                   key={code}
@@ -176,8 +167,8 @@ export default function CaregiverProfileScreen() {
               ))}
             </Card>
             <Text variant="caption" color="inkMuted">
-              Especial: si tu mascota toma medicina, tiene una herida o se recupera de una
-              operación. Cada mascota adicional suma 50%.
+              El precio es el mismo para todas las mascotas, también las Especiales. Cada mascota
+              adicional suma 50%.
             </Text>
           </View>
         </Animated.View>
@@ -228,10 +219,7 @@ function PriceRow({
   detail: string;
   last: boolean;
 }) {
-  const cell = (level: 'STANDARD' | 'SPECIAL') => {
-    const price = prices.find((p) => p.serviceCode === code && p.careLevel === level);
-    return price ? formatMoney(price.priceCents, { short: true }) : '—';
-  };
+  const price = prices.find((p) => p.serviceCode === code);
 
   return (
     <View style={[styles.priceRow, !last && styles.priceDivider]}>
@@ -242,10 +230,7 @@ function PriceRow({
         </Text>
       </View>
       <Text variant="bodyStrong" style={styles.priceCell}>
-        {cell('STANDARD')}
-      </Text>
-      <Text variant="bodyStrong" style={styles.priceCell}>
-        {cell('SPECIAL')}
+        {price ? formatMoney(price.priceCents, { short: true }) : '—'}
       </Text>
     </View>
   );
@@ -302,7 +287,6 @@ const styles = StyleSheet.create({
     gap: space[2],
     paddingVertical: space[3],
   },
-  priceHead: { paddingBottom: space[2], borderBottomWidth: 1, borderBottomColor: colors.line },
   priceDivider: { borderBottomWidth: 1, borderBottomColor: colors.line },
   priceCell: { width: 72, textAlign: 'right' },
 });

@@ -7,6 +7,7 @@ import { REUSE_GRACE_MS } from '../src/auth/refresh-tokens.service.js';
 import { addDays, addMonths, dateInElSalvador } from '../src/common/time/calendar.js';
 import { Role } from '../src/generated/prisma/client.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
+import { SettingsService } from '../src/settings/settings.service.js';
 import { createTestApp } from './create-test-app.js';
 import { createTestDatabase, prismaFor, type TestDatabase } from './database.js';
 
@@ -17,6 +18,8 @@ describe('auth', () => {
 
   beforeAll(async () => {
     db = await createTestDatabase();
+    // GET /v1/users/me reads the first-service window (RN-PRE-09).
+    await new SettingsService(db.prisma).createMissing({ changedBy: 'test' });
   });
 
   afterAll(async () => {
@@ -249,6 +252,10 @@ describe('auth', () => {
         birthDate: '1988-01-15',
         phone: null,
         roles: ['OWNER'],
+        // RN-PRE-09: 15 days from registering.
+        firstServiceFeeWaiverEndsAt: new Date(
+          owner.createdAt.getTime() + 15 * 86_400_000,
+        ).toISOString(),
       });
     });
 

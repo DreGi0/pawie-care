@@ -293,7 +293,7 @@ describe('database constraints', () => {
       await expect(
         prisma.booking.update({
           where: { id: booking.id },
-          data: { caregiverPayoutCents: booking.subtotalCents },
+          data: { caregiverPayoutCents: booking.subtotalCents - 1 },
         }),
       ).rejects.toThrow(/bookings_amounts_check/);
     });

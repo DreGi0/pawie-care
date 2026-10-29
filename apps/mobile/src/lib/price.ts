@@ -2,7 +2,8 @@
 // so this is only the estimate of Reservar: the booking stores the real amounts when it's
 // created (RN-PRE-07), and Pagar shows those.
 const ADDITIONAL_PET_SURCHARGE_BP = 5000;
-const OWNER_SERVICE_FEE_BP = 1000;
+// Interim: the stage 6 app work replaces this estimate with POST /v1/bookings/quote (RN-PRE-10).
+const OWNER_SERVICE_FEE_BP = 1500;
 
 /** Rounds half up, like the API (RN-PRE-08). */
 function applyBasisPoints(cents: number, bp: number): number {

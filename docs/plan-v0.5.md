@@ -59,6 +59,8 @@ Regla general: **no se renombra una clave si su significado no cambió**. Solo c
 
 ### Etapa 6: precios por nivel del cuidador
 
+**Avance:** se hace en dos PR. **6.1 (hecha, solo API):** `CaregiverLevel` y `CaregiverProfile.level`, `CaregiverSkill`, tipos de certificación, settings `certifications.minExamScoreBp`, `certifications.validityMonths` y `levels.requirements`, `caregiver-level.ts`, recálculo en la transacción (`recalculateLevel`), el script `caregivers:recalculate-levels` y el seed con los cuatro niveles. **6.2:** se parte en API y app. **API (hecha):** precios por nivel del cuidador (`CaregiverServicePrice` sin `careLevel`, `pricing.priceRanges` de visita y pernocta), tarifa 15% y comisión 0%, `pricing.firstServiceWindowDays`, `Booking.caregiverLevel` y `firstServiceFeeWaived` (con el dueño bloqueado en la transacción), `POST /v1/bookings/quote`, `firstServiceFeeWaiverEndsAt` en `GET /v1/users/me`, y los filtros `minLevel`, `certificationCodes` y `minRating` con `level`, `badges`, `certifications` y `skills` en búsqueda y perfil. **App (pendiente):** filtros, perfil, `/quote` en Reservar, y el aviso y la línea tachada del primer servicio.
+
 **Reglas:** RN-NIV-01 a RN-NIV-06, RN-PRE-01 a RN-PRE-04, RN-PRE-07, RN-PRE-09, RN-PRE-10, RN-RES-10, RN-CUI-05 a RN-CUI-07, RN-CUI-09, RN-CUI-11, RN-CUI-19, RN-CUI-21.
 
 **API:**

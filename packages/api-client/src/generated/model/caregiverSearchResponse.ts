@@ -10,7 +10,7 @@ import type { CareLevel } from './careLevel';
 import type { SlotResponse } from './slotResponse';
 
 export interface CaregiverSearchResponse {
-  /** RN-MAS-05, RN-PRE-02: Especial si alguna mascota lo es en esas fechas. */
+  /** RN-MAS-05, RN-MAS-06: Especial si alguna mascota lo es en esas fechas. Exige la ⭐, pero no cambia el precio. */
   careLevel: CareLevel;
   /** Los tramos que se buscaron, en orden. */
   slots: SlotResponse[];

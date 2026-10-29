@@ -44,10 +44,10 @@ describe('SettingsService', () => {
   it('saves a valid value and records who changed it and what it was', async () => {
     const update = await settings.set('pricing.ownerServiceFeeBp', 1200, author);
 
-    expect(update).toEqual({ previousValue: 1000, value: 1200, changed: true });
+    expect(update).toEqual({ previousValue: 1500, value: 1200, changed: true });
     expect(await settings.get('pricing.ownerServiceFeeBp')).toBe(1200);
     expect((await historyOf('pricing.ownerServiceFeeBp')).at(-1)).toMatchObject({
-      previousValue: 1000,
+      previousValue: 1500,
       newValue: 1200,
       changedBy: 'test',
       reason: 'Prueba',
@@ -60,7 +60,7 @@ describe('SettingsService', () => {
     await expect(settings.set('pricing.caregiverCommissionBp', 15.5, author)).rejects.toThrow(
       InvalidSettingValueError,
     );
-    expect(await settings.get('pricing.caregiverCommissionBp')).toBe(1500);
+    expect(await settings.get('pricing.caregiverCommissionBp')).toBe(0);
     expect(await historyOf('pricing.caregiverCommissionBp')).toEqual(before);
   });
 

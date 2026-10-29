@@ -100,8 +100,12 @@ export const BookingsCreateResponse = zod.object({
   serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
   careLevel: zod
     .enum(['STANDARD', 'SPECIAL'])
-    .describe('RN-PRE-02: Especial si alguna mascota lo es.')
-    .describe('RN-PRE-02: Especial si alguna mascota lo es.'),
+    .describe(
+      'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+    )
+    .describe(
+      'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+    ),
   startsAt: zod.iso.datetime({ offset: true }).describe('Inicio del primer tramo.'),
   endsAt: zod.iso.datetime({ offset: true }).describe('Fin del último tramo.'),
   responseDueAt: zod.iso
@@ -127,7 +131,9 @@ export const BookingsCreateResponse = zod.object({
       name: zod.string(),
       careLevel: zod
         .enum(['STANDARD', 'SPECIAL'])
-        .describe('RN-PRE-02: Especial si alguna mascota lo es.')
+        .describe(
+          'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+        )
         .describe('Su nivel en las fechas de la reserva (RN-MAS-05).'),
       vetInstructionIds: zod
         .array(zod.uuid())
@@ -165,9 +171,16 @@ export const BookingsCreateResponse = zod.object({
   }),
   price: zod.object({
     subtotalCents: zod.int().describe('Lo que cobra el cuidador: la suma de los tramos.'),
-    serviceFeeBp: zod.int().describe('Tarifa de servicio, en puntos básicos.'),
+    serviceFeeBp: zod
+      .int()
+      .describe('Tarifa de servicio, en puntos básicos. Es 0 en el primer servicio (RN-PRE-09).'),
     serviceFeeCents: zod.int(),
     totalCents: zod.int().describe('Lo que paga el dueño.'),
+    firstServiceFeeWaived: zod
+      .boolean()
+      .describe(
+        'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00.',
+      ),
   }),
   payment: zod
     .object({
@@ -224,8 +237,12 @@ export const BookingsListResponseItem = zod.object({
   serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
   careLevel: zod
     .enum(['STANDARD', 'SPECIAL'])
-    .describe('RN-PRE-02: Especial si alguna mascota lo es.')
-    .describe('RN-PRE-02: Especial si alguna mascota lo es.'),
+    .describe(
+      'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+    )
+    .describe(
+      'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+    ),
   startsAt: zod.iso.datetime({ offset: true }).describe('Inicio del primer tramo.'),
   endsAt: zod.iso.datetime({ offset: true }).describe('Fin del último tramo.'),
   responseDueAt: zod.iso
@@ -251,7 +268,9 @@ export const BookingsListResponseItem = zod.object({
       name: zod.string(),
       careLevel: zod
         .enum(['STANDARD', 'SPECIAL'])
-        .describe('RN-PRE-02: Especial si alguna mascota lo es.')
+        .describe(
+          'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+        )
         .describe('Su nivel en las fechas de la reserva (RN-MAS-05).'),
       vetInstructionIds: zod
         .array(zod.uuid())
@@ -289,9 +308,16 @@ export const BookingsListResponseItem = zod.object({
   }),
   price: zod.object({
     subtotalCents: zod.int().describe('Lo que cobra el cuidador: la suma de los tramos.'),
-    serviceFeeBp: zod.int().describe('Tarifa de servicio, en puntos básicos.'),
+    serviceFeeBp: zod
+      .int()
+      .describe('Tarifa de servicio, en puntos básicos. Es 0 en el primer servicio (RN-PRE-09).'),
     serviceFeeCents: zod.int(),
     totalCents: zod.int().describe('Lo que paga el dueño.'),
+    firstServiceFeeWaived: zod
+      .boolean()
+      .describe(
+        'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00.',
+      ),
   }),
   payment: zod
     .object({
@@ -325,6 +351,92 @@ export const BookingsListResponseItem = zod.object({
 export const BookingsListResponse = zod.array(BookingsListResponseItem);
 
 /**
+ * RN-PRE-10. Mismo cuerpo y mismas validaciones que `POST /v1/bookings`; devuelve el precio que se cobraría ahora, con el primer servicio sin tarifa si aplica (RN-PRE-09), y no guarda nada.
+ * @summary Cotizar una reserva
+ */
+export const bookingsQuoteBodyNightsMax = 31;
+
+export const bookingsQuoteBodyVisitsMax = 62;
+
+export const bookingsQuoteBodyPetIdsMax = 10;
+
+export const bookingsQuoteBodyInstructionsMax = 2000;
+
+export const bookingsQuoteBodyEmergencyContactNameMax = 120;
+
+export const bookingsQuoteBodyEmergencyVetNameMax = 120;
+
+export const bookingsQuoteBodyEmergencyPreauthorizedCentsMin = 0;
+export const bookingsQuoteBodyEmergencyPreauthorizedCentsMax = 200000;
+
+export const BookingsQuoteBody = zod.object({
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+  nights: zod
+    .array(zod.iso.date())
+    .max(bookingsQuoteBodyNightsMax)
+    .optional()
+    .describe('Solo en pernocta: la fecha en que empieza cada noche.'),
+  visits: zod
+    .array(zod.iso.datetime({ offset: true }))
+    .max(bookingsQuoteBodyVisitsMax)
+    .optional()
+    .describe(
+      'Cuándo empieza cada visita. En una pernocta son las visitas de día durante la estadía (RN-SER-03).',
+    ),
+  caregiverId: zod.uuid().describe('Un cuidador de los resultados de la búsqueda.'),
+  petIds: zod
+    .array(zod.uuid())
+    .min(1)
+    .max(bookingsQuoteBodyPetIdsMax)
+    .describe('Mascotas del dueño.'),
+  addressId: zod.uuid().describe('Una de las direcciones de GET /v1/addresses.'),
+  instructions: zod
+    .string()
+    .max(bookingsQuoteBodyInstructionsMax)
+    .optional()
+    .describe('Instrucciones para el cuidador (RN-RES-03).'),
+  emergency: zod.object({
+    contactName: zod
+      .string()
+      .max(bookingsQuoteBodyEmergencyContactNameMax)
+      .describe('Contacto de emergencia.'),
+    contactPhone: zod.string(),
+    vetName: zod
+      .string()
+      .max(bookingsQuoteBodyEmergencyVetNameMax)
+      .optional()
+      .describe('Veterinario de cabecera.'),
+    vetPhone: zod.string().optional(),
+    preauthorizedCents: zod
+      .int()
+      .min(bookingsQuoteBodyEmergencyPreauthorizedCentsMin)
+      .max(bookingsQuoteBodyEmergencyPreauthorizedCentsMax)
+      .describe(
+        'Monto preautorizado para emergencias, en centavos. Solo se declara: no se cobra por adelantado (RN-EME-04).',
+      ),
+    clinicConsent: zod
+      .literal(true)
+      .describe(
+        'Consentimiento para llevar a la mascota a una clínica si hace falta. Sin él no se puede reservar (RN-EME-02).',
+      ),
+  }),
+});
+
+export const BookingsQuoteResponse = zod.object({
+  subtotalCents: zod.int().describe('Lo que cobra el cuidador: la suma de los tramos.'),
+  serviceFeeBp: zod
+    .int()
+    .describe('Tarifa de servicio, en puntos básicos. Es 0 en el primer servicio (RN-PRE-09).'),
+  serviceFeeCents: zod.int(),
+  totalCents: zod.int().describe('Lo que paga el dueño.'),
+  firstServiceFeeWaived: zod
+    .boolean()
+    .describe(
+      'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00.',
+    ),
+});
+
+/**
  * El teléfono del cuidador aparece cuando está confirmada (RN-CTA-04).
  * @summary Ver una reserva
  */
@@ -353,8 +465,12 @@ export const BookingsGetResponse = zod.object({
   serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
   careLevel: zod
     .enum(['STANDARD', 'SPECIAL'])
-    .describe('RN-PRE-02: Especial si alguna mascota lo es.')
-    .describe('RN-PRE-02: Especial si alguna mascota lo es.'),
+    .describe(
+      'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+    )
+    .describe(
+      'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+    ),
   startsAt: zod.iso.datetime({ offset: true }).describe('Inicio del primer tramo.'),
   endsAt: zod.iso.datetime({ offset: true }).describe('Fin del último tramo.'),
   responseDueAt: zod.iso
@@ -380,7 +496,9 @@ export const BookingsGetResponse = zod.object({
       name: zod.string(),
       careLevel: zod
         .enum(['STANDARD', 'SPECIAL'])
-        .describe('RN-PRE-02: Especial si alguna mascota lo es.')
+        .describe(
+          'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+        )
         .describe('Su nivel en las fechas de la reserva (RN-MAS-05).'),
       vetInstructionIds: zod
         .array(zod.uuid())
@@ -418,9 +536,16 @@ export const BookingsGetResponse = zod.object({
   }),
   price: zod.object({
     subtotalCents: zod.int().describe('Lo que cobra el cuidador: la suma de los tramos.'),
-    serviceFeeBp: zod.int().describe('Tarifa de servicio, en puntos básicos.'),
+    serviceFeeBp: zod
+      .int()
+      .describe('Tarifa de servicio, en puntos básicos. Es 0 en el primer servicio (RN-PRE-09).'),
     serviceFeeCents: zod.int(),
     totalCents: zod.int().describe('Lo que paga el dueño.'),
+    firstServiceFeeWaived: zod
+      .boolean()
+      .describe(
+        'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00.',
+      ),
   }),
   payment: zod
     .object({
@@ -491,8 +616,12 @@ export const BookingsCancelResponse = zod.object({
   serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
   careLevel: zod
     .enum(['STANDARD', 'SPECIAL'])
-    .describe('RN-PRE-02: Especial si alguna mascota lo es.')
-    .describe('RN-PRE-02: Especial si alguna mascota lo es.'),
+    .describe(
+      'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+    )
+    .describe(
+      'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+    ),
   startsAt: zod.iso.datetime({ offset: true }).describe('Inicio del primer tramo.'),
   endsAt: zod.iso.datetime({ offset: true }).describe('Fin del último tramo.'),
   responseDueAt: zod.iso
@@ -518,7 +647,9 @@ export const BookingsCancelResponse = zod.object({
       name: zod.string(),
       careLevel: zod
         .enum(['STANDARD', 'SPECIAL'])
-        .describe('RN-PRE-02: Especial si alguna mascota lo es.')
+        .describe(
+          'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+        )
         .describe('Su nivel en las fechas de la reserva (RN-MAS-05).'),
       vetInstructionIds: zod
         .array(zod.uuid())
@@ -556,9 +687,16 @@ export const BookingsCancelResponse = zod.object({
   }),
   price: zod.object({
     subtotalCents: zod.int().describe('Lo que cobra el cuidador: la suma de los tramos.'),
-    serviceFeeBp: zod.int().describe('Tarifa de servicio, en puntos básicos.'),
+    serviceFeeBp: zod
+      .int()
+      .describe('Tarifa de servicio, en puntos básicos. Es 0 en el primer servicio (RN-PRE-09).'),
     serviceFeeCents: zod.int(),
     totalCents: zod.int().describe('Lo que paga el dueño.'),
+    firstServiceFeeWaived: zod
+      .boolean()
+      .describe(
+        'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00.',
+      ),
   }),
   payment: zod
     .object({

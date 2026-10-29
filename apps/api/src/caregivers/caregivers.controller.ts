@@ -37,7 +37,7 @@ export class CaregiversController {
   @ApiOperation({
     summary: 'Buscar cuidadores',
     description:
-      'RN-RES-01. Va por POST porque lleva las mascotas y los horarios; no cambia nada. Devuelve el nivel de la reserva, los tramos y los cuidadores disponibles.',
+      'RN-RES-01. Va por POST porque lleva las mascotas y los horarios; no cambia nada. Acepta los filtros `minLevel`, `certificationCodes` y `minRating`. Devuelve el nivel de la reserva, los tramos y los cuidadores disponibles, con su nivel, insignias, certificaciones y habilidades.',
   })
   @ApiOkResponse({ type: CaregiverSearchResponse })
   @ApiNotFoundResponse({ type: ErrorResponse, description: '`PET_NOT_FOUND`.' })

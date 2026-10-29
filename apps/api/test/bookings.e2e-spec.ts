@@ -12,6 +12,7 @@ import { TestClock } from './test-clock.js';
 import { useApi } from './use-api.js';
 
 const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 
 /** A date at least three days ahead, so every slot clears the minimum lead time. */
 const day = (n: number) => formatDateOnly(addDays(dateInElSalvador(new Date()), 3 + n));
@@ -57,9 +58,16 @@ describe('bookings', () => {
     clock.reset();
   });
 
-  /** A new owner with a home in Santa Tecla, where Carlos works every day. */
-  async function owner(district = 'santa-tecla') {
+  /**
+   * An owner with a home in Santa Tecla, where Carlos works every day. By default they
+   * registered a month ago, past the window of the first service without a fee
+   * (RN-PRE-09); a newcomer is still inside it.
+   */
+  async function owner(district = 'santa-tecla', { newcomer = false } = {}) {
     const user = await createUser(db.prisma);
+    if (!newcomer) {
+      await registeredDaysAgo(user.id, 30);
+    }
     const address = await db.prisma.address.create({
       data: {
         userId: user.id,
@@ -109,18 +117,25 @@ describe('bookings', () => {
 
     /** A home visit with Carlos, unless the body says otherwise. */
     const toby = await pet();
-    const book = (body: Record<string, unknown>) =>
-      as.post('/v1/bookings', {
-        caregiverId: caregivers.Carlos,
-        serviceCode: 'HOME_VISIT',
-        petIds: [toby],
-        addressId: address.id,
-        emergency: EMERGENCY,
-        ...body,
-      });
+    const request = (body: Record<string, unknown>) => ({
+      caregiverId: caregivers.Carlos,
+      serviceCode: 'HOME_VISIT',
+      petIds: [toby],
+      addressId: address.id,
+      emergency: EMERGENCY,
+      ...body,
+    });
+    const book = (body: Record<string, unknown>) => as.post('/v1/bookings', request(body));
+    const quote = (body: Record<string, unknown>) => as.post('/v1/bookings/quote', request(body));
 
-    return { user, address, as, pet, book };
+    return { user, address, as, pet, book, quote };
   }
+
+  const registeredDaysAgo = (userId: string, days: number) =>
+    db.prisma.user.update({
+      where: { id: userId },
+      data: { createdAt: new Date(Date.now() - days * DAY_MS) },
+    });
 
   const bookingRow = (id: string) =>
     db.prisma.booking.findUniqueOrThrow({
@@ -157,15 +172,20 @@ describe('bookings', () => {
         paymentDueAt: new Date(now.getTime() + 2 * HOUR_MS).toISOString(),
         caregiver: { id: caregivers.Carlos, displayName: 'Carlos H.', phone: null },
         pets: [{ id: toby, name: 'Toby', careLevel: 'STANDARD', vetInstructionIds: [] }],
-        slots: [{ serviceCode: 'HOME_VISIT', unitPriceCents: 1200, subtotalCents: 1200 }],
+        // Carlos is Pro and set no visit price: the suggested $13 of his level.
+        slots: [{ serviceCode: 'HOME_VISIT', unitPriceCents: 1300, subtotalCents: 1300 }],
         address: { street: 'Calle El Progreso 5, Colonia Utila', details: 'Casa esquinera' },
         emergency: EMERGENCY,
-        price: { subtotalCents: 1200, serviceFeeBp: 1000, serviceFeeCents: 120, totalCents: 1320 },
+        price: {
+          subtotalCents: 1300,
+          serviceFeeBp: 1500,
+          serviceFeeCents: 195,
+          totalCents: 1495,
+          firstServiceFeeWaived: false,
+        },
       });
       // The booking charges what the search showed.
-      expect(found.prices).toEqual([
-        { serviceCode: 'HOME_VISIT', careLevel: 'STANDARD', priceCents: 1200 },
-      ]);
+      expect(found.prices).toEqual([{ serviceCode: 'HOME_VISIT', priceCents: 1300 }]);
       expect((await bookingRow(body.id)).statusChanges).toMatchObject([
         { fromStatus: null, toStatus: 'PENDING_PAYMENT', changedById: user.id },
       ]);
@@ -198,7 +218,7 @@ describe('bookings', () => {
       }
     });
 
-    it('saves the prices of the example of RN-PRE: a $17 Special visit (RN-PRE-07)', async () => {
+    it('a Special pet needs the ⭐ but does not change the price, and the booking saves its terms (RN-MAS-06, RN-PRE-07)', async () => {
       const { pet, book } = await owner();
       const nala = await pet('Nala', [
         { task: 'MOBILITY_ASSISTANCE', ownerInstructions: 'Ayudarla a subir al sofá.' },
@@ -206,35 +226,38 @@ describe('bookings', () => {
 
       const { body } = await book({ petIds: [nala], visits: [at(day(2), '10:00')] }).expect(201);
 
-      // Carlos didn't set a Special visit price, so the suggested $17 applies.
+      // The same $13 as a Normal pet: Carlos is Pro, and the pet's level doesn't price.
       expect(await bookingRow(body.id)).toMatchObject({
         careLevel: 'SPECIAL',
-        subtotalCents: 1700,
-        ownerServiceFeeBp: 1000,
-        ownerServiceFeeCents: 170,
-        totalCents: 1870,
-        caregiverCommissionBp: 1500,
-        caregiverCommissionCents: 255,
-        caregiverPayoutCents: 1445,
+        caregiverLevel: 'PRO',
+        firstServiceFeeWaived: false,
+        subtotalCents: 1300,
+        ownerServiceFeeBp: 1500,
+        ownerServiceFeeCents: 195,
+        totalCents: 1495,
+        caregiverCommissionBp: 0,
+        caregiverCommissionCents: 0,
+        caregiverPayoutCents: 1300,
         additionalPetSurchargeBp: 5000,
         guaranteeFundBp: 200,
         vatBp: 1300,
         gatewayFeeBp: 350,
         pricingSnapshot: {
-          version: 1,
+          version: 2,
           rounding: 'HALF_UP_ONCE_PER_AMOUNT',
-          careLevel: 'SPECIAL',
+          caregiverLevel: 'PRO',
+          firstServiceFeeWaived: false,
           petCount: 1,
           prices: [
             {
               serviceCode: 'HOME_VISIT',
               caregiverPriceCents: null,
-              range: { minCents: 1500, suggestedCents: 1700, maxCents: 2000 },
-              unitPriceCents: 1700,
+              range: { minCents: 1100, suggestedCents: 1300, maxCents: 1500 },
+              unitPriceCents: 1300,
             },
           ],
         },
-        slots: [{ unitPriceCents: 1700, subtotalCents: 1700 }],
+        slots: [{ unitPriceCents: 1300, subtotalCents: 1300 }],
         pets: [{ petId: nala, careLevel: 'SPECIAL' }],
       });
     });
@@ -250,18 +273,19 @@ describe('bookings', () => {
         visits: [at(day(4), '13:00')],
       }).expect(201);
 
-      // Nights: 2600 × 1.5 = 3900. The visit: 1200 × 1.5 = 1800.
+      // Nights: 3000 × 1.5 = 4500. The visit: 1300 × 1.5 = 1950.
       expect(body.slots).toMatchObject([
-        { serviceCode: 'OVERNIGHT_STAY', unitPriceCents: 2600, subtotalCents: 3900 },
-        { serviceCode: 'HOME_VISIT', unitPriceCents: 1200, subtotalCents: 1800 },
-        { serviceCode: 'OVERNIGHT_STAY', unitPriceCents: 2600, subtotalCents: 3900 },
+        { serviceCode: 'OVERNIGHT_STAY', unitPriceCents: 3000, subtotalCents: 4500 },
+        { serviceCode: 'HOME_VISIT', unitPriceCents: 1300, subtotalCents: 1950 },
+        { serviceCode: 'OVERNIGHT_STAY', unitPriceCents: 3000, subtotalCents: 4500 },
       ]);
+      // 10 950 × 15% = 1642.5, which rounds half up to 1643.
       expect(await bookingRow(body.id)).toMatchObject({
-        subtotalCents: 9600,
-        ownerServiceFeeCents: 960,
-        totalCents: 10_560,
-        caregiverCommissionCents: 1440,
-        caregiverPayoutCents: 8160,
+        subtotalCents: 10_950,
+        ownerServiceFeeCents: 1643,
+        totalCents: 12_593,
+        caregiverCommissionCents: 0,
+        caregiverPayoutCents: 10_950,
       });
     });
 
@@ -425,6 +449,7 @@ describe('bookings', () => {
       const service = api.app().get(CaregiversService);
       const check = vi.spyOn(service, 'bookableCaregiver').mockResolvedValueOnce({
         caregiverId: caregivers.Carlos,
+        level: 'PRO',
         instantBooking: true,
         prices: [
           {
@@ -467,6 +492,147 @@ describe('bookings', () => {
       expect(before).toContain(caregivers.Carlos);
       expect(whileBooked).not.toContain(caregivers.Carlos);
       expect(afterCancelling).toContain(caregivers.Carlos);
+    });
+  });
+
+  describe('POST /v1/bookings/quote and the first service without a fee (RN-PRE-09, RN-PRE-10)', () => {
+    it('quotes the same total as the booking it precedes', async () => {
+      for (const newcomer of [false, true]) {
+        const { book, quote } = await owner('santa-tecla', { newcomer });
+        const body = { visits: [at(day(20), newcomer ? '10:00' : '12:00')] };
+        const before = await db.prisma.booking.count();
+
+        const quoted = await quote(body).expect(200);
+        expect(await db.prisma.booking.count()).toBe(before);
+        const booking = await book(body).expect(201);
+
+        expect(quoted.body.totalCents).toBe(booking.body.price.totalCents);
+        expect(quoted.body).toEqual(booking.body.price);
+        expect(quoted.body).toEqual(
+          newcomer
+            ? {
+                subtotalCents: 1300,
+                serviceFeeBp: 0,
+                serviceFeeCents: 0,
+                totalCents: 1300,
+                firstServiceFeeWaived: true,
+              }
+            : {
+                subtotalCents: 1300,
+                serviceFeeBp: 1500,
+                serviceFeeCents: 195,
+                totalCents: 1495,
+                firstServiceFeeWaived: false,
+              },
+        );
+      }
+    });
+
+    it('validates the quote like a booking', async () => {
+      const { book, quote } = await owner();
+      await book({ visits: [at(day(21), '10:00')] }).expect(201);
+
+      const taken = await quote({ visits: [at(day(21), '10:00')] }).expect(409);
+
+      expect(taken.body.errorCode).toBe('SLOT_TAKEN');
+    });
+
+    it('saves the waiver in the booking and keeps the zero fee in its snapshot (RN-PRE-07)', async () => {
+      const { book } = await owner('santa-tecla', { newcomer: true });
+
+      const { body } = await book({ visits: [at(day(22), '10:00')] }).expect(201);
+
+      expect(await bookingRow(body.id)).toMatchObject({
+        firstServiceFeeWaived: true,
+        caregiverLevel: 'PRO',
+        ownerServiceFeeBp: 0,
+        ownerServiceFeeCents: 0,
+        totalCents: 1300,
+        caregiverPayoutCents: 1300,
+        pricingSnapshot: { firstServiceFeeWaived: true, rates: { ownerServiceFeeBp: 0 } },
+      });
+    });
+
+    it('does not repeat with two active bookings, and comes back if the first expires', async () => {
+      const { user, as, book } = await owner('santa-tecla', { newcomer: true });
+      const me = async () =>
+        (await as.get('/v1/users/me').expect(200)).body.firstServiceFeeWaiverEndsAt;
+      const first = (await book({ visits: [at(day(23), '10:00')] }).expect(201)).body;
+      const meWhileActive = await me();
+      const second = (await book({ visits: [at(day(23), '12:00')] }).expect(201)).body;
+
+      await api.app().get(BookingStateMachine).transition(first.id, {
+        from: BookingStatus.PENDING_PAYMENT,
+        to: BookingStatus.EXPIRED,
+        changedById: null,
+      });
+      const meAfterExpiring = await me();
+      const third = (await book({ visits: [at(day(23), '14:00')] }).expect(201)).body;
+      const fourth = (await book({ visits: [at(day(23), '16:00')] }).expect(201)).body;
+
+      expect(
+        [first, second, third, fourth].map(({ price }) => price.firstServiceFeeWaived),
+      ).toEqual([true, false, true, false]);
+      expect(second.price.serviceFeeCents).toBe(195);
+      expect(meWhileActive).toBeNull();
+      expect(meAfterExpiring).toBe(
+        new Date(
+          (await db.prisma.user.findUniqueOrThrow({ where: { id: user.id } })).createdAt.getTime() +
+            15 * DAY_MS,
+        ).toISOString(),
+      );
+    });
+
+    it('gives it to only one of two requests made at the same time', async () => {
+      const { book } = await owner('santa-tecla', { newcomer: true });
+
+      const responses = await Promise.all([
+        book({ visits: [at(day(24), '10:00')] }),
+        book({ visits: [at(day(24), '12:00')] }),
+      ]);
+
+      expect(responses.map(({ status }) => status)).toEqual([201, 201]);
+      expect(
+        responses.filter(({ body }) => body.price.firstServiceFeeWaived === true),
+      ).toHaveLength(1);
+    });
+
+    it('applies within 15 days of registering, and not after (RN-PRE-09)', async () => {
+      const inside = await owner('santa-tecla', { newcomer: true });
+      await registeredDaysAgo(inside.user.id, 14);
+      const outside = await owner('santa-tecla', { newcomer: true });
+      await registeredDaysAgo(outside.user.id, 16);
+
+      const a = await inside.book({ visits: [at(day(25), '10:00')] }).expect(201);
+      const b = await outside.book({ visits: [at(day(25), '12:00')] }).expect(201);
+
+      expect([a, b].map(({ body }) => body.price.firstServiceFeeWaived)).toEqual([true, false]);
+      expect(
+        (await outside.as.get('/v1/users/me').expect(200)).body.firstServiceFeeWaiverEndsAt,
+      ).toBeNull();
+    });
+
+    it('does not apply to an owner who already paid a booking', async () => {
+      const { book } = await owner('santa-tecla', { newcomer: true });
+      const paid = (await book({ visits: [at(day(26), '10:00')] }).expect(201)).body;
+      await db.prisma.payment.create({
+        data: {
+          bookingId: paid.id,
+          provider: 'WOMPI',
+          status: 'APPROVED',
+          amountCents: paid.price.totalCents,
+          approvedAt: new Date(),
+        },
+      });
+      await api.app().get(BookingStateMachine).transition(paid.id, {
+        from: BookingStatus.PENDING_PAYMENT,
+        to: BookingStatus.CONFIRMED,
+        changedById: null,
+      });
+
+      const next = await book({ visits: [at(day(26), '12:00')] }).expect(201);
+
+      expect(next.body.price).toMatchObject({ firstServiceFeeWaived: false, serviceFeeCents: 195 });
     });
   });
 

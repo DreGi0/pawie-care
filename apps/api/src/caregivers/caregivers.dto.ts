@@ -1,15 +1,29 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 import { ScheduleRequest, SlotResponse } from '../bookings/schedule.dto.js';
 import { DistrictOption } from '../catalog/catalog.dto.js';
-import { CareLevel, ServiceCode } from '../generated/prisma/enums.js';
+import {
+  CaregiverLevel,
+  CaregiverSkill,
+  CareLevel,
+  ServiceCode,
+} from '../generated/prisma/enums.js';
+import { CaregiverBadge } from './badges.js';
 
 export class CaregiverPrice {
   @ApiProperty({ enum: ServiceCode, enumName: 'ServiceCode' })
   serviceCode: ServiceCode;
-
-  @ApiProperty({ enum: CareLevel, enumName: 'CareLevel' })
-  careLevel: CareLevel;
 
   @ApiProperty({
     type: 'integer',
@@ -18,6 +32,17 @@ export class CaregiverPrice {
       'Precio del cuidador por una mascota, en centavos, sin la tarifa de servicio (RN-PRE-01).',
   })
   priceCents: number;
+}
+
+export class CaregiverCertificationSummary {
+  @ApiProperty({ example: 'FIRST_AID', description: 'Código del tipo de certificación.' })
+  code: string;
+
+  @ApiProperty({ example: 'Primeros auxilios' })
+  name: string;
+
+  @ApiProperty({ format: 'date', description: 'Último día de vigencia (RN-CUI-09).' })
+  validUntil: string;
 }
 
 /** What the owner sees of a caregiver in a list (RN-RES-02). */
@@ -34,6 +59,35 @@ export class CaregiverSummary {
     description: 'URL firmada que vence en 10 minutos.',
   })
   photoUrl: string | null;
+
+  @ApiProperty({
+    enum: CaregiverLevel,
+    enumName: 'CaregiverLevel',
+    description: 'RN-NIV-01: lo calcula el sistema.',
+  })
+  level: CaregiverLevel;
+
+  @ApiProperty({
+    enum: CaregiverBadge,
+    enumName: 'CaregiverBadge',
+    isArray: true,
+    description: 'Insignias de verificación (RN-CUI-03, RN-CUI-05).',
+  })
+  badges: CaregiverBadge[];
+
+  @ApiProperty({
+    type: [CaregiverCertificationSummary],
+    description: 'Certificaciones vigentes, la ⭐ incluida (RN-CUI-07).',
+  })
+  certifications: CaregiverCertificationSummary[];
+
+  @ApiProperty({
+    enum: CaregiverSkill,
+    enumName: 'CaregiverSkill',
+    isArray: true,
+    description: 'Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19).',
+  })
+  skills: CaregiverSkill[];
 
   @ApiProperty({ description: 'Tiene la ⭐ de cuidado especial vigente (RN-CUI-07).' })
   hasSpecialCareCertification: boolean;
@@ -68,7 +122,7 @@ export class CaregiverProfileResponse extends CaregiverSummary {
 
   @ApiProperty({
     type: [CaregiverPrice],
-    description: 'Los servicios que ofrece. Los de nivel Especial solo aparecen si tiene la ⭐.',
+    description: 'Los servicios que ofrece, al rango de su nivel (RN-PRE-01).',
   })
   prices: CaregiverPrice[];
 }
@@ -85,12 +139,42 @@ export class SearchCaregiversRequest extends ScheduleRequest {
   @ApiProperty({ format: 'uuid', description: 'Uno de los distritos de GET /v1/catalog.' })
   @IsUUID('all', { message: 'Elige un distrito.' })
   districtId: string;
+
+  @ApiPropertyOptional({
+    enum: CaregiverLevel,
+    enumName: 'CaregiverLevel',
+    description: 'Solo cuidadores de este nivel o uno más alto.',
+  })
+  @IsOptional()
+  @IsEnum(CaregiverLevel, { message: 'Elige un nivel de la lista.' })
+  minLevel?: CaregiverLevel;
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['FIRST_AID'],
+    description: 'Códigos de certificación que debe tener vigentes todo el servicio.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  certificationCodes?: string[];
+
+  @ApiPropertyOptional({
+    example: 4.5,
+    description: 'Calificación mínima, de 1 a 5. Deja fuera a quien aún no tiene calificaciones.',
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 1 }, { message: 'Escribe una calificación de 1 a 5.' })
+  @Min(1, { message: 'Escribe una calificación de 1 a 5.' })
+  @Max(5, { message: 'Escribe una calificación de 1 a 5.' })
+  minRating?: number;
 }
 
 export class CaregiverSearchResult extends CaregiverSummary {
   @ApiProperty({
     type: [CaregiverPrice],
-    description: 'Sus precios para lo que se buscó, en el nivel de la reserva.',
+    description: 'Sus precios para lo que se buscó (RN-PRE-01).',
   })
   prices: CaregiverPrice[];
 }
@@ -99,7 +183,8 @@ export class CaregiverSearchResponse {
   @ApiProperty({
     enum: CareLevel,
     enumName: 'CareLevel',
-    description: 'RN-MAS-05, RN-PRE-02: Especial si alguna mascota lo es en esas fechas.',
+    description:
+      'RN-MAS-05, RN-MAS-06: Especial si alguna mascota lo es en esas fechas. Exige la ⭐, pero no cambia el precio.',
   })
   careLevel: CareLevel;
 

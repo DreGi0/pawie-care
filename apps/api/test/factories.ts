@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { blocksCalendar } from '../src/bookings/booking-status.js';
 import {
   BookingStatus,
+  CaregiverLevel,
   CareLevel,
   CaregiverStatus,
   type PrismaClient,
@@ -112,8 +113,8 @@ export async function createBooking(
 ) {
   const owner = await createUser(prisma);
   const subtotalCents = UNIT_PRICE_CENTS * slots.length;
-  const ownerServiceFeeCents = subtotalCents / 10;
-  const caregiverCommissionCents = (subtotalCents * 15) / 100;
+  const ownerServiceFeeCents = (subtotalCents * 15) / 100;
+  const caregiverCommissionCents = 0;
   const dueAt = new Date(slots[0].startsAt.getTime() - 60 * 60 * 1000);
 
   return prisma.booking.create({
@@ -122,6 +123,7 @@ export async function createBooking(
       caregiverId,
       serviceId: catalog.homeVisitId,
       careLevel: CareLevel.STANDARD,
+      caregiverLevel: CaregiverLevel.NEW,
       status,
       blocksCalendar: blocksCalendar(status),
       startsAt: slots[0].startsAt,
@@ -135,10 +137,10 @@ export async function createBooking(
       responseDueAt: dueAt,
       paymentDueAt: dueAt,
       subtotalCents,
-      ownerServiceFeeBp: 1000,
+      ownerServiceFeeBp: 1500,
       ownerServiceFeeCents,
       totalCents: subtotalCents + ownerServiceFeeCents,
-      caregiverCommissionBp: 1500,
+      caregiverCommissionBp: 0,
       caregiverCommissionCents,
       caregiverPayoutCents: subtotalCents - caregiverCommissionCents,
       additionalPetSurchargeBp: 5000,

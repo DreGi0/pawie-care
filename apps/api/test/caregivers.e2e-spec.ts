@@ -107,8 +107,53 @@ describe('caregivers', () => {
         rating: 4.8,
         ratingCount: 46,
         instantBooking: true,
-        prices: [{ serviceCode: 'HOME_VISIT', careLevel: 'STANDARD', priceCents: 1300 }],
+        level: 'SUPER',
+        // Valeria is a Súper Cuidador: the $18 she set is in her level's range.
+        prices: [{ serviceCode: 'HOME_VISIT', priceCents: 1800 }],
       });
+    });
+
+    it('filters by level, certification and rating (RN-NIV, RN-CUI-07)', async () => {
+      const request = async (filters: Record<string, unknown>) =>
+        names(
+          (
+            await search({
+              petIds: [await pet()],
+              serviceCode: 'HOME_VISIT',
+              visits: [at(WEDNESDAY, '15:00')],
+              districtId: districts['santa-tecla'],
+              ...filters,
+            }).expect(200)
+          ).body.results,
+        );
+
+      expect(await request({ minLevel: 'PRO' })).toEqual(['Valeria M.', 'Carlos H.']);
+      expect(await request({ minLevel: 'SUPER' })).toEqual(['Valeria M.']);
+      expect(await request({ certificationCodes: ['FIRST_AID'] })).toEqual(['Valeria M.']);
+      expect(await request({ certificationCodes: ['SPECIAL_CARE', 'FIRST_AID'] })).toEqual([
+        'Valeria M.',
+      ]);
+      expect(await request({ certificationCodes: ['LARGE_DOGS'] })).toEqual(['Carlos H.']);
+      // Carlos averages 4.7 and Diego 4.6; a caregiver without ratings never passes.
+      expect(await request({ minRating: 4.8 })).toEqual(['Valeria M.', 'María José R.']);
+      expect(await request({ minLevel: 'TRUSTED', minRating: 4.7 })).toEqual([
+        'Valeria M.',
+        'María José R.',
+        'Carlos H.',
+      ]);
+    });
+
+    it('rejects filters out of range', async () => {
+      const response = await search({
+        petIds: [await pet()],
+        serviceCode: 'HOME_VISIT',
+        visits: [at(WEDNESDAY, '15:00')],
+        districtId: districts['santa-tecla'],
+        minLevel: 'LEGEND',
+        minRating: 6,
+      });
+
+      expect(response.status).toBe(400);
     });
 
     it('leaves out who has no window at that time', async () => {
@@ -142,9 +187,10 @@ describe('caregivers', () => {
           prices,
         ]),
       ).toEqual([
-        ['Valeria M.', [{ serviceCode: 'HOME_VISIT', careLevel: 'SPECIAL', priceCents: 1800 }]],
-        // Carlos didn't set a Special visit price, so the suggested one applies.
-        ['Carlos H.', [{ serviceCode: 'HOME_VISIT', careLevel: 'SPECIAL', priceCents: 1700 }]],
+        // A Special pet needs the ⭐ but doesn't change the price (RN-MAS-06): they charge
+        // what they charge for any pet. Carlos set no visit price, so his level's suggested one.
+        ['Valeria M.', [{ serviceCode: 'HOME_VISIT', priceCents: 1800 }]],
+        ['Carlos H.', [{ serviceCode: 'HOME_VISIT', priceCents: 1300 }]],
       ]);
     });
 
@@ -180,8 +226,8 @@ describe('caregivers', () => {
         ({ displayName }: { displayName: string }) => displayName === 'Valeria M.',
       );
       expect(valeria.prices).toEqual([
-        { serviceCode: 'OVERNIGHT_STAY', careLevel: 'STANDARD', priceCents: 2800 },
-        { serviceCode: 'HOME_VISIT', careLevel: 'STANDARD', priceCents: 1300 },
+        { serviceCode: 'OVERNIGHT_STAY', priceCents: 4000 },
+        { serviceCode: 'HOME_VISIT', priceCents: 1800 },
       ]);
       expect(names(whileBooked.body.results)).not.toContain('Ricardo P.');
       expect(names(afterCancelling.body.results)).toContain('Ricardo P.');
@@ -278,10 +324,53 @@ describe('caregivers', () => {
         'Santa Tecla',
       ]);
       expect(body.prices).toEqual([
-        { serviceCode: 'HOME_VISIT', careLevel: 'SPECIAL', priceCents: 1800 },
-        { serviceCode: 'HOME_VISIT', careLevel: 'STANDARD', priceCents: 1300 },
-        { serviceCode: 'OVERNIGHT_STAY', careLevel: 'SPECIAL', priceCents: 4000 },
-        { serviceCode: 'OVERNIGHT_STAY', careLevel: 'STANDARD', priceCents: 2800 },
+        { serviceCode: 'HOME_VISIT', priceCents: 1800 },
+        { serviceCode: 'OVERNIGHT_STAY', priceCents: 4000 },
+      ]);
+    });
+
+    it('shows the level, the badges, the certifications and the skills (RN-NIV-01, RN-CUI-19)', async () => {
+      const valeria = (await profile(caregivers.Valeria).expect(200)).body;
+      const sofia = (await profile(caregivers.Sofía).expect(200)).body;
+
+      expect(valeria).toMatchObject({
+        level: 'SUPER',
+        badges: ['IDENTITY_VERIFIED', 'BACKGROUND_CHECKED', 'VET_STUDENT'],
+        skills: ['SENIOR_PETS', 'CATS'],
+      });
+      expect(
+        valeria.certifications.map(({ code, name }: { code: string; name: string }) => [
+          code,
+          name,
+        ]),
+      ).toEqual([
+        ['SPECIAL_CARE', 'Cuidado especial'],
+        ['CATS', 'Gatos'],
+        ['FIRST_AID', 'Primeros auxilios'],
+      ]);
+      expect(valeria.certifications[0]).toEqual({
+        code: 'SPECIAL_CARE',
+        name: 'Cuidado especial',
+        validUntil: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      });
+      expect(sofia).toMatchObject({
+        level: 'NEW',
+        badges: ['IDENTITY_VERIFIED', 'BACKGROUND_CHECKED'],
+        certifications: [],
+        skills: ['CATS'],
+      });
+    });
+
+    it('does not list an expired certification', async () => {
+      await db.prisma.caregiverCertification.updateMany({
+        where: { caregiverId: caregivers.Gabriela, certificationType: { code: 'FIRST_AID' } },
+        data: { obtainedOn: new Date('2019-01-01'), validUntil: new Date('2020-01-01') },
+      });
+
+      const { body } = await profile(caregivers.Gabriela).expect(200);
+
+      expect(body.certifications.map(({ code }: { code: string }) => code)).toEqual([
+        'SPECIAL_CARE',
       ]);
     });
 
@@ -308,16 +397,16 @@ describe('caregivers', () => {
 
     it('keeps prices within the current range, even after it changes', async () => {
       const ranges = await settings.get('pricing.priceRanges');
-      ranges.HOME_VISIT.STANDARD = { minCents: 1100, suggestedCents: 1200, maxCents: 1250 };
+      ranges.HOME_VISIT.SUPER = { minCents: 1500, suggestedCents: 1700, maxCents: 1750 };
+      ranges.HOME_VISIT.TRUSTED = { minCents: 1100, suggestedCents: 1200, maxCents: 1250 };
       await settings.set('pricing.priceRanges', ranges, { changedBy: 'test' });
 
-      // Valeria charges 1300 and Fernando 1000 for a standard visit.
+      // Valeria (Súper Cuidador) charges 1800 and Fernando (Confiable) 1000 for a visit.
       const valeria = await profile(caregivers.Valeria).expect(200);
       const fernando = await profile(caregivers.Fernando).expect(200);
 
-      const visit = ({ serviceCode, careLevel }: { serviceCode: string; careLevel: string }) =>
-        serviceCode === 'HOME_VISIT' && careLevel === 'STANDARD';
-      expect(valeria.body.prices.find(visit).priceCents).toBe(1250);
+      const visit = ({ serviceCode }: { serviceCode: string }) => serviceCode === 'HOME_VISIT';
+      expect(valeria.body.prices.find(visit).priceCents).toBe(1750);
       expect(fernando.body.prices.find(visit).priceCents).toBe(1100);
     });
   });

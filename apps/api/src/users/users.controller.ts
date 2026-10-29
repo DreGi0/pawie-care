@@ -9,7 +9,7 @@ import {
 import type { AuthenticatedUser } from '../auth/authenticated-user.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { ErrorResponse } from '../common/errors/error-response.dto.js';
-import { UserProfile } from './user-profile.dto.js';
+import { MeResponse } from './user-profile.dto.js';
 import { toUserProfile, UsersService } from './users.service.js';
 
 @ApiTags('users')
@@ -21,13 +21,15 @@ export class UsersController {
 
   @Get('me')
   @ApiOperation({ summary: 'Mi cuenta', description: 'Los datos de la cuenta que inició sesión.' })
-  @ApiOkResponse({ type: UserProfile })
-  async me(@CurrentUser() current: AuthenticatedUser): Promise<UserProfile> {
+  @ApiOkResponse({ type: MeResponse })
+  async me(@CurrentUser() current: AuthenticatedUser): Promise<MeResponse> {
     const user = await this.users.findById(current.id);
     if (!user) {
       // The token is still valid, but the account was deleted.
       throw new UnauthorizedException();
     }
-    return toUserProfile(user);
+    return Object.assign(toUserProfile(user), {
+      firstServiceFeeWaiverEndsAt: await this.users.firstServiceFeeWaiverEndsAt(user.id),
+    });
   }
 }
