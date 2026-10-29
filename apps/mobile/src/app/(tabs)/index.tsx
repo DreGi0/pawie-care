@@ -5,6 +5,7 @@ import {
   useUsersMe,
   type ApiError,
   type CaregiverSearchResponse,
+  type CaregiverLevel,
   type CaregiverSearchResult,
   type CatalogResponse,
   type PetResponse,
@@ -31,7 +32,15 @@ import { Text } from '@/components/Text';
 import { Touchable } from '@/components/Touchable';
 import { errorMessage } from '@/lib/api';
 import { serviceName, serviceUnit } from '@/lib/bookings';
-import { atLocalTime, dayLabel, formatDay, formatMoney, upcomingDays } from '@/lib/format';
+import { CERTIFICATION_FILTERS, LEVEL_NAMES, levelLabel } from '@/lib/caregivers';
+import {
+  atLocalTime,
+  dayLabel,
+  daysUntil,
+  formatDay,
+  formatMoney,
+  upcomingDays,
+} from '@/lib/format';
 import { setSearch, useSearch, useSearchResults, type Search } from '@/lib/search';
 import { colors, fontFamily, radius, space, type ColorName } from '@/theme/tokens';
 
@@ -39,6 +48,8 @@ import { colors, fontFamily, radius, space, type ColorName } from '@/theme/token
 const VISIT_HOURS = Array.from({ length: 13 }, (_, i) => (7 + i) * 60);
 const DAYS_AHEAD = 14;
 const PHOTO_COLORS: ColorName[] = ['grape', 'sky', 'sage'];
+const LEVELS: CaregiverLevel[] = ['TRUSTED', 'PRO', 'SUPER'];
+const RATINGS = [4, 4.5, 4.8];
 
 export default function SearchScreen() {
   const me = useUsersMe();
@@ -47,6 +58,7 @@ export default function SearchScreen() {
   const catalog = useCatalogGet();
   const search = useSearch();
   const [editing, setEditing] = useState(false);
+  const [filtering, setFiltering] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // The first search: the first pet, tomorrow at 9:00, in the district of its home.
@@ -63,6 +75,7 @@ export default function SearchScreen() {
       day: upcomingDays(2)[1],
       minute: 9 * 60,
       districtId,
+      certificationCodes: [],
     });
   }, [search, pets.data, addresses.data, catalog.data]);
 
@@ -96,6 +109,13 @@ export default function SearchScreen() {
           </Text>
           <Text color="inkMuted">¿A quién cuidamos esta vez?</Text>
         </View>
+
+        {me.data?.firstServiceFeeWaiverEndsAt && (
+          <Banner
+            tone="success"
+            message={`Tu primer servicio sin tarifa. ${daysLeftText(daysUntil(me.data.firstServiceFeeWaiverEndsAt))}`}
+          />
+        )}
 
         {loading ? (
           <ActivityIndicator color={colors.grapeDeep} style={styles.loading} />
@@ -146,9 +166,17 @@ export default function SearchScreen() {
                     Cambiar
                   </Text>
                 </Touchable>
+                <Button
+                  variant="secondary"
+                  label={filterCount(search) > 0 ? `Filtros (${filterCount(search)})` : 'Filtros'}
+                  icon={<Icon name="sliders-horizontal" />}
+                  onPress={() => setFiltering(true)}
+                />
               </Card>
 
               <Results search={search} query={results} />
+
+              {filtering && <FiltersSheet onClose={() => setFiltering(false)} search={search} />}
 
               {editing && (
                 <SearchSheet
@@ -171,6 +199,17 @@ function describeSearch({ serviceCode, day, minute }: Search): string {
   return serviceCode === 'OVERNIGHT_STAY'
     ? `Pernocta · ${formatDay(date)}`
     : `Visita · ${formatDay(date)}, ${minute / 60}:00`;
+}
+
+/** How many filters are on. */
+function filterCount({ minLevel, certificationCodes, minRating }: Search): number {
+  return (minLevel ? 1 : 0) + certificationCodes.length + (minRating ? 1 : 0);
+}
+
+/** "Te quedan 12 días para reservarlo." */
+function daysLeftText(days: number): string {
+  if (days <= 1) return 'Hoy es el último día para reservarlo.';
+  return `Te quedan ${days} días para reservarlo.`;
 }
 
 function PetToggles({
@@ -260,7 +299,7 @@ function Results({
         <Text variant="caption" color="inkMuted">
           {results.length > 0
             ? 'Ordenados por calificación'
-            : 'Prueba con otro día, otra hora u otro distrito.'}
+            : 'Prueba con otro día, otra hora, otro distrito o menos filtros.'}
         </Text>
       </View>
       {results.map((caregiver, index) => (
@@ -313,14 +352,13 @@ function CaregiverCard({
             <Text variant="bodyStrong">{formatMoney(price.priceCents, { short: true })}</Text>
           )}
         </View>
-        {(caregiver.hasSpecialCareCertification || caregiver.isVetStudent) && (
-          <View style={styles.tags}>
-            {caregiver.hasSpecialCareCertification && (
-              <Tag tone="certified" label="⭐ Con certificación" />
-            )}
-            {caregiver.isVetStudent && <Tag tone="info" label="Estudiante de veterinaria" />}
-          </View>
-        )}
+        <View style={styles.tags}>
+          <Tag tone="level" label={levelLabel(caregiver.level)} />
+          {caregiver.hasSpecialCareCertification && (
+            <Tag tone="certified" label="⭐ Con certificación" />
+          )}
+          {caregiver.isVetStudent && <Tag tone="info" label="Estudiante de veterinaria" />}
+        </View>
         <View style={styles.rating}>
           <Icon name="star" size={14} />
           <Text variant="caption">
@@ -333,6 +371,106 @@ function CaregiverCard({
         </View>
       </View>
     </Card>
+  );
+}
+
+/** RN-RES-10: minimum level, certifications and minimum rating. Mounted only while open. */
+function FiltersSheet({ onClose, search }: { onClose: () => void; search: Search }) {
+  const [draft, setDraft] = useState(search);
+  const toggleCertification = (code: string) =>
+    setDraft({
+      ...draft,
+      certificationCodes: draft.certificationCodes.includes(code)
+        ? draft.certificationCodes.filter((c) => c !== code)
+        : [...draft.certificationCodes, code],
+    });
+
+  return (
+    <Sheet
+      visible
+      onClose={onClose}
+      title="Filtros"
+      footer={
+        <>
+          <Button
+            label="Ver cuidadores"
+            onPress={() => {
+              setSearch(draft);
+              onClose();
+            }}
+          />
+          <Button
+            variant="ghost"
+            label="Quitar filtros"
+            onPress={() =>
+              setDraft({
+                ...draft,
+                minLevel: undefined,
+                certificationCodes: [],
+                minRating: undefined,
+              })
+            }
+          />
+        </>
+      }
+    >
+      <SheetSection label="Nivel mínimo">
+        <View style={styles.hours}>
+          <View style={styles.filter}>
+            <Chip
+              label="Todos"
+              selected={!draft.minLevel}
+              onPress={() => setDraft({ ...draft, minLevel: undefined })}
+            />
+          </View>
+          {LEVELS.map((level) => (
+            <View key={level} style={styles.filter}>
+              <Chip
+                label={LEVEL_NAMES[level]}
+                selected={draft.minLevel === level}
+                onPress={() => setDraft({ ...draft, minLevel: level })}
+              />
+            </View>
+          ))}
+        </View>
+      </SheetSection>
+
+      <SheetSection label="Certificaciones">
+        <View style={styles.hours}>
+          {CERTIFICATION_FILTERS.map(({ code, label }) => (
+            <View key={code} style={styles.filter}>
+              <Chip
+                label={label}
+                selected={draft.certificationCodes.includes(code)}
+                onPress={() => toggleCertification(code)}
+              />
+            </View>
+          ))}
+        </View>
+      </SheetSection>
+
+      <SheetSection label="Calificación mínima">
+        <View style={styles.hours}>
+          <View style={styles.filter}>
+            <Chip
+              label="Todas"
+              selected={!draft.minRating}
+              onPress={() => setDraft({ ...draft, minRating: undefined })}
+            />
+          </View>
+          {RATINGS.map((rating) => (
+            <View key={rating} style={styles.filter}>
+              <Chip
+                label={`${rating.toFixed(1)}+`}
+                icon={<Icon name="star" size={14} />}
+                selected={draft.minRating === rating}
+                onPress={() => setDraft({ ...draft, minRating: rating })}
+              />
+            </View>
+          ))}
+        </View>
+      </SheetSection>
+    </Sheet>
   );
 }
 
@@ -533,6 +671,7 @@ const styles = StyleSheet.create({
   days: { gap: space[2], paddingRight: space[4] },
   hours: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   hour: { width: '23%' },
+  filter: { minWidth: '45%', flexGrow: 1 },
   empty: { flexGrow: 1, justifyContent: 'center', gap: space[4] },
   emptyArt: {
     alignSelf: 'center',
