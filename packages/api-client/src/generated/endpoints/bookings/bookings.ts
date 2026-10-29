@@ -27,6 +27,7 @@ import type {
   CancelBookingRequest,
   CreateBookingRequest,
   ErrorResponse,
+  QuoteBookingRequest,
 } from '../../model';
 
 import { customFetch } from '../../../fetcher';
@@ -272,11 +273,11 @@ export const getBookingsQuoteUrl = () => {
 };
 
 /**
- * RN-PRE-10. Mismo cuerpo y mismas validaciones que `POST /v1/bookings`; devuelve el precio que se cobraría ahora, con el primer servicio sin tarifa si aplica (RN-PRE-09), y no guarda nada.
+ * RN-PRE-10. Mismo cuerpo y mismas validaciones que `POST /v1/bookings`, sin los datos de emergencia, que no cambian el precio; devuelve el precio que se cobraría ahora, con el primer servicio sin tarifa si aplica (RN-PRE-09), y no guarda nada.
  * @summary Cotizar una reserva
  */
 export const bookingsQuote = async (
-  createBookingRequest: CreateBookingRequest,
+  quoteBookingRequest: QuoteBookingRequest,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<BookingPrice> => {
   const getHeaders = (
@@ -302,7 +303,7 @@ export const bookingsQuote = async (
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(createBookingRequest),
+    body: JSON.stringify(quoteBookingRequest),
   });
 };
 
@@ -345,9 +346,9 @@ export const getBookingsQuoteMutationOptions = <
 };
 
 export type BookingsQuoteMutationResult = NonNullable<Awaited<ReturnType<typeof bookingsQuote>>>;
-export type BookingsQuoteMutationBody = CreateBookingRequest;
+export type BookingsQuoteMutationBody = QuoteBookingRequest;
 export type BookingsQuoteMutationError = ErrorType<ErrorResponse>;
-export type BookingsQuoteMutationVariables = { data: CreateBookingRequest };
+export type BookingsQuoteMutationVariables = { data: QuoteBookingRequest };
 
 /**
  * @summary Cotizar una reserva

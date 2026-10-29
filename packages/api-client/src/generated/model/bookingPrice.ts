@@ -14,6 +14,8 @@ export interface BookingPrice {
   serviceFeeCents: number;
   /** Lo que paga el dueño. */
   totalCents: number;
-  /** RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00. */
+  /** RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada, con $0.00 al lado. */
   firstServiceFeeWaived: boolean;
+  /** RN-PRE-09: lo que habría costado la tarifa de servicio. Es 0 si no es el primer servicio sin tarifa. La app lo muestra tachado junto al $0.00. */
+  waivedServiceFeeCents: number;
 }

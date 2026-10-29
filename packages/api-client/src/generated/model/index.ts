@@ -58,6 +58,7 @@ export * from './petDetail';
 export * from './petRequest';
 export * from './petResponse';
 export * from './petSex';
+export * from './quoteBookingRequest';
 export * from './refreshTokenRequest';
 export * from './registerRequest';
 export * from './role';

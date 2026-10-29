@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -112,6 +112,12 @@ export class CreateBookingRequest extends ScheduleRequest {
   @Type(() => EmergencyDetails)
   emergency: EmergencyDetails;
 }
+
+/**
+ * RN-PRE-10: the same request without the emergency details, which don't change the price.
+ * Reservar quotes before the owner has filled them in.
+ */
+export class QuoteBookingRequest extends OmitType(CreateBookingRequest, ['emergency'] as const) {}
 
 export class CancelBookingRequest {
   @ApiPropertyOptional({ example: 'Cambié de planes.', description: 'Por qué cancela el dueño.' })
@@ -247,9 +253,17 @@ export class BookingPrice {
 
   @ApiProperty({
     description:
-      'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00.',
+      'RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada, con $0.00 al lado.',
   })
   firstServiceFeeWaived: boolean;
+
+  @ApiProperty({
+    type: 'integer',
+    example: 255,
+    description:
+      'RN-PRE-09: lo que habría costado la tarifa de servicio. Es 0 si no es el primer servicio sin tarifa. La app lo muestra tachado junto al $0.00.',
+  })
+  waivedServiceFeeCents: number;
 }
 
 export class BookingResponse {

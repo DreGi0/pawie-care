@@ -84,6 +84,12 @@ export function upcomingDays(count: number, now = new Date()): string[] {
   );
 }
 
+/** Whole days from now until `date`, rounding up: 12 hours left are 1 day. Never below 0. */
+export function daysUntil(date: Date | string, now = new Date()): number {
+  const ms = new Date(date).getTime() - now.getTime();
+  return Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)));
+}
+
 /** For a list of days: "Hoy", "Mañana" or "Mié 21". */
 export function dayLabel(day: string, now = new Date()): string {
   const [today, tomorrow] = upcomingDays(2, now);

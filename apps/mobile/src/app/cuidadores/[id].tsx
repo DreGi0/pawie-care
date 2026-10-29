@@ -7,6 +7,7 @@ import {
 } from '@pawie/api-client';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
+import type { ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,9 +21,9 @@ import { IconButton } from '@/components/IconButton';
 import { Tag } from '@/components/Tag';
 import { Text } from '@/components/Text';
 import { errorMessage } from '@/lib/api';
-import { firstName, joinNames, serviceName } from '@/lib/bookings';
+import { firstName, joinNames, serviceName, serviceUnit } from '@/lib/bookings';
+import { BADGE_NAMES, SKILL_NAMES, levelLabel } from '@/lib/caregivers';
 import { formatDay, formatDayTime, formatMoney } from '@/lib/format';
-import { estimatePrice } from '@/lib/price';
 import { useSearch, useSearchResults } from '@/lib/search';
 import { colors, radius, space } from '@/theme/tokens';
 
@@ -91,14 +92,7 @@ export default function CaregiverProfileScreen() {
             <Text variant="title" accessibilityRole="header">
               {caregiver.displayName}
             </Text>
-            {(caregiver.hasSpecialCareCertification || caregiver.isVetStudent) && (
-              <View style={styles.tags}>
-                {caregiver.hasSpecialCareCertification && (
-                  <Tag tone="certified" label="⭐ Con certificación" />
-                )}
-                {caregiver.isVetStudent && <Tag tone="info" label="Estudiante de veterinaria" />}
-              </View>
-            )}
+            <Tag tone="level" label={levelLabel(caregiver.level)} />
             <View style={styles.rating}>
               <Icon name="star" size={18} />
               <Text>
@@ -130,6 +124,37 @@ export default function CaregiverProfileScreen() {
               tone="warning"
               message={`${name} no está disponible para tu búsqueda. Prueba con otro día u hora.`}
             />
+          )}
+
+          {caregiver.badges.length > 0 && (
+            <TagGroup label="Verificado por Pawie">
+              {caregiver.badges.map((badge) => (
+                <Tag
+                  key={badge}
+                  tone="success"
+                  label={BADGE_NAMES[badge]}
+                  icon={<Icon name="check" size={16} />}
+                />
+              ))}
+            </TagGroup>
+          )}
+          {caregiver.certifications.length > 0 && (
+            <TagGroup label="Certificaciones">
+              {caregiver.certifications.map(({ code, name: certification }) =>
+                code === 'SPECIAL_CARE' ? (
+                  <Tag key={code} tone="certified" label={`⭐ ${certification}`} />
+                ) : (
+                  <Tag key={code} tone="info" label={certification} />
+                ),
+              )}
+            </TagGroup>
+          )}
+          {caregiver.skills.length > 0 && (
+            <TagGroup label={`Habilidades que declara ${name}`}>
+              {caregiver.skills.map((skill) => (
+                <Tag key={skill} tone="neutral" label={SKILL_NAMES[skill]} />
+              ))}
+            </TagGroup>
           )}
 
           {caregiver.bio && (
@@ -183,10 +208,8 @@ export default function CaregiverProfileScreen() {
 
       {search && price && (
         <BottomBar
-          caption={`${petNames} · ${overnight ? '1 noche' : '1 visita'}`}
-          amount={formatMoney(estimatePrice(price.priceCents, 1, search.petIds.length).slotCents, {
-            short: true,
-          })}
+          caption={`Precio ${serviceUnit(search.serviceCode)}`}
+          amount={formatMoney(price.priceCents, { short: true })}
         >
           <Button
             label={overnight ? 'Reservar pernocta' : 'Reservar visita'}
@@ -194,6 +217,17 @@ export default function CaregiverProfileScreen() {
           />
         </BottomBar>
       )}
+    </View>
+  );
+}
+
+function TagGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <Text variant="heading" accessibilityRole="header">
+        {label}
+      </Text>
+      <View style={styles.tags}>{children}</View>
     </View>
   );
 }

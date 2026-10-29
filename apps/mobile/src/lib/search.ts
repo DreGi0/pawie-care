@@ -1,5 +1,6 @@
 import {
   useCaregiversSearch,
+  type CaregiverLevel,
   type SearchCaregiversRequest,
   type ServiceCode,
 } from '@pawie/api-client';
@@ -18,6 +19,10 @@ export type Search = {
   /** Start of the visit, in minutes from midnight. An overnight stay ignores it. */
   minute: number;
   districtId: string;
+  /** RN-RES-10: the filters. Without them, every caregiver of the search. */
+  minLevel?: CaregiverLevel;
+  certificationCodes: string[];
+  minRating?: number;
 };
 
 let current: Search | null = null;
@@ -44,10 +49,16 @@ subscribeSession(() => {
 
 /** The body of POST /v1/caregivers/search. */
 export function toSearchRequest(search: Search): SearchCaregiversRequest {
-  const { serviceCode, petIds, districtId, day, minute } = search;
+  const { serviceCode, petIds, districtId, day, minute, minLevel, certificationCodes, minRating } =
+    search;
+  const filters = {
+    minLevel,
+    minRating,
+    certificationCodes: certificationCodes.length > 0 ? certificationCodes : undefined,
+  };
   return serviceCode === 'OVERNIGHT_STAY'
-    ? { serviceCode, petIds, districtId, nights: [day] }
-    : { serviceCode, petIds, districtId, visits: [atLocalTime(day, minute)] };
+    ? { serviceCode, petIds, districtId, nights: [day], ...filters }
+    : { serviceCode, petIds, districtId, visits: [atLocalTime(day, minute)], ...filters };
 }
 
 const NO_SEARCH: SearchCaregiversRequest = {

@@ -126,7 +126,11 @@ describe('bookings', () => {
       ...body,
     });
     const book = (body: Record<string, unknown>) => as.post('/v1/bookings', request(body));
-    const quote = (body: Record<string, unknown>) => as.post('/v1/bookings/quote', request(body));
+    // The quote takes the booking's body without the emergency details.
+    const quote = (body: Record<string, unknown>) => {
+      const { emergency: _emergency, ...rest } = request(body);
+      return as.post('/v1/bookings/quote', rest);
+    };
 
     return { user, address, as, pet, book, quote };
   }
@@ -516,6 +520,8 @@ describe('bookings', () => {
                 serviceFeeCents: 0,
                 totalCents: 1300,
                 firstServiceFeeWaived: true,
+                // What the fee would have been: 1300 × 15% = 195.
+                waivedServiceFeeCents: 195,
               }
             : {
                 subtotalCents: 1300,
@@ -523,6 +529,7 @@ describe('bookings', () => {
                 serviceFeeCents: 195,
                 totalCents: 1495,
                 firstServiceFeeWaived: false,
+                waivedServiceFeeCents: 0,
               },
         );
       }
@@ -537,6 +544,61 @@ describe('bookings', () => {
       expect(taken.body.errorCode).toBe('SLOT_TAKEN');
     });
 
+    it('still checks the pets, the schedule and the ⭐ of a Special pet', async () => {
+      const { pet, quote } = await owner();
+      const toby = await pet('Toby');
+      const nala = await pet('Nala', [
+        { task: 'MOBILITY_ASSISTANCE', ownerInstructions: 'Ayudarla a subir al sofá.' },
+      ]);
+      // Diego works in Santa Tecla on Saturdays from 9:00 to 17:00 and has no ⭐.
+      const saturday = [0, 1, 2, 3, 4, 5, 6]
+        .map(day)
+        .find((date) => new Date(`${date}T12:00:00-06:00`).getUTCDay() === 6)!;
+      const visits = [at(saturday, '10:00')];
+      const withDiego = { caregiverId: caregivers.Diego, visits };
+
+      await quote({ ...withDiego, petIds: [toby] }).expect(200);
+      const special = await quote({ ...withDiego, petIds: [nala] });
+      const prohibited = await quote({
+        visits,
+        petIds: [await pet('Rocky', [{ task: 'INJECTION' }])],
+      });
+      const tooMany = await quote({
+        visits,
+        petIds: [toby, nala, await pet('Max'), await pet('Luna')],
+      });
+      const soon = await quote({ visits: [new Date(Date.now() + 30 * 60_000).toISOString()] });
+
+      expect([special.status, special.body.errorCode]).toEqual([409, 'CAREGIVER_UNAVAILABLE']);
+      expect([prohibited.status, prohibited.body.errorCode]).toEqual([422, 'PET_NOT_BOOKABLE']);
+      expect([tooMany.status, tooMany.body.errorCode]).toEqual([422, 'TOO_MANY_PETS']);
+      expect([soon.status, soon.body.errorCode]).toEqual([422, 'TOO_SOON']);
+    });
+
+    it('does not take the first service without a fee: only the booking does (RN-PRE-09)', async () => {
+      const { book, quote, as } = await owner('santa-tecla', { newcomer: true });
+      const waiverEndsAt = async () => (await as.get('/v1/users/me').expect(200)).body;
+
+      const first = await quote({ visits: [at(day(35), '10:00')] }).expect(200);
+      const second = await quote({ visits: [at(day(35), '10:00')] }).expect(200);
+      const before = await waiverEndsAt();
+
+      expect(first.body).toMatchObject({ firstServiceFeeWaived: true, waivedServiceFeeCents: 195 });
+      expect(second.body).toEqual(first.body);
+      expect(before.firstServiceFeeWaiverEndsAt).not.toBeNull();
+      expect(await db.prisma.booking.count({ where: { ownerId: before.id } })).toBe(0);
+
+      await book({ visits: [at(day(35), '10:00')] }).expect(201);
+      const third = await quote({ visits: [at(day(36), '10:00')] }).expect(200);
+
+      expect(third.body).toMatchObject({
+        firstServiceFeeWaived: false,
+        serviceFeeCents: 195,
+        waivedServiceFeeCents: 0,
+      });
+      expect((await waiverEndsAt()).firstServiceFeeWaiverEndsAt).toBeNull();
+    });
+
     it('saves the waiver in the booking and keeps the zero fee in its snapshot (RN-PRE-07)', async () => {
       const { book } = await owner('santa-tecla', { newcomer: true });
 
@@ -549,7 +611,11 @@ describe('bookings', () => {
         ownerServiceFeeCents: 0,
         totalCents: 1300,
         caregiverPayoutCents: 1300,
-        pricingSnapshot: { firstServiceFeeWaived: true, rates: { ownerServiceFeeBp: 0 } },
+        pricingSnapshot: {
+          firstServiceFeeWaived: true,
+          waivedServiceFeeCents: 195,
+          rates: { ownerServiceFeeBp: 0 },
+        },
       });
     });
 

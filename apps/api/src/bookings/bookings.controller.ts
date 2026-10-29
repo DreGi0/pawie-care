@@ -26,6 +26,7 @@ import {
   BookingResponse,
   CancelBookingRequest,
   CreateBookingRequest,
+  QuoteBookingRequest,
 } from './bookings.dto.js';
 import { BookingsService } from './bookings.service.js';
 
@@ -70,7 +71,7 @@ export class BookingsController {
   @ApiOperation({
     summary: 'Cotizar una reserva',
     description:
-      'RN-PRE-10. Mismo cuerpo y mismas validaciones que `POST /v1/bookings`; devuelve el precio que se cobraría ahora, con el primer servicio sin tarifa si aplica (RN-PRE-09), y no guarda nada.',
+      'RN-PRE-10. Mismo cuerpo y mismas validaciones que `POST /v1/bookings`, sin los datos de emergencia, que no cambian el precio; devuelve el precio que se cobraría ahora, con el primer servicio sin tarifa si aplica (RN-PRE-09), y no guarda nada.',
   })
   @ApiOkResponse({ type: BookingPrice })
   @ApiNotFoundResponse({
@@ -88,7 +89,7 @@ export class BookingsController {
   })
   quote(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: CreateBookingRequest,
+    @Body() body: QuoteBookingRequest,
   ): Promise<BookingPrice> {
     return this.bookings.quote(user.id, body);
   }

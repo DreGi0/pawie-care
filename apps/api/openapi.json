@@ -1515,7 +1515,7 @@
     },
     "/v1/bookings/quote": {
       "post": {
-        "description": "RN-PRE-10. Mismo cuerpo y mismas validaciones que `POST /v1/bookings`; devuelve el precio que se cobraría ahora, con el primer servicio sin tarifa si aplica (RN-PRE-09), y no guarda nada.",
+        "description": "RN-PRE-10. Mismo cuerpo y mismas validaciones que `POST /v1/bookings`, sin los datos de emergencia, que no cambian el precio; devuelve el precio que se cobraría ahora, con el primer servicio sin tarifa si aplica (RN-PRE-09), y no guarda nada.",
         "operationId": "Bookings_quote",
         "parameters": [],
         "requestBody": {
@@ -1523,7 +1523,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateBookingRequest"
+                "$ref": "#/components/schemas/QuoteBookingRequest"
               }
             }
           }
@@ -3434,7 +3434,12 @@
           },
           "firstServiceFeeWaived": {
             "type": "boolean",
-            "description": "RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada en $0.00."
+            "description": "RN-PRE-09: es el primer servicio y no lleva tarifa. La app muestra la línea tachada, con $0.00 al lado."
+          },
+          "waivedServiceFeeCents": {
+            "type": "integer",
+            "example": 255,
+            "description": "RN-PRE-09: lo que habría costado la tarifa de servicio. Es 0 si no es el primer servicio sin tarifa. La app lo muestra tachado junto al $0.00."
           }
         },
         "required": [
@@ -3442,7 +3447,8 @@
           "serviceFeeBp",
           "serviceFeeCents",
           "totalCents",
-          "firstServiceFeeWaived"
+          "firstServiceFeeWaived",
+          "waivedServiceFeeCents"
         ]
       },
       "PaymentStatus": {
@@ -3616,6 +3622,75 @@
           "price",
           "payment",
           "createdAt"
+        ]
+      },
+      "QuoteBookingRequest": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "nights": {
+            "maxItems": 31,
+            "example": [
+              "2026-11-20",
+              "2026-11-21"
+            ],
+            "description": "Solo en pernocta: la fecha en que empieza cada noche.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "visits": {
+            "maxItems": 62,
+            "example": [
+              "2026-11-20T09:00:00-06:00"
+            ],
+            "description": "Cuándo empieza cada visita. En una pernocta son las visitas de día durante la estadía (RN-SER-03).",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "caregiverId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Un cuidador de los resultados de la búsqueda."
+          },
+          "petIds": {
+            "minItems": 1,
+            "maxItems": 10,
+            "description": "Mascotas del dueño.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "addressId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Una de las direcciones de GET /v1/addresses."
+          },
+          "instructions": {
+            "type": "string",
+            "maxLength": 2000,
+            "example": "La comida está en la alacena de la cocina. Toby come dos veces al día.",
+            "description": "Instrucciones para el cuidador (RN-RES-03)."
+          }
+        },
+        "required": [
+          "serviceCode",
+          "caregiverId",
+          "petIds",
+          "addressId"
         ]
       },
       "CancelBookingRequest": {

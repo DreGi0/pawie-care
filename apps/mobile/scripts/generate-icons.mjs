@@ -30,6 +30,7 @@ const names = [
   'plus',
   'rotate-cw',
   'search',
+  'sliders-horizontal',
   'star',
   'user',
   'x',

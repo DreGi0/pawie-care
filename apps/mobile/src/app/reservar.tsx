@@ -4,6 +4,7 @@ import {
   useAddressesList,
   useBookingsCreate,
   useBookingsList,
+  useBookingsQuote,
   useCaregiversProfile,
   usePetsList,
   type AddressResponse,
@@ -14,7 +15,7 @@ import {
 import { BookingsCreateBody } from '@pawie/api-client/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
   ActivityIndicator,
@@ -38,6 +39,7 @@ import { Chip } from '@/components/Chip';
 import { Icon, type IconName } from '@/components/Icon';
 import { IconButton } from '@/components/IconButton';
 import { Input } from '@/components/Input';
+import { PriceCard } from '@/components/PriceCard';
 import { Sheet } from '@/components/Sheet';
 import { StepBar } from '@/components/StepBar';
 import { Text } from '@/components/Text';
@@ -45,7 +47,6 @@ import { Touchable } from '@/components/Touchable';
 import { errorMessage } from '@/lib/api';
 import { firstName, joinNames, serviceName } from '@/lib/bookings';
 import { formatDay, formatMoney, formatRange, maskPhone, parsePhone } from '@/lib/format';
-import { estimatePrice } from '@/lib/price';
 import { toSearchRequest, useSearch, useSearchResults, type Search } from '@/lib/search';
 import { colors, radius, space } from '@/theme/tokens';
 
@@ -121,9 +122,7 @@ export default function BookScreen() {
     <BookingForm
       search={search}
       caregiver={profile.data!}
-      careLevel={results.data!.careLevel}
       slot={results.data!.slots[0]}
-      unitPriceCents={price.priceCents}
       pets={pets.data!.filter((pet) => search.petIds.includes(pet.id))}
       addresses={addresses.data!}
       // The list starts with the most recent booking: its emergency details are the latest.
@@ -135,24 +134,21 @@ export default function BookScreen() {
 function BookingForm({
   search,
   caregiver,
-  careLevel,
   slot,
-  unitPriceCents,
   pets,
   addresses,
   previous,
 }: {
   search: Search;
   caregiver: CaregiverProfileResponse;
-  careLevel: 'STANDARD' | 'SPECIAL';
   slot: { startsAt: string; endsAt: string };
-  unitPriceCents: number;
   pets: PetResponse[];
   addresses: AddressResponse[];
   previous: BookingEmergency | null;
 }) {
   const queryClient = useQueryClient();
   const create = useBookingsCreate();
+  const quote = useBookingsQuote();
   const [addressId, setAddressId] = useState(addresses[0]?.id ?? null);
   const [choosingAddress, setChoosingAddress] = useState(false);
   // The first booking asks for the emergency details; the next ones reuse the last ones.
@@ -160,7 +156,6 @@ function BookingForm({
   const name = firstName(caregiver.displayName);
   const petNames = joinNames(pets.map((pet) => pet.name));
   const overnight = search.serviceCode === 'OVERNIGHT_STAY';
-  const estimate = estimatePrice(unitPriceCents, 1, pets.length);
   const address = addresses.find((a) => a.id === addressId);
 
   const {
@@ -180,6 +175,17 @@ function BookingForm({
     },
   });
   const consent = useWatch({ control, name: 'consent' });
+
+  // RN-PRE-10: the API calculates the total, and asks again if the address changes.
+  const requestQuote = quote.mutate;
+  const askQuote = useCallback(() => {
+    if (!addressId) return;
+    const { serviceCode, petIds, visits, nights } = toSearchRequest(search);
+    requestQuote({
+      data: { serviceCode, petIds, visits, nights, caregiverId: caregiver.id, addressId },
+    });
+  }, [search, caregiver.id, addressId, requestQuote]);
+  useEffect(askQuote, [askQuote]);
 
   const submit = handleSubmit(
     (form) => {
@@ -440,20 +446,24 @@ function BookingForm({
           </View>
 
           <View style={styles.section}>
-            <Card style={styles.price}>
-              <PriceLine
-                label={`${overnight ? 'Pernocta' : 'Visita'} ${careLevel === 'SPECIAL' ? 'especial' : 'normal'}${pets.length > 1 ? ` · ${pets.length} mascotas` : ''}`}
-                amount={formatMoney(estimate.subtotalCents)}
+            {quote.data ? (
+              <PriceCard
+                price={quote.data}
+                lines={[
+                  {
+                    label: `${overnight ? 'Pernocta' : 'Visita'}${pets.length > 1 ? ` · ${pets.length} mascotas` : ''}`,
+                    amountCents: quote.data.subtotalCents,
+                  },
+                ]}
               />
-              <PriceLine
-                label={`Tarifa de servicio (${estimate.serviceFeePercent}%)`}
-                amount={formatMoney(estimate.serviceFeeCents)}
-              />
-              <View style={styles.total}>
-                <Text variant="heading">Total</Text>
-                <Text variant="heading">{formatMoney(estimate.totalCents)}</Text>
-              </View>
-            </Card>
+            ) : quote.isError ? (
+              <>
+                <Banner tone="error" message={errorMessage(quote.error)} />
+                <Button variant="secondary" label="Calcular de nuevo" onPress={askQuote} />
+              </>
+            ) : (
+              <ActivityIndicator color={colors.grapeDeep} />
+            )}
             <Banner
               tone="info"
               message={
@@ -466,10 +476,10 @@ function BookingForm({
           </View>
         </ScrollView>
 
-        <BottomBar caption="Total" amount={formatMoney(estimate.totalCents)}>
+        <BottomBar caption="Total" amount={quote.data ? formatMoney(quote.data.totalCents) : '—'}>
           <Button
             label="Enviar solicitud"
-            disabled={!consent}
+            disabled={!consent || !quote.data}
             loading={create.isPending}
             onPress={() => submit()}
           />
@@ -566,15 +576,6 @@ function EmergencySummary({ previous }: { previous: BookingEmergency }) {
   );
 }
 
-function PriceLine({ label, amount }: { label: string; amount: string }): ReactNode {
-  return (
-    <View style={styles.priceLine}>
-      <Text style={styles.flex}>{label}</Text>
-      <Text>{amount}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.cream },
   centered: { alignItems: 'center', justifyContent: 'center' },
@@ -600,16 +601,6 @@ const styles = StyleSheet.create({
   consent: { padding: space[3], borderRadius: radius.sm, backgroundColor: colors.card },
   consentMissing: { backgroundColor: colors.rose },
   consentHint: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginTop: -space[1] },
-  price: { gap: space[2] },
-  priceLine: { flexDirection: 'row', gap: space[2] },
-  total: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: space[1],
-    paddingTop: space[3],
-    borderTopWidth: 1,
-    borderTopColor: colors.line,
-  },
   addressOption: {
     minHeight: 56,
     flexDirection: 'row',

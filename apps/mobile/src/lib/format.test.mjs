@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import {
   atLocalTime,
   dayLabel,
+  daysUntil,
   formatDay,
   formatDeadline,
   formatLongDayTime,
@@ -68,4 +69,11 @@ test('reads typed phones', () => {
   assert.equal(parsePhone('7000 1234'), '+50370001234');
   assert.equal(parsePhone('1000 1234'), null);
   assert.equal(parsePhone('7000 123'), null);
+});
+
+test('counts the days that are left, rounding up', () => {
+  const now = new Date('2026-10-19T12:00:00Z');
+  assert.equal(daysUntil('2026-11-03T12:00:00Z', now), 15);
+  assert.equal(daysUntil('2026-10-20T00:00:00Z', now), 1);
+  assert.equal(daysUntil('2026-10-19T11:00:00Z', now), 0);
 });

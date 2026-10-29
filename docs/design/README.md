@@ -32,9 +32,9 @@ flowchart LR
 | `Login.dc.html`        | Iniciar sesión, con estado de error               | `POST /v1/auth/login`                                |
 | `OnbMascota.dc.html`   | Onboarding 1/2: registrar la mascota              | `GET /v1/catalog`, `POST /v1/pets`, `POST /v1/files` |
 | `OnbDireccion.dc.html` | Onboarding 2/2: dirección                         | `POST /v1/addresses`                                 |
-| `Main.dc.html`         | Pestaña Buscar: buscador y resultados             | `POST /v1/caregivers/search`                         |
+| `Main.dc.html`         | Pestaña Buscar: buscador, filtros y resultados    | `POST /v1/caregivers/search`, `GET /v1/users/me`     |
 | `Perfil.dc.html`       | Perfil del cuidador con galería de 3 fotos        | `GET /v1/caregivers/{id}`                            |
-| `Reservar.dc.html`     | Paso 1: revisar y enviar la solicitud             | `POST /v1/bookings`                                  |
+| `Reservar.dc.html`     | Paso 1: revisar y enviar la solicitud             | `POST /v1/bookings/quote`, `POST /v1/bookings`       |
 | `Esperando.dc.html`    | Paso 2: el cuidador responde (`REQUESTED`)        | `GET /v1/bookings/{id}`                              |
 | `Pagar.dc.html`        | Paso 3: pagar (`PENDING_PAYMENT`)                 | `POST /v1/bookings/{id}/payments`                    |
 | `Confirmada.dc.html`   | Visita confirmada (`CONFIRMED`) con Nimbus "hola" | `GET /v1/bookings/{id}`                              |
@@ -65,7 +65,7 @@ flowchart LR
 - **Perfil de la mascota:** OnbMascota dice "Agrégalo luego en su perfil", pero la app todavía no tiene la pantalla de la mascota con sus tareas de cuidado, vacunas e indicaciones del veterinario.
 - **Género en la ⭐:** el mockup dice "⭐ Certificada", pero la API no dice si el cuidador es hombre o mujer. La app muestra "⭐ Con certificación".
 - **Avisos:** Esperando y Confirmada dicen "Te avisamos", pero la app no tiene notificaciones push. Esperando dice que la pantalla cambia sola, porque vuelve a preguntar mientras está abierta.
-- **Precio en Reservar:** hoy la app estima el total con el recargo por mascota (50%) y la tarifa de servicio (10%) de la v0.4, en `src/lib/price.ts`. En la v0.5 la tarifa es 15% y el primer servicio puede ir sin tarifa, así que la estimación se borra y el total sale de `POST /v1/bookings/quote` (RN-PRE-10, etapa 6).
+- **Mockups de la etapa 6:** `Main`, `Perfil`, `Reservar` y `Pagar` siguen en la v0.4. La app ya tiene los filtros (una hoja con nivel mínimo, certificaciones y calificación mínima), el nivel en cada resultado, el perfil con nivel, insignias, certificaciones y habilidades, la tarifa que habría costado tachada, $0.00 al lado y "Primer servicio" debajo y el aviso con los días que quedan; falta dibujarlos en `screens/`.
 - **Varias visitas o noches:** la búsqueda pide una sola visita o una sola noche. La API acepta varias (RN-SER-03).
 - **Nombre de la dirección:** se guarda siempre como "Casa".
 - **Barra de pestañas:** en la app flota sobre el borde inferior, con las esquinas redondas, en lugar de pegarse al borde como en Main y Visitas.
@@ -80,14 +80,10 @@ Mismo design system y mismas reglas de arriba. Cada pantalla nueva lleva su `.dc
 
 ### Del dueño: cambiar
 
-| Pantalla              | Qué cambia                                                                                      | Reglas               | Etapa |
-| --------------------- | ----------------------------------------------------------------------------------------------- | -------------------- | ----- |
-| `Main`                | Filtros por nivel, certificaciones y calificación. Nivel en cada resultado. Paseo como servicio | RN-RES-10, RN-SER-05 | 6, 8  |
-| `Perfil`              | Nivel, insignias de verificación, certificaciones y habilidades declaradas, en ese orden        | RN-CUI-21, RN-CUI-19 | 6     |
-| `Reservar`            | Total desde la cotización y aviso de primer servicio sin tarifa                                 | RN-PRE-09, RN-PRE-10 | 6     |
-| `Pagar`               | Línea de la tarifa tachada en $0.00 con el texto "Primer servicio"                              | RN-PRE-09            | 6     |
-| `Esperando`           | Ya no simula la aceptación: espera la respuesta real del cuidador                               | RN-RES-06            | 9     |
-| `Bienvenida` o `Main` | Aviso "Tu primer servicio sin tarifa", con los días que quedan                                  | RN-PRE-09            | 6     |
+| Pantalla    | Qué cambia                                                                              | Reglas    | Etapa |
+| ----------- | --------------------------------------------------------------------------------------- | --------- | ----- |
+| `Main`      | Paseo como servicio (los filtros, el nivel y el aviso de la etapa 6 ya están en la app) | RN-SER-05 | 8     |
+| `Esperando` | Ya no simula la aceptación: espera la respuesta real del cuidador                       | RN-RES-06 | 9     |
 
 ### Del dueño: nuevas
 

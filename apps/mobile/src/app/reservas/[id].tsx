@@ -21,6 +21,7 @@ import { Card } from '@/components/Card';
 import { Icon, type IconName } from '@/components/Icon';
 import { IconButton } from '@/components/IconButton';
 import { Nimbus } from '@/components/Nimbus';
+import { PriceCard } from '@/components/PriceCard';
 import { StepBar } from '@/components/StepBar';
 import { Tag } from '@/components/Tag';
 import { Text } from '@/components/Text';
@@ -172,7 +173,6 @@ function Pay({ booking, onPaid }: { booking: BookingResponse; onPaid: () => void
   const cancel = useCancel(booking.id);
   const [returned, setReturned] = useState(false);
   const overnight = booking.serviceCode === 'OVERNIGHT_STAY';
-  const level = booking.careLevel === 'SPECIAL' ? 'especial' : 'normal';
   const confirming = returned && booking.payment?.status === 'PENDING';
 
   const startPayment = () =>
@@ -224,23 +224,13 @@ function Pay({ booking, onPaid }: { booking: BookingResponse; onPaid: () => void
         <Text variant="heading" accessibilityRole="header">
           Detalle
         </Text>
-        <Card style={styles.price}>
-          {booking.slots.map((slot) => (
-            <PriceLine
-              key={slot.startsAt}
-              label={`${overnight && slot.serviceCode === 'OVERNIGHT_STAY' ? 'Pernocta' : 'Visita'} ${level} · ${petNames(booking)}`}
-              amount={formatMoney(slot.subtotalCents)}
-            />
-          ))}
-          <PriceLine
-            label={`Tarifa de servicio (${booking.price.serviceFeeBp / 100}%)`}
-            amount={formatMoney(booking.price.serviceFeeCents)}
-          />
-          <View style={styles.total}>
-            <Text variant="heading">Total</Text>
-            <Text variant="heading">{formatMoney(booking.price.totalCents)}</Text>
-          </View>
-        </Card>
+        <PriceCard
+          price={booking.price}
+          lines={booking.slots.map((slot) => ({
+            label: `${overnight && slot.serviceCode === 'OVERNIGHT_STAY' ? 'Pernocta' : 'Visita'} · ${petNames(booking)}`,
+            amountCents: slot.subtotalCents,
+          }))}
+        />
       </View>
 
       {confirming ? (
@@ -407,15 +397,6 @@ function SummaryRow({
   );
 }
 
-function PriceLine({ label, amount }: { label: string; amount: string }) {
-  return (
-    <View style={styles.priceLine}>
-      <Text style={styles.flex}>{label}</Text>
-      <Text>{amount}</Text>
-    </View>
-  );
-}
-
 /** Cancelling can't be undone, so it asks first. */
 function confirmCancel(run: () => void) {
   Alert.alert('¿Cancelar la reserva?', 'No te cobramos nada, y el horario queda libre.', [
@@ -463,14 +444,5 @@ const styles = StyleSheet.create({
   summary: { paddingVertical: space[1] },
   row: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3] },
   divider: { borderBottomWidth: 1, borderBottomColor: colors.line },
-  price: { gap: space[3] },
-  priceLine: { flexDirection: 'row', gap: space[2] },
-  total: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: space[3],
-    borderTopWidth: 1,
-    borderTopColor: colors.line,
-  },
   footer: { marginTop: 'auto', gap: space[2] },
 });

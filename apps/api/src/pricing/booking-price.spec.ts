@@ -114,6 +114,7 @@ describe('quoteBooking', () => {
       rounding: 'HALF_UP_ONCE_PER_AMOUNT',
       caregiverLevel: 'TRUSTED',
       firstServiceFeeWaived: false,
+      waivedServiceFeeCents: 0,
       petCount: 2,
       prices: [
         {
@@ -168,8 +169,10 @@ describe('quoteBooking', () => {
       totalCents: 650,
       caregiverPayoutCents: 650,
     });
+    // 650 × 15% = 97.5, which rounds half up to 98: what the fee would have been.
     expect(quote.snapshot).toMatchObject({
       firstServiceFeeWaived: true,
+      waivedServiceFeeCents: 98,
       rates: { ...RATES, ownerServiceFeeBp: 0 },
     });
   });
