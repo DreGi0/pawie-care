@@ -25,7 +25,12 @@ import { bookingNotFound, isSlotOverlap, slotTaken } from './booking-errors.js';
 import { BookingDeadlines } from './booking-deadlines.js';
 import { BookingStateMachine } from './booking-state-machine.js';
 import { blocksCalendar, canTransition, revealsContact } from './booking-status.js';
-import type { BookingPrice, BookingResponse, CreateBookingRequest } from './bookings.dto.js';
+import type {
+  BookingPrice,
+  BookingResponse,
+  CreateBookingRequest,
+  QuoteBookingRequest,
+} from './bookings.dto.js';
 import { paymentDeadline, responseDeadline } from './deadlines.js';
 
 /** Everything a booking request reads from the settings (§15), in one query. */
@@ -167,7 +172,7 @@ export class BookingsService {
    * RN-PRE-10: the price create() would charge now, with the same checks and the same
    * pricing functions, and nothing saved.
    */
-  async quote(ownerId: string, request: CreateBookingRequest): Promise<BookingPrice> {
+  async quote(ownerId: string, request: QuoteBookingRequest): Promise<BookingPrice> {
     const prepared = await this.prepare(ownerId, request);
     const { amounts, snapshot } = await this.quoteFor(this.prisma, ownerId, prepared);
     return toPrice({
@@ -249,7 +254,7 @@ export class BookingsService {
   }
 
   /** What create() and quote() check before pricing: the address, the plan and the caregiver. */
-  private async prepare(ownerId: string, request: CreateBookingRequest) {
+  private async prepare(ownerId: string, request: QuoteBookingRequest) {
     const now = this.clock.now();
     const address = await this.addresses.findOwn(ownerId, request.addressId);
     const settings = await this.settings.getMany(BOOKING_SETTING_KEYS);

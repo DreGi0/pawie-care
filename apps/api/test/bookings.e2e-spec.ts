@@ -126,7 +126,11 @@ describe('bookings', () => {
       ...body,
     });
     const book = (body: Record<string, unknown>) => as.post('/v1/bookings', request(body));
-    const quote = (body: Record<string, unknown>) => as.post('/v1/bookings/quote', request(body));
+    // The quote takes the booking's body without the emergency details.
+    const quote = (body: Record<string, unknown>) => {
+      const { emergency: _emergency, ...rest } = request(body);
+      return as.post('/v1/bookings/quote', rest);
+    };
 
     return { user, address, as, pet, book, quote };
   }
