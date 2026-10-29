@@ -1,11 +1,13 @@
-import { CareLevel, ServiceCode } from '../generated/prisma/enums.js';
+import { CaregiverLevel, CareLevel, ServiceCode } from '../generated/prisma/enums.js';
 import {
   basisPoints,
   integer,
+  list,
   minuteOfDay,
   object,
   refine,
   type SettingParser,
+  text,
 } from './setting-parsers.js';
 
 type RuleId = `RN-${string}`;
@@ -32,6 +34,16 @@ const days = integer({ min: 1, max: 365 });
 const cents = integer({ min: 1, max: 100_000 });
 /** An average rating in tenths of a star: 40 is 4.0. Avoids comparing floats. */
 const ratingTenths = integer({ min: 10, max: 50 });
+
+/** What a level asks for besides the lower levels (RN-NIV-02). Ratings are in tenths. */
+const levelRequirement = object({
+  minReviews: integer({ min: 1, max: 10_000 }),
+  minAverageRatingTenths: ratingTenths,
+  minCompletedBookings: integer({ min: 0, max: 100_000 }),
+  minCertifications: integer({ min: 0, max: 20 }),
+  /** Codes of certification types the caregiver must hold, counted in minCertifications. */
+  requiredCertificationCodes: list(text),
+});
 
 const priceRange = refine(
   object({ minCents: cents, suggestedCents: cents, maxCents: cents }),
@@ -238,16 +250,16 @@ export const SETTINGS = {
     postDemo: true,
   }),
 
-  // ─── Special-care certification (⭐) ───
-  'certifications.specialCareMinExamScoreBp': setting({
-    description: 'Nota mínima del curso ⭐',
+  // ─── Certifications (RN-CUI-07 to RN-CUI-10) and levels (RN-NIV) ───
+  'certifications.minExamScoreBp': setting({
+    description: 'Nota mínima del examen de una certificación',
     rules: ['RN-CUI-08'],
     parse: basisPoints,
     initialValue: 8000,
     postDemo: true,
   }),
-  'certifications.specialCareValidityMonths': setting({
-    description: 'Vigencia de la ⭐',
+  'certifications.validityMonths': setting({
+    description: 'Vigencia de una certificación',
     rules: ['RN-CUI-09'],
     parse: integer({ min: 1, max: 60 }),
     initialValue: 12,
@@ -258,6 +270,39 @@ export const SETTINGS = {
     parse: ratingTenths,
     initialValue: 40,
     postDemo: true,
+  }),
+  'levels.requirements': setting({
+    description:
+      'Requisitos de cada nivel del cuidador, menos Nuevo, que no pide nada. Cuenta solo las certificaciones vigentes',
+    rules: ['RN-NIV-02', 'RN-NIV-04'],
+    parse: object({
+      [CaregiverLevel.TRUSTED]: levelRequirement,
+      [CaregiverLevel.PRO]: levelRequirement,
+      [CaregiverLevel.SUPER]: levelRequirement,
+    }),
+    initialValue: {
+      TRUSTED: {
+        minReviews: 3,
+        minAverageRatingTenths: 45,
+        minCompletedBookings: 0,
+        minCertifications: 0,
+        requiredCertificationCodes: [],
+      },
+      PRO: {
+        minReviews: 3,
+        minAverageRatingTenths: 46,
+        minCompletedBookings: 15,
+        minCertifications: 2,
+        requiredCertificationCodes: [],
+      },
+      SUPER: {
+        minReviews: 3,
+        minAverageRatingTenths: 48,
+        minCompletedBookings: 40,
+        minCertifications: 3,
+        requiredCertificationCodes: ['FIRST_AID'],
+      },
+    },
   }),
   'disputes.resolutionBusinessDays': setting({
     description: 'Plazo para resolver disputas',

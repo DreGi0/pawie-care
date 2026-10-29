@@ -27,6 +27,24 @@ export const basisPoints = integer({ min: 0, max: 10_000 });
 /** A time of day in minutes since midnight, America/El_Salvador. */
 export const minuteOfDay = integer({ min: 0, max: 24 * 60 - 1 });
 
+/** A text that isn't blank. */
+export const text: SettingParser<string> = (value, path) => {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new InvalidSettingValueError(`${path} debe ser un texto.`);
+  }
+  return value;
+};
+
+/** A list whose items all pass `item`. */
+export function list<T>(item: SettingParser<T>): SettingParser<T[]> {
+  return (value, path) => {
+    if (!Array.isArray(value)) {
+      throw new InvalidSettingValueError(`${path} debe ser una lista.`);
+    }
+    return value.map((entry, index) => item(entry, `${path}[${index}]`));
+  };
+}
+
 /** An object with exactly these properties. */
 export function object<Shape extends Record<string, SettingParser<unknown>>>(
   shape: Shape,

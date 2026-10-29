@@ -24,6 +24,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import type { SettingValue } from '../settings/settings.registry.js';
 import { SettingsService, type SettingValues } from '../settings/settings.service.js';
 import { overlaps, scheduleCovers } from './availability.js';
+import { validCertification } from './certifications.js';
 import type {
   CaregiverPrice,
   CaregiverProfileResponse,
@@ -381,10 +382,8 @@ function visibleAt(now: Date) {
 /** An active ⭐ that isn't suspended and lasts through `lastDate` (RN-CUI-09, RN-CUI-10). */
 function validSpecialCare(lastDate: Date, now: Date) {
   return {
-    status: CertificationStatus.ACTIVE,
+    ...validCertification(lastDate, now),
     certificationType: { code: SPECIAL_CARE_CERTIFICATION.code },
-    validUntil: { gte: lastDate },
-    OR: [{ suspendedUntil: null }, { suspendedUntil: { lte: now } }],
   } satisfies Prisma.CaregiverCertificationWhereInput;
 }
 

@@ -59,6 +59,8 @@ Regla general: **no se renombra una clave si su significado no cambió**. Solo c
 
 ### Etapa 6: precios por nivel del cuidador
 
+**Avance:** se hace en dos PR. **6.1 (hecha, solo API):** `CaregiverLevel` y `CaregiverProfile.level`, `CaregiverSkill`, tipos de certificación, settings `certifications.minExamScoreBp`, `certifications.validityMonths` y `levels.requirements`, `caregiver-level.ts`, recálculo en la transacción (`recalculateLevel`), el script `caregivers:recalculate-levels` y el seed con los cuatro niveles. **6.2 (pendiente):** precios por nivel, `/quote`, primer servicio sin tarifa, búsqueda, perfil y app.
+
 **Reglas:** RN-NIV-01 a RN-NIV-06, RN-PRE-01 a RN-PRE-04, RN-PRE-07, RN-PRE-09, RN-PRE-10, RN-RES-10, RN-CUI-05 a RN-CUI-07, RN-CUI-09, RN-CUI-11, RN-CUI-19, RN-CUI-21.
 
 **API:**

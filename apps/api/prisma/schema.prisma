@@ -175,6 +175,30 @@ enum CareLevel {
   @@map("care_level")
 }
 
+/// RN-NIV-01: computed by the system from the reviews, the completed services and the
+/// certifications (RN-NIV-02), never chosen by the caregiver. The order is the order
+/// of the levels, so SQL can compare them.
+enum CaregiverLevel {
+  NEW
+  TRUSTED
+  PRO
+  SUPER
+
+  @@map("caregiver_level")
+}
+
+/// RN-CUI-18: skills the caregiver declares, from a catalog. Nobody verifies them
+/// (RN-CUI-19), so they are labels, not badges, and searches don't filter by them.
+enum CaregiverSkill {
+  LARGE_DOGS
+  CATS
+  PUPPIES
+  SENIOR_PETS
+  DIFFICULT_BEHAVIOR
+
+  @@map("caregiver_skill")
+}
+
 /// The caregiver side of an account. The ⭐ is a CaregiverCertification (RN-CUI-11).
 model CaregiverProfile {
   userId                String          @id @map("user_id") @db.Uuid
@@ -198,6 +222,11 @@ model CaregiverProfile {
   specialRatingSum      Int             @default(0) @map("special_rating_sum")
   /// RN-RES-02: number of services completed in Pawie.
   completedBookingCount Int             @default(0) @map("completed_booking_count")
+  /// RN-NIV-04: stored so searches can filter and sort by it in SQL. Recalculate it in
+  /// the same transaction that changes the ratings, the completed services or the
+  /// certifications (src/caregivers/recalculate-level.ts).
+  level                 CaregiverLevel  @default(NEW)
+  skills                CaregiverSkill[] @default([])
   /// RN-CAN-05: hidden from searches until then.
   suspendedUntil        DateTime?       @map("suspended_until") @db.Timestamptz(3)
   createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)

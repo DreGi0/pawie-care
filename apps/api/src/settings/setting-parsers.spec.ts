@@ -1,4 +1,11 @@
-import { integer, InvalidSettingValueError, object, refine } from './setting-parsers.js';
+import {
+  integer,
+  InvalidSettingValueError,
+  list,
+  object,
+  refine,
+  text,
+} from './setting-parsers.js';
 
 describe('setting parsers', () => {
   describe('integer', () => {
@@ -12,6 +19,27 @@ describe('setting parsers', () => {
     it.each([-1, 101, 2.5, '50', null, undefined, Number.NaN])('rejects %s', (value) => {
       expect(() => percent(value, 'pricing.fee')).toThrow(
         new InvalidSettingValueError('pricing.fee debe ser un número entero entre 0 y 100.'),
+      );
+    });
+  });
+
+  describe('list', () => {
+    const codes = list(text);
+
+    it('accepts a list, empty or not, of texts', () => {
+      expect(codes([], 'c')).toEqual([]);
+      expect(codes(['FIRST_AID'], 'c')).toEqual(['FIRST_AID']);
+    });
+
+    it('names the item that fails', () => {
+      expect(() => codes(['FIRST_AID', ' '], 'c')).toThrow(
+        new InvalidSettingValueError('c[1] debe ser un texto.'),
+      );
+    });
+
+    it.each([null, 'FIRST_AID', { length: 0 }])('rejects %j, which is not a list', (value) => {
+      expect(() => codes(value, 'c')).toThrow(
+        new InvalidSettingValueError('c debe ser una lista.'),
       );
     });
   });

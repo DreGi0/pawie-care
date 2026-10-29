@@ -1,3 +1,4 @@
+import { SPECIAL_CARE_CERTIFICATION } from '../caregivers/special-care.js';
 import { ServiceCode } from '../generated/prisma/enums.js';
 
 /**
@@ -45,3 +46,13 @@ export const SERVICES = [
       'El cuidador duerme en la casa del dueño y se encarga de los cuidados de la noche y de la mañana.',
   },
 ] as const;
+
+/** RN-CUI-07: the initial certification types. More can be added without touching the model (RN-CUI-11). */
+export const CERTIFICATION_TYPES = [
+  SPECIAL_CARE_CERTIFICATION,
+  { code: 'FIRST_AID', name: 'Primeros auxilios' },
+  { code: 'LARGE_DOGS', name: 'Perros grandes' },
+  { code: 'CATS', name: 'Gatos' },
+] as const;
+
+export type CertificationCode = (typeof CERTIFICATION_TYPES)[number]['code'];

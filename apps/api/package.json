@@ -24,7 +24,8 @@
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "openapi:generate": "nest build && node dist/openapi/export-openapi.js",
-    "settings:set": "nest build && node dist/settings/set-setting.js"
+    "settings:set": "nest build && node dist/settings/set-setting.js",
+    "caregivers:recalculate-levels": "nest build && node dist/caregivers/recalculate-levels.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1152.0",

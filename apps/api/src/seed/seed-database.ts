@@ -1,5 +1,5 @@
 import { hashPassword, verifyPassword } from '../auth/passwords.js';
-import { SPECIAL_CARE_CERTIFICATION } from '../caregivers/special-care.js';
+import { recalculateLevel } from '../caregivers/recalculate-level.js';
 import { addDays, addMonths, dateInElSalvador } from '../common/time/calendar.js';
 import {
   CaregiverStatus,
@@ -10,15 +10,21 @@ import {
   Role,
   type ServiceCode,
 } from '../generated/prisma/client.js';
-import type { SettingKey } from '../settings/settings.registry.js';
+import type { SettingKey, SettingValue } from '../settings/settings.registry.js';
 import type { SettingsService } from '../settings/settings.service.js';
 import { DEMO_CAREGIVERS, type DemoCaregiver } from './caregivers.js';
-import { DISTRICTS, SERVICES, SPECIES } from './catalog.js';
+import {
+  type CertificationCode,
+  CERTIFICATION_TYPES,
+  DISTRICTS,
+  SERVICES,
+  SPECIES,
+} from './catalog.js';
 import { DEMO_OWNER } from './demo-owner.js';
 import { mediaName, type SeedMedia, seedPhoto } from './seed-media.js';
 
 export interface SeedOptions {
-  /** Dates such as the ⭐ validity are relative to it. */
+  /** Dates such as the certifications' validity are relative to it. */
   now?: Date;
   /** DEMO_OWNER_PASSWORD. Without it, the demo owner isn't created. */
   demoOwnerPassword?: string;
@@ -50,16 +56,18 @@ interface CatalogIds {
   districtIds: Map<string, string>;
   speciesIds: Map<string, string>;
   serviceIds: Map<ServiceCode, string>;
-  specialCareTypeId: string;
+  certificationTypeIds: Map<CertificationCode, string>;
 }
 
 /**
  * Loads what the demo needs: the catalog, every setting of §15, the demo caregivers
  * and the demo owner. It can run any number of times:
  * - the catalog and the accounts are upserted by their natural keys (slug, code,
- *   email), and each caregiver's districts, prices, schedule and ⭐ are replaced;
+ *   email), and each caregiver's districts, prices, schedule and certifications are
+ *   replaced, and their level recalculated from them (RN-NIV-04);
  * - settings that already exist keep their value, so it never undoes a settings:set.
- * Dates such as the ⭐ validity are relative to `now`, so the demo data stays current.
+ * Dates such as the certifications' validity are relative to `now`, so the demo data
+ * stays current.
  */
 export async function seedDatabase(
   prisma: PrismaClient,
@@ -71,14 +79,17 @@ export async function seedDatabase(
     changedBy: 'seed',
     reason: 'Valor inicial de la sección 15 de las reglas de negocio',
   });
-  const validityMonths = await settings.get('certifications.specialCareValidityMonths');
+  const validityMonths = await settings.get('certifications.validityMonths');
+  const requirements = await settings.get('levels.requirements');
 
   const today = dateInElSalvador(now);
   let photos = 0;
   for (const caregiver of DEMO_CAREGIVERS) {
     const caregiverId = await seedCaregiver(prisma, caregiver, catalog, {
+      now,
       today,
       validityMonths,
+      requirements,
       phone: demoCaregiverPhone ?? null,
     });
     if (media) {
@@ -235,21 +246,36 @@ async function seedCatalog(prisma: PrismaClient): Promise<CatalogIds> {
     serviceIds.set(code, service.id);
   }
 
-  const { code, name } = SPECIAL_CARE_CERTIFICATION;
-  const specialCare = await prisma.certificationType.upsert({
-    where: { code },
-    create: { code, name },
-    update: { name },
-  });
+  const certificationTypeIds = new Map<CertificationCode, string>();
+  for (const { code, name } of CERTIFICATION_TYPES) {
+    const type = await prisma.certificationType.upsert({
+      where: { code },
+      create: { code, name },
+      update: { name },
+    });
+    certificationTypeIds.set(code, type.id);
+  }
 
-  return { districtIds, speciesIds, serviceIds, specialCareTypeId: specialCare.id };
+  return { districtIds, speciesIds, serviceIds, certificationTypeIds };
 }
 
 async function seedCaregiver(
   prisma: PrismaClient,
   caregiver: DemoCaregiver,
-  { districtIds, serviceIds, specialCareTypeId }: CatalogIds,
-  { today, validityMonths, phone }: { today: Date; validityMonths: number; phone: string | null },
+  { districtIds, serviceIds, certificationTypeIds }: CatalogIds,
+  {
+    now,
+    today,
+    validityMonths,
+    requirements,
+    phone,
+  }: {
+    now: Date;
+    today: Date;
+    validityMonths: number;
+    requirements: SettingValue<'levels.requirements'>;
+    phone: string | null;
+  },
 ): Promise<string> {
   const account = {
     firstName: caregiver.firstName,
@@ -272,6 +298,7 @@ async function seedCaregiver(
     specialRatingCount: caregiver.ratings.specialCount,
     specialRatingSum: caregiver.ratings.specialSum,
     completedBookingCount: caregiver.completedBookings,
+    skills: caregiver.skills ?? [],
     suspendedUntil: null,
   };
 
@@ -315,12 +342,12 @@ async function seedCaregiver(
     });
 
     await tx.caregiverCertification.deleteMany({ where: { caregiverId } });
-    if (caregiver.specialCareMonthsAgo !== undefined) {
-      const obtainedOn = addMonths(today, -caregiver.specialCareMonthsAgo);
+    for (const [code, monthsAgo] of Object.entries(caregiver.certifications ?? {})) {
+      const obtainedOn = addMonths(today, -monthsAgo);
       await tx.caregiverCertification.create({
         data: {
           caregiverId,
-          certificationTypeId: specialCareTypeId,
+          certificationTypeId: required(certificationTypeIds.get(code as CertificationCode), code),
           status: CertificationStatus.ACTIVE,
           obtainedOn,
           // RN-CUI-09: valid for the configured months, up to the day before.
@@ -328,6 +355,8 @@ async function seedCaregiver(
         },
       });
     }
+    // RN-NIV-04: the level follows the ratings, the services and the certifications.
+    await recalculateLevel(tx, caregiverId, requirements, now);
     return caregiverId;
   });
 }
