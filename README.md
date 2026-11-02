@@ -4,8 +4,8 @@ Marketplace que conecta a dueños de perros y gatos con cuidadores verificados e
 
 ## Documentación
 
-- [Reglas de negocio](docs/reglas-de-negocio.md) (v0.5): qué hace el producto. Es la fuente de verdad.
-- [Plan para la v0.5](docs/plan-v0.5.md): qué falta construir, por etapas. El código actual sigue las reglas v0.4.
+- [Reglas de negocio](docs/reglas-de-negocio.md) (v0.6): qué hace el producto. Es la fuente de verdad.
+- [Plan para la v0.6](docs/plan-v0.6.md): qué falta construir, por etapas. El código actual sigue las reglas v0.4 más la etapa 6.
 - [Arquitectura y stack técnico](docs/arquitectura.md): cómo se construye.
 - [Diseño](docs/design/README.md): mockups, tokens y pantallas pendientes.
 - [CLAUDE.md](CLAUDE.md): cómo trabajar en este repositorio con Claude Code.

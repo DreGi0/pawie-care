@@ -22,7 +22,7 @@ function section15Rows(): string[][] {
 
 describe('settings registry', () => {
   it('has one setting per parameter of §15, citing its rule first', () => {
-    // §15 already lists the parameters of the later stages (docs/plan-v0.5.md). Remove each
+    // §15 already lists the parameters of the later stages (docs/plan-v0.6.md). Remove each
     // rule from here when its stage adds the setting.
     const comesLater = [
       'RN-SER-05', // stage 8

@@ -1,10 +1,10 @@
 # Pawie Care: arquitectura y stack técnico
 
-**Versión del documento:** 0.4 · **Implementa las reglas v0.5** · **Fecha:** 2026-10-28
+**Versión del documento:** 0.5 · **Implementa las reglas v0.6** · **Fecha:** 2026-11-02
 
-Las reglas de negocio están en [reglas-de-negocio.md](reglas-de-negocio.md) y el orden de construcción en [plan-v0.5.md](plan-v0.5.md). Este documento cubre cómo se construye.
+Las reglas de negocio están en [reglas-de-negocio.md](reglas-de-negocio.md) y el orden de construcción en [plan-v0.6.md](plan-v0.6.md). Este documento cubre cómo se construye.
 
-> **Ojo:** el código del commit `d088fba` implementa las reglas v0.4. Lo que este documento describe para la v0.5 (niveles, paseo, app del cuidador, ejecución, push y soporte) se construye en las etapas 6 a 12b del plan.
+> **Ojo:** el código implementa las reglas v0.4 más la etapa 6 (niveles y precios por nivel del cuidador). Lo demás que describe este documento (paseo, app del cuidador, métricas del piloto, ejecución, push, referidos y soporte) se construye en las etapas del plan.
 
 ## 1. Resumen
 
@@ -173,26 +173,27 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 
 ## 5. Módulos del backend
 
-| Módulo          | Responsabilidad                                                                                                                         | Reglas                                                     |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| `auth`          | Registro, inicio de sesión y tokens                                                                                                     | RN-CTA-01, RN-CTA-02                                       |
-| `users`         | Cuentas y roles                                                                                                                         | RN-CTA                                                     |
-| `addresses`     | Direcciones del dueño, que cada reserva copia                                                                                           | RN-CTA-04                                                  |
-| `caregivers`    | Perfil, modo cuidador, niveles, insignias, certificaciones, distritos, disponibilidad, precios, Reserva inmediata, búsqueda y ganancias | RN-CUI, RN-NIV, RN-RES-01, RN-RES-02, RN-RES-10, RN-PAG-10 |
-| `pets`          | Mascotas, indicaciones del veterinario y clasificación del nivel de cuidado                                                             | RN-MAS                                                     |
-| `catalog`       | Especies, servicios y distritos                                                                                                         | RN-MAS-01, RN-SER                                          |
-| `settings`      | Parámetros configurables y su historial de cambios                                                                                      | Sección 15 de las reglas                                   |
-| `pricing`       | Cálculo del precio de una reserva, cotización y primer servicio sin tarifa                                                              | RN-PRE                                                     |
-| `bookings`      | Solicitudes, estados y plazos, y el plan de tramos que también usa la búsqueda                                                          | RN-RES, RN-CAN-07                                          |
-| `payments`      | Integración con Wompi, sus webhooks y los reintentos de los que no se pudieron aplicar                                                  | RN-PAG                                                     |
-| `files`         | Subida y acceso a archivos                                                                                                              | RN-MAS-02, RN-MAS-08                                       |
-| `notifications` | Notificaciones push con el Expo Push Service y correos al equipo                                                                        | RN-NOT, RN-SOP-03                                          |
-| `courses`       | Curso de bienvenida: contenido, intentos y calificación                                                                                 | RN-CUI-02                                                  |
-| `care-logs`     | Ejecución: check-in, check-out, tareas del tramo, fotos y ruta                                                                          | §11 de las reglas                                          |
-| `reviews`       | Reseñas del dueño y recálculo del nivel                                                                                                 | RN-RSE, RN-NIV-04                                          |
-| `support`       | Árbol del asistente, casos y reclamos de garantía                                                                                       | §14 y §17 de las reglas                                    |
-| `queues`        | Conexión de BullMQ con Redis y su chequeo en `/v1/health`                                                                               |                                                            |
-| `maintenance`   | Limpieza periódica: refresh tokens vencidos y archivos abandonados                                                                      |                                                            |
+| Módulo          | Responsabilidad                                                                                                                                             | Reglas                                                                |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `auth`          | Registro, con el código de referido opcional, inicio de sesión y tokens                                                                                     | RN-CTA-01, RN-CTA-02, RN-REF-03                                       |
+| `users`         | Cuentas y roles                                                                                                                                             | RN-CTA                                                                |
+| `addresses`     | Direcciones del dueño, que cada reserva copia                                                                                                               | RN-CTA-04                                                             |
+| `caregivers`    | Perfil, modo cuidador, niveles, insignias, certificaciones, distritos, disponibilidad, precios, Reserva inmediata, código de referido, búsqueda y ganancias | RN-CUI, RN-NIV, RN-REF-01, RN-RES-01, RN-RES-02, RN-RES-10, RN-PAG-10 |
+| `pets`          | Mascotas, indicaciones del veterinario y clasificación del nivel de cuidado                                                                                 | RN-MAS                                                                |
+| `catalog`       | Especies, servicios y distritos                                                                                                                             | RN-MAS-01, RN-SER                                                     |
+| `settings`      | Parámetros configurables y su historial de cambios                                                                                                          | Sección 15 de las reglas                                              |
+| `pricing`       | Cálculo del precio de una reserva, cotización y primer servicio sin tarifa                                                                                  | RN-PRE                                                                |
+| `bookings`      | Solicitudes, estados y plazos, y el plan de tramos que también usa la búsqueda                                                                              | RN-RES, RN-CAN-07                                                     |
+| `payments`      | Integración con Wompi, sus webhooks y los reintentos de los que no se pudieron aplicar                                                                      | RN-PAG                                                                |
+| `files`         | Subida y acceso a archivos                                                                                                                                  | RN-MAS-02, RN-MAS-08                                                  |
+| `notifications` | Notificaciones push con el Expo Push Service y correos al equipo                                                                                            | RN-NOT, RN-SOP-03                                                     |
+| `courses`       | Curso de bienvenida: contenido, intentos y calificación                                                                                                     | RN-CUI-02                                                             |
+| `care-logs`     | Ejecución: check-in, check-out, tareas del tramo, fotos y ruta                                                                                              | §11 de las reglas                                                     |
+| `reviews`       | Reseñas del dueño y recálculo del nivel                                                                                                                     | RN-RSE, RN-NIV-04                                                     |
+| `support`       | Árbol del asistente, casos y reclamos de garantía                                                                                                           | §14 y §17 de las reglas                                               |
+| `metrics`       | Reporte del piloto (`metrics:report`): solo lee la base y escribe en la consola. Sus metas son constantes, no settings                                      | §19 de las reglas                                                     |
+| `queues`        | Conexión de BullMQ con Redis y su chequeo en `/v1/health`                                                                                                   |                                                                       |
+| `maintenance`   | Limpieza periódica: refresh tokens vencidos y archivos abandonados                                                                                          |                                                                       |
 
 ## 6. Integración con Wompi
 
@@ -268,6 +269,8 @@ Confirmada contra la [documentación de Wompi El Salvador](https://docs.wompi.sv
 | Ruta del paseo                                                                                                                                                                        | Walk route                                                                                                                                                           |
 | Curso de bienvenida                                                                                                                                                                   | Welcome course                                                                                                                                                       |
 | Primer servicio sin tarifa                                                                                                                                                            | First service fee waiver                                                                                                                                             |
+| Código de referido / Cuidador que refirió                                                                                                                                             | Referral code / Referring caregiver                                                                                                                                  |
+| Métricas del piloto / Cuidadores verificados activos                                                                                                                                  | Pilot metrics / Active verified caregivers                                                                                                                           |
 | Garantía de reembolso / Reclamo                                                                                                                                                       | Refund guarantee / Guarantee claim                                                                                                                                   |
 | Pago al cuidador                                                                                                                                                                      | Payout                                                                                                                                                               |
 | Asistente / Centro de ayuda / Caso                                                                                                                                                    | Help assistant / Help center / Support case                                                                                                                          |
