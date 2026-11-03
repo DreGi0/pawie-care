@@ -22,7 +22,8 @@ await runScript(async (app) => {
   });
   console.log(
     `Seed listo: ${summary.districts} distritos, ${summary.species} especies, ` +
-      `${summary.services} servicios y ${summary.caregivers} cuidadores.`,
+      `${summary.services} servicios, ${summary.caregivers} cuidadores y el curso de bienvenida ` +
+      `con ${summary.courseQuestions} preguntas.`,
   );
   console.log(
     summary.demoOwner

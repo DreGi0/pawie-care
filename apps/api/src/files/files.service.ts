@@ -31,7 +31,9 @@ export class FilesService {
     if (!rule.contentTypes.includes(contentType)) {
       throw new UnprocessableEntityException({
         errorCode: 'UNSUPPORTED_FILE_TYPE',
-        message: 'Ese formato no se puede subir. Usa una foto (JPEG, PNG, WebP o HEIC) o un PDF.',
+        message: rule.contentTypes.includes('application/pdf')
+          ? 'Ese formato no se puede subir. Usa una foto (JPEG, PNG, WebP o HEIC) o un PDF.'
+          : 'Ese formato no se puede subir. Usa una foto (JPEG, PNG, WebP o HEIC).',
         details: { allowed: rule.contentTypes },
       });
     }

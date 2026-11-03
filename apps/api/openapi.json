@@ -70,6 +70,62 @@
         "tags": [
           "users"
         ]
+      },
+      "patch": {
+        "description": "RN-CTA-06: el modo en que abre la app, que la cuenta recuerda.",
+        "operationId": "Users_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o ya venció.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`CAREGIVER_PROFILE_NOT_FOUND`: el modo cuidador no está activado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cambiar mi cuenta",
+        "tags": [
+          "users"
+        ]
       }
     },
     "/v1/auth/register": {
@@ -1695,6 +1751,280 @@
         ]
       }
     },
+    "/v1/caregivers/me": {
+      "post": {
+        "description": "RN-CTA-06. Crea el perfil de cuidador en `PENDING_APPROVAL`, con todos los servicios al precio sugerido (RN-CUI-17), y la cuenta queda en modo cuidador.",
+        "operationId": "CaregiverMe_create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverMeResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`CAREGIVER_PROFILE_EXISTS`: ya lo activó.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Activar el modo cuidador",
+        "tags": [
+          "caregivers"
+        ]
+      },
+      "get": {
+        "description": "Con los documentos, el curso de bienvenida y lo que le falta para aparecer en búsquedas.",
+        "operationId": "CaregiverMe_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverMeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CAREGIVER_PROFILE_NOT_FOUND`: la cuenta no ha activado el modo cuidador.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mi perfil de cuidador",
+        "tags": [
+          "caregivers"
+        ]
+      },
+      "patch": {
+        "description": "RN-CUI-18. Foto, descripción, habilidades, distritos, horario semanal, precios, Reserva inmediata, pausa (RN-CUI-20) y documentos (RN-CUI-01). Cada campo enviado reemplaza al anterior.",
+        "operationId": "CaregiverMe_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCaregiverMeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverMeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CAREGIVER_PROFILE_NOT_FOUND` o `FILE_NOT_FOUND`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`DOCUMENTS_LOCKED`: el alta ya está aprobada. `FILE_NOT_UPLOADED`: el archivo no terminó de subirse.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`PRICE_OUT_OF_RANGE` (RN-CUI-17, con el rango en `details`), `INVALID_AVAILABILITY`, `UNKNOWN_DISTRICT` o `WRONG_FILE_PURPOSE`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Editar mi perfil de cuidador",
+        "tags": [
+          "caregivers"
+        ]
+      }
+    },
+    "/v1/caregivers/me/level": {
+      "get": {
+        "description": "RN-NIV-05: el nivel actual y cada requisito del siguiente, cumplido o no.",
+        "operationId": "CaregiverMe_level",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverLevelResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CAREGIVER_PROFILE_NOT_FOUND`: la cuenta no ha activado el modo cuidador.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mi nivel",
+        "tags": [
+          "caregivers"
+        ]
+      }
+    },
+    "/v1/caregivers/me/prices": {
+      "get": {
+        "description": "RN-CUI-17, RN-PRE-01, RN-PRE-04. Por servicio: su precio, lo que recibe con él, el rango y el sugerido de su nivel, y el sugerido del siguiente nivel.",
+        "operationId": "CaregiverMe_prices",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverPricesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CAREGIVER_PROFILE_NOT_FOUND`: la cuenta no ha activado el modo cuidador.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mis precios",
+        "tags": [
+          "caregivers"
+        ]
+      }
+    },
+    "/v1/caregivers/me/prices/quote": {
+      "post": {
+        "description": "RN-CUI-17, RN-PRE-04. Para la calculadora de precios, mientras el cuidador lo cambia. No guarda nada.",
+        "operationId": "CaregiverMe_quote",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceQuoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceQuoteResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CAREGIVER_PROFILE_NOT_FOUND`: la cuenta no ha activado el modo cuidador.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`PRICE_OUT_OF_RANGE`, con el rango de su nivel en `details`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cuánto recibiría con un precio",
+        "tags": [
+          "caregivers"
+        ]
+      }
+    },
     "/v1/caregivers/search": {
       "post": {
         "description": "RN-RES-01. Va por POST porque lleva las mascotas y los horarios; no cambia nada. Acepta los filtros `minLevel`, `certificationCodes` y `minRating`. Devuelve el nivel de la reserva, los tramos y los cuidadores disponibles, con su nivel, insignias, certificaciones y habilidades.",
@@ -1779,7 +2109,7 @@
             }
           },
           "404": {
-            "description": "`CAREGIVER_NOT_FOUND`: no existe, no está aprobado o no está activo.",
+            "description": "`CAREGIVER_NOT_FOUND`: no existe, no está aprobado, no aprobó el curso de bienvenida o está en pausa.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1874,6 +2204,102 @@
         "summary": "Pagar una reserva",
         "tags": [
           "payments"
+        ]
+      }
+    },
+    "/v1/courses/welcome": {
+      "get": {
+        "description": "RN-CUI-02. Los módulos y las preguntas del examen, sin las respuestas.",
+        "operationId": "Courses_welcome",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WelcomeCourseResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CAREGIVER_PROFILE_NOT_FOUND`: la cuenta no ha activado el modo cuidador. `COURSE_NOT_FOUND`: el seed no cargó el curso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Curso de bienvenida",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/v1/courses/welcome/attempts": {
+      "post": {
+        "description": "RN-CUI-02. La API lo califica y guarda el intento. Aprueba con la nota mínima de §15, y se puede repetir.",
+        "operationId": "Courses_submit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CourseAttemptRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseAttemptResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CAREGIVER_PROFILE_NOT_FOUND`: la cuenta no ha activado el modo cuidador. `COURSE_NOT_FOUND`: el seed no cargó el curso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_ANSWERS`: no responde cada pregunta una vez, con una de sus opciones.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Enviar el examen del curso de bienvenida",
+        "tags": [
+          "courses"
         ]
       }
     }
@@ -1988,6 +2414,14 @@
         ],
         "description": "RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez."
       },
+      "AppMode": {
+        "type": "string",
+        "enum": [
+          "OWNER",
+          "CAREGIVER"
+        ],
+        "description": "RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER."
+      },
       "MeResponse": {
         "type": "object",
         "properties": {
@@ -2024,6 +2458,14 @@
             },
             "description": "RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez."
           },
+          "mode": {
+            "description": "RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AppMode"
+              }
+            ]
+          },
           "firstServiceFeeWaiverEndsAt": {
             "type": "string",
             "nullable": true,
@@ -2039,8 +2481,22 @@
           "birthDate",
           "phone",
           "roles",
+          "mode",
           "firstServiceFeeWaiverEndsAt"
         ]
+      },
+      "UpdateMeRequest": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "description": "CAREGIVER necesita el perfil de cuidador (POST /v1/caregivers/me).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AppMode"
+              }
+            ]
+          }
+        }
       },
       "RegisterRequest": {
         "type": "object",
@@ -2122,6 +2578,14 @@
               "$ref": "#/components/schemas/Role"
             },
             "description": "RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez."
+          },
+          "mode": {
+            "description": "RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AppMode"
+              }
+            ]
           }
         },
         "required": [
@@ -2131,7 +2595,8 @@
           "lastName",
           "birthDate",
           "phone",
-          "roles"
+          "roles",
+          "mode"
         ]
       },
       "AuthSession": {
@@ -2209,7 +2674,11 @@
         "enum": [
           "PET_PHOTO",
           "VET_INSTRUCTION",
-          "VACCINATION_RECORD"
+          "VACCINATION_RECORD",
+          "CAREGIVER_PHOTO",
+          "ID_DOCUMENT",
+          "SELFIE",
+          "BACKGROUND_CHECK"
         ]
       },
       "CreateUploadRequest": {
@@ -2226,7 +2695,7 @@
             "type": "string",
             "maxLength": 100,
             "example": "image/jpeg",
-            "description": "Fotos: JPEG, PNG, WebP o HEIC, hasta 10 MB. Recetas y carnés de vacunas: también PDF, hasta 15 MB."
+            "description": "Fotos y selfie: JPEG, PNG, WebP o HEIC, hasta 10 MB. Recetas, carnés de vacunas, DUI y antecedentes: también PDF, hasta 15 MB."
           },
           "sizeBytes": {
             "type": "integer",
@@ -2247,7 +2716,10 @@
           "PET_PHOTO",
           "CAREGIVER_PHOTO",
           "VET_INSTRUCTION",
-          "VACCINATION_RECORD"
+          "VACCINATION_RECORD",
+          "ID_DOCUMENT",
+          "SELFIE",
+          "BACKGROUND_CHECK"
         ]
       },
       "FileResponse": {
@@ -3704,6 +4176,82 @@
           }
         }
       },
+      "CaregiverStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING_APPROVAL",
+          "APPROVED",
+          "REJECTED"
+        ],
+        "description": "RN-CUI-03."
+      },
+      "CaregiverSkill": {
+        "type": "string",
+        "enum": [
+          "LARGE_DOGS",
+          "CATS",
+          "PUPPIES",
+          "SENIOR_PETS",
+          "DIFFICULT_BEHAVIOR"
+        ]
+      },
+      "AvailabilityWindow": {
+        "type": "object",
+        "properties": {
+          "weekday": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7,
+            "description": "ISO: 1 es lunes."
+          },
+          "startMinute": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1439,
+            "example": 420
+          },
+          "endMinute": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2879,
+            "example": 720,
+            "description": "Mayor que startMinute y a lo sumo 24 h después."
+          }
+        },
+        "required": [
+          "weekday",
+          "startMinute",
+          "endMinute"
+        ]
+      },
+      "CaregiverDocumentKind": {
+        "type": "string",
+        "enum": [
+          "ID_DOCUMENT_FRONT",
+          "ID_DOCUMENT_BACK",
+          "SELFIE",
+          "BACKGROUND_CHECK"
+        ]
+      },
+      "CaregiverDocumentResponse": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CaregiverDocumentKind"
+              }
+            ]
+          },
+          "file": {
+            "$ref": "#/components/schemas/FileResponse"
+          }
+        },
+        "required": [
+          "kind",
+          "file"
+        ]
+      },
       "CaregiverLevel": {
         "type": "string",
         "enum": [
@@ -3711,8 +4259,524 @@
           "TRUSTED",
           "PRO",
           "SUPER"
+        ]
+      },
+      "CaregiverBadge": {
+        "type": "string",
+        "enum": [
+          "IDENTITY_VERIFIED",
+          "BACKGROUND_CHECKED",
+          "VET_STUDENT"
+        ]
+      },
+      "CaregiverSetupStep": {
+        "type": "string",
+        "enum": [
+          "DOCUMENTS",
+          "WELCOME_COURSE",
+          "APPROVAL",
+          "DISTRICTS",
+          "AVAILABILITY",
+          "SERVICES"
         ],
-        "description": "Solo cuidadores de este nivel o uno más alto."
+        "description": "Lo que le falta para aparecer en búsquedas, en orden (RN-CUI-01 a RN-CUI-04, RN-CUI-17)."
+      },
+      "CaregiverMeResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "description": "RN-CUI-03.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CaregiverStatus"
+              }
+            ]
+          },
+          "isPaused": {
+            "type": "boolean",
+            "description": "RN-CUI-20."
+          },
+          "instantBooking": {
+            "type": "boolean",
+            "description": "RN-CUI-16."
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL firmada que vence en 10 minutos."
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverSkill"
+            }
+          },
+          "districts": {
+            "description": "Ordenados por nombre.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DistrictOption"
+            }
+          },
+          "availability": {
+            "description": "Ordenadas por día y hora.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityWindow"
+            }
+          },
+          "documents": {
+            "description": "RN-CUI-01: los que ya subió. Solo los ve el cuidador.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverDocumentResponse"
+            }
+          },
+          "welcomeCoursePassedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "RN-CUI-02: cuándo aprobó el curso de bienvenida."
+          },
+          "level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CaregiverLevel"
+              }
+            ]
+          },
+          "badges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverBadge"
+            }
+          },
+          "pendingSteps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverSetupStep"
+            },
+            "description": "Lo que le falta para aparecer en búsquedas, en orden (RN-CUI-01 a RN-CUI-04, RN-CUI-17)."
+          },
+          "visibleInSearch": {
+            "type": "boolean",
+            "description": "Aparece en búsquedas: no le falta ningún paso, no está pausado ni suspendido (RN-CUI-03, RN-CUI-20)."
+          }
+        },
+        "required": [
+          "status",
+          "isPaused",
+          "instantBooking",
+          "bio",
+          "photoUrl",
+          "skills",
+          "districts",
+          "availability",
+          "documents",
+          "welcomeCoursePassedAt",
+          "level",
+          "badges",
+          "pendingSteps",
+          "visibleInSearch"
+        ]
+      },
+      "CaregiverPriceRequest": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "priceCents": {
+            "type": "integer",
+            "nullable": true,
+            "example": 900,
+            "description": "Precio por una mascota, en centavos, dentro del rango de su nivel. Null usa el sugerido (RN-CUI-17)."
+          }
+        },
+        "required": [
+          "serviceCode",
+          "priceCents"
+        ]
+      },
+      "CaregiverDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CaregiverDocumentKind"
+              }
+            ]
+          },
+          "fileId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Un archivo ya subido: ID_DOCUMENT para el DUI, SELFIE para la selfie y BACKGROUND_CHECK para los antecedentes."
+          }
+        },
+        "required": [
+          "kind",
+          "fileId"
+        ]
+      },
+      "UpdateCaregiverMeRequest": {
+        "type": "object",
+        "properties": {
+          "bio": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 1000,
+            "description": "Descripción del perfil."
+          },
+          "photoFileId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Un archivo CAREGIVER_PHOTO ya subido. Null quita la foto."
+          },
+          "skills": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/CaregiverSkill"
+            },
+            "description": "Reemplaza las habilidades declaradas (RN-CUI-19)."
+          },
+          "districtIds": {
+            "uniqueItems": true,
+            "maxItems": 30,
+            "description": "Reemplaza los distritos que cubre (RN-CUI-04), de GET /v1/catalog.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "availability": {
+            "maxItems": 50,
+            "description": "Reemplaza el horario semanal (RN-CUI-04). Las ventanas de un mismo día no se pueden cruzar.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityWindow"
+            }
+          },
+          "prices": {
+            "uniqueItems": true,
+            "description": "Reemplaza los servicios que ofrece y su precio (RN-CUI-17). Un servicio que no está en la lista deja de ofrecerse.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverPriceRequest"
+            }
+          },
+          "instantBooking": {
+            "type": "boolean",
+            "description": "RN-CUI-16: las solicitudes se confirman sin esperarlo."
+          },
+          "isPaused": {
+            "type": "boolean",
+            "description": "RN-CUI-20: pausado no aparece en búsquedas, pero conserva sus reservas."
+          },
+          "documents": {
+            "uniqueItems": true,
+            "description": "RN-CUI-01: reemplaza los documentos de esos tipos. Solo mientras el alta no está aprobada.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverDocumentRequest"
+            }
+          }
+        }
+      },
+      "LevelRequirementKind": {
+        "type": "string",
+        "enum": [
+          "REVIEWS",
+          "AVERAGE_RATING",
+          "COMPLETED_BOOKINGS",
+          "CERTIFICATIONS",
+          "CERTIFICATION"
+        ]
+      },
+      "RequiredCertification": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "FIRST_AID"
+          },
+          "name": {
+            "type": "string",
+            "example": "Primeros auxilios"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ]
+      },
+      "LevelRequirementResponse": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LevelRequirementKind"
+              }
+            ]
+          },
+          "current": {
+            "type": "number",
+            "example": 12,
+            "description": "La cifra del cuidador. El promedio va con un decimal, redondeado hacia abajo. En CERTIFICATION es 1 si la tiene y 0 si no."
+          },
+          "required": {
+            "type": "number",
+            "example": 3
+          },
+          "met": {
+            "type": "boolean"
+          },
+          "certification": {
+            "nullable": true,
+            "description": "La certificación que pide el nivel, solo en CERTIFICATION.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RequiredCertification"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "current",
+          "required",
+          "met",
+          "certification"
+        ]
+      },
+      "NextLevelProgress": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CaregiverLevel"
+              }
+            ]
+          },
+          "requirements": {
+            "description": "Cumplidos o no.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LevelRequirementResponse"
+            }
+          }
+        },
+        "required": [
+          "level",
+          "requirements"
+        ]
+      },
+      "CaregiverLevelResponse": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "description": "RN-NIV-01.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CaregiverLevel"
+              }
+            ]
+          },
+          "next": {
+            "nullable": true,
+            "description": "RN-NIV-05. Null para un Súper Cuidador.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/NextLevelProgress"
+              }
+            ]
+          }
+        },
+        "required": [
+          "level",
+          "next"
+        ]
+      },
+      "PriceRangeResponse": {
+        "type": "object",
+        "properties": {
+          "minCents": {
+            "type": "integer",
+            "example": 600
+          },
+          "suggestedCents": {
+            "type": "integer",
+            "example": 700
+          },
+          "maxCents": {
+            "type": "integer",
+            "example": 900
+          }
+        },
+        "required": [
+          "minCents",
+          "suggestedCents",
+          "maxCents"
+        ]
+      },
+      "NextLevelPrice": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CaregiverLevel"
+              }
+            ]
+          },
+          "suggestedCents": {
+            "type": "integer",
+            "example": 1000
+          }
+        },
+        "required": [
+          "level",
+          "suggestedCents"
+        ]
+      },
+      "CaregiverServicePriceResponse": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "offered": {
+            "type": "boolean",
+            "description": "Lo ofrece: aparece en las búsquedas de ese servicio."
+          },
+          "caregiverPriceCents": {
+            "type": "integer",
+            "nullable": true,
+            "description": "El precio que fijó. Null si usa el sugerido."
+          },
+          "priceCents": {
+            "type": "integer",
+            "description": "El precio que se cobra por una mascota: el suyo o el sugerido, dentro del rango vigente."
+          },
+          "payoutCents": {
+            "type": "integer",
+            "description": "Lo que recibe con ese precio, ya descontada la comisión vigente (RN-PRE-04)."
+          },
+          "range": {
+            "description": "El rango y el sugerido de su nivel (RN-PRE-01).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PriceRangeResponse"
+              }
+            ]
+          },
+          "nextLevel": {
+            "nullable": true,
+            "description": "El sugerido del siguiente nivel. Null para un Súper Cuidador.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/NextLevelPrice"
+              }
+            ]
+          }
+        },
+        "required": [
+          "serviceCode",
+          "offered",
+          "caregiverPriceCents",
+          "priceCents",
+          "payoutCents",
+          "range",
+          "nextLevel"
+        ]
+      },
+      "CaregiverPricesResponse": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CaregiverLevel"
+              }
+            ]
+          },
+          "prices": {
+            "description": "Todos los servicios.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverServicePriceResponse"
+            }
+          }
+        },
+        "required": [
+          "level",
+          "prices"
+        ]
+      },
+      "PriceQuoteRequest": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "priceCents": {
+            "type": "integer",
+            "example": 900,
+            "description": "Precio por una mascota."
+          }
+        },
+        "required": [
+          "serviceCode",
+          "priceCents"
+        ]
+      },
+      "PriceQuoteResponse": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "priceCents": {
+            "type": "integer"
+          },
+          "payoutCents": {
+            "type": "integer",
+            "description": "Lo que recibiría, ya descontada la comisión vigente (RN-PRE-04)."
+          }
+        },
+        "required": [
+          "serviceCode",
+          "priceCents",
+          "payoutCents"
+        ]
       },
       "SearchCaregiversRequest": {
         "type": "object",
@@ -3822,15 +4886,6 @@
           "endsAt"
         ]
       },
-      "CaregiverBadge": {
-        "type": "string",
-        "enum": [
-          "IDENTITY_VERIFIED",
-          "BACKGROUND_CHECKED",
-          "VET_STUDENT"
-        ],
-        "description": "Insignias de verificación (RN-CUI-03, RN-CUI-05)."
-      },
       "CaregiverCertificationSummary": {
         "type": "object",
         "properties": {
@@ -3854,17 +4909,6 @@
           "name",
           "validUntil"
         ]
-      },
-      "CaregiverSkill": {
-        "type": "string",
-        "enum": [
-          "LARGE_DOGS",
-          "CATS",
-          "PUPPIES",
-          "SENIOR_PETS",
-          "DIFFICULT_BEHAVIOR"
-        ],
-        "description": "Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19)."
       },
       "CaregiverPrice": {
         "type": "object",
@@ -4121,6 +5165,182 @@
           "bio",
           "districts",
           "prices"
+        ]
+      },
+      "CourseQuestionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prompt": {
+            "type": "string",
+            "example": "¿Quién compra el alimento de la mascota?"
+          },
+          "options": {
+            "description": "Las opciones, en orden. La respuesta se envía con su índice.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "prompt",
+          "options"
+        ]
+      },
+      "CourseModuleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "position": {
+            "type": "integer",
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "example": "Reglas de la plataforma"
+          },
+          "body": {
+            "type": "string",
+            "description": "La lección, en párrafos separados por una línea en blanco."
+          },
+          "questions": {
+            "description": "Sin la respuesta correcta.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourseQuestionResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "title",
+          "body",
+          "questions"
+        ]
+      },
+      "WelcomeCourseResponse": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Curso de bienvenida"
+          },
+          "passingScoreBp": {
+            "type": "integer",
+            "example": 8000,
+            "description": "Nota mínima para aprobar, en puntos básicos (RN-CUI-02)."
+          },
+          "passedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "Cuándo lo aprobó. Null si todavía no."
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourseModuleResponse"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "passingScoreBp",
+          "passedAt",
+          "modules"
+        ]
+      },
+      "ExamAnswer": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "option": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "description": "Índice de la opción elegida."
+          }
+        },
+        "required": [
+          "questionId",
+          "option"
+        ]
+      },
+      "CourseAttemptRequest": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "uniqueItems": true,
+            "maxItems": 200,
+            "description": "Una respuesta para cada pregunta.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExamAnswer"
+            }
+          }
+        },
+        "required": [
+          "answers"
+        ]
+      },
+      "CourseAttemptResponse": {
+        "type": "object",
+        "properties": {
+          "scoreBp": {
+            "type": "integer",
+            "example": 8333,
+            "description": "Respuestas correctas en puntos básicos, redondeadas hacia abajo."
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "correctCount": {
+            "type": "integer",
+            "example": 10
+          },
+          "questionCount": {
+            "type": "integer",
+            "example": 12
+          },
+          "passingScoreBp": {
+            "type": "integer",
+            "example": 8000
+          },
+          "incorrectQuestionIds": {
+            "description": "Las preguntas que falló, sin decir cuál era la respuesta.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "passedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "Cuándo aprobó el curso, con este intento o con uno anterior."
+          }
+        },
+        "required": [
+          "scoreBp",
+          "passed",
+          "correctCount",
+          "questionCount",
+          "passingScoreBp",
+          "incorrectQuestionIds",
+          "passedAt"
         ]
       }
     }

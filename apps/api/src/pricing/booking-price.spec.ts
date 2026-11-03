@@ -1,6 +1,7 @@
 import { CaregiverLevel, ServiceCode } from '../generated/prisma/enums.js';
 import {
   applyBasisPoints,
+  caregiverPayout,
   type PricingRates,
   priceBooking,
   quoteBooking,
@@ -188,6 +189,30 @@ describe('quoteBooking', () => {
         rates: RATES,
       }),
     ).toThrow(RangeError);
+  });
+});
+
+describe('caregiverPayout (RN-PRE-04)', () => {
+  it('gives the caregiver the whole price with the commission at 0%', () => {
+    expect(caregiverPayout(650, 0)).toEqual({
+      caregiverCommissionCents: 0,
+      caregiverPayoutCents: 650,
+    });
+  });
+
+  it('reproduces the example of RN-PRE: with a 10% commission, $6.50 leaves $5.85', () => {
+    expect(caregiverPayout(650, 1000)).toEqual({
+      caregiverCommissionCents: 65,
+      caregiverPayoutCents: 585,
+    });
+  });
+
+  it('is what a booking of one slot and one pet pays the caregiver', () => {
+    const rates = { ...RATES, caregiverCommissionBp: 1250 };
+
+    expect(priceBooking([visit(1235)], 1, rates).amounts).toMatchObject(
+      caregiverPayout(1235, rates.caregiverCommissionBp),
+    );
   });
 });
 

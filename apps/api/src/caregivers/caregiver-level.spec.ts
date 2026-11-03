@@ -90,8 +90,8 @@ describe('caregiverLevel (RN-NIV-02)', () => {
     });
   });
 
-  describe('what is missing for the next level (RN-NIV-05)', () => {
-    it('lists every requirement the caregiver does not meet', () => {
+  describe('the requirements of the next level (RN-NIV-05)', () => {
+    it('lists each one, met or not', () => {
       const result = caregiverLevel(
         {
           ratingCount: 10,
@@ -106,10 +106,11 @@ describe('caregiverLevel (RN-NIV-02)', () => {
         level: TRUSTED,
         next: {
           level: PRO,
-          // The 4.7 average already meets Pro's 4.6, so it isn't listed.
-          missing: [
-            { kind: 'completedBookings', current: 10, required: 15 },
-            { kind: 'certifications', current: 1, required: 2 },
+          requirements: [
+            { kind: 'reviews', current: 10, required: 3, met: true },
+            { kind: 'averageRatingTenths', current: 47, required: 46, met: true },
+            { kind: 'completedBookings', current: 10, required: 15, met: false },
+            { kind: 'certifications', current: 1, required: 2, met: false },
           ],
         },
       });
@@ -121,10 +122,11 @@ describe('caregiverLevel (RN-NIV-02)', () => {
         REQUIREMENTS,
       );
 
-      expect(next?.missing).toContainEqual({
+      expect(next?.requirements).toContainEqual({
         kind: 'averageRatingTenths',
         current: 45,
         required: 46,
+        met: false,
       });
     });
 
@@ -135,13 +137,13 @@ describe('caregiverLevel (RN-NIV-02)', () => {
       );
 
       expect(level).toBe(PRO);
-      expect(next).toEqual({
-        level: SUPER,
-        missing: [{ kind: 'certification', code: 'FIRST_AID' }],
-      });
+      expect(next?.level).toBe(SUPER);
+      expect(next?.requirements.filter(({ met }) => !met)).toEqual([
+        { kind: 'certification', code: 'FIRST_AID', met: false },
+      ]);
     });
 
-    it('starts at Confiable for a new caregiver', () => {
+    it('leaves out what the level does not ask for, such as services for Confiable', () => {
       const { next } = caregiverLevel(
         { ratingCount: 0, ratingSum: 0, completedBookingCount: 0, certificationCodes: [] },
         REQUIREMENTS,
@@ -149,9 +151,9 @@ describe('caregiverLevel (RN-NIV-02)', () => {
 
       expect(next).toEqual({
         level: TRUSTED,
-        missing: [
-          { kind: 'reviews', current: 0, required: 3 },
-          { kind: 'averageRatingTenths', current: 0, required: 45 },
+        requirements: [
+          { kind: 'reviews', current: 0, required: 3, met: false },
+          { kind: 'averageRatingTenths', current: 0, required: 45, met: false },
         ],
       });
     });

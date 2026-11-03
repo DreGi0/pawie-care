@@ -32,6 +32,14 @@ enum Role {
   @@map("role")
 }
 
+/// RN-CTA-06: which tabs the app shows. A caregiver profile is needed for CAREGIVER.
+enum AppMode {
+  OWNER
+  CAREGIVER
+
+  @@map("app_mode")
+}
+
 model User {
   id           String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   /// Stored trimmed and lowercased (CHECK), so the unique index is case-insensitive.
@@ -46,6 +54,8 @@ model User {
   /// RN-CTA-01: one account can be owner and caregiver at the same time. At least
   /// one role (CHECK).
   roles        Role[]
+  /// RN-CTA-06: the account remembers the mode it used last.
+  lastMode     AppMode  @default(OWNER) @map("last_mode")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -199,38 +209,43 @@ enum CaregiverSkill {
   @@map("caregiver_skill")
 }
 
-/// The caregiver side of an account. The ⭐ is a CaregiverCertification (RN-CUI-11).
+/// The caregiver side of an account, created when it turns on caregiver mode
+/// (RN-CTA-06). The ⭐ is a CaregiverCertification (RN-CUI-11).
 model CaregiverProfile {
-  userId                String          @id @map("user_id") @db.Uuid
-  status                CaregiverStatus @default(PENDING_APPROVAL)
-  /// RN-RES-01: only approved and active caregivers show up in searches.
-  isActive              Boolean         @default(false) @map("is_active")
+  userId                String           @id @map("user_id") @db.Uuid
+  /// RN-CUI-03: an admin approves it with the caregivers:approve script.
+  status                CaregiverStatus  @default(PENDING_APPROVAL)
+  /// RN-CUI-20: hidden from searches while paused, but it keeps its bookings.
+  isPaused              Boolean          @default(false) @map("is_paused")
+  /// RN-CUI-02: when the caregiver first passed the welcome course. Searches need it
+  /// (RN-CUI-03).
+  welcomeCoursePassedAt DateTime?        @map("welcome_course_passed_at") @db.Timestamptz(3)
   /// RN-CUI-16: requests are confirmed without waiting for the caregiver.
-  instantBooking        Boolean         @default(false) @map("instant_booking")
+  instantBooking        Boolean          @default(false) @map("instant_booking")
   /// RN-CUI-05: last day covered by the student ID or enrollment proof. The badge
   /// shows while it hasn't passed.
-  vetStudentUntil       DateTime?       @map("vet_student_until") @db.Date
+  vetStudentUntil       DateTime?        @map("vet_student_until") @db.Date
   bio                   String?
-  photoFileId           String?         @map("photo_file_id") @db.Uuid
+  photoFileId           String?          @map("photo_file_id") @db.Uuid
   /// Ratings from 1 to 5. The average is ratingSum / ratingCount, kept as two
   /// integers so it never drifts (CHECK: count ≤ sum ≤ 5 × count). RN-RSE-05: only
   /// bookings made in Pawie count.
-  ratingCount           Int             @default(0) @map("rating_count")
-  ratingSum             Int             @default(0) @map("rating_sum")
+  ratingCount           Int              @default(0) @map("rating_count")
+  ratingSum             Int              @default(0) @map("rating_sum")
   /// RN-CUI-10: the ⭐ also depends on the average of special-care bookings alone.
-  specialRatingCount    Int             @default(0) @map("special_rating_count")
-  specialRatingSum      Int             @default(0) @map("special_rating_sum")
+  specialRatingCount    Int              @default(0) @map("special_rating_count")
+  specialRatingSum      Int              @default(0) @map("special_rating_sum")
   /// RN-RES-02: number of services completed in Pawie.
-  completedBookingCount Int             @default(0) @map("completed_booking_count")
+  completedBookingCount Int              @default(0) @map("completed_booking_count")
   /// RN-NIV-04: stored so searches can filter and sort by it in SQL. Recalculate it in
   /// the same transaction that changes the ratings, the completed services or the
   /// certifications (src/caregivers/recalculate-level.ts).
-  level                 CaregiverLevel  @default(NEW)
+  level                 CaregiverLevel   @default(NEW)
   skills                CaregiverSkill[] @default([])
   /// RN-CAN-05: hidden from searches until then.
-  suspendedUntil        DateTime?       @map("suspended_until") @db.Timestamptz(3)
-  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt             DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  suspendedUntil        DateTime?        @map("suspended_until") @db.Timestamptz(3)
+  createdAt             DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   photoFile      File?                    @relation(fields: [photoFileId], references: [id], onDelete: SetNull)
@@ -239,8 +254,40 @@ model CaregiverProfile {
   availability   CaregiverAvailability[]
   certifications CaregiverCertification[]
   bookings       Booking[]
+  documents      CaregiverDocument[]
+  courseAttempts CourseAttempt[]
 
   @@map("caregiver_profiles")
+}
+
+/// RN-CUI-01: the documents of the sign-up. The kinds are provisional
+/// ([DEFINIR: documentos exactos con el abogado]).
+enum CaregiverDocumentKind {
+  /// Both sides of the DUI, as two files of purpose ID_DOCUMENT.
+  ID_DOCUMENT_FRONT
+  ID_DOCUMENT_BACK
+  SELFIE
+  /// The criminal record certificate or the PNC solvency.
+  BACKGROUND_CHECK
+
+  @@map("caregiver_document_kind")
+}
+
+/// RN-CUI-01: one file per kind, replaced while the profile waits for approval. Only
+/// the caregiver and the admins see them.
+model CaregiverDocument {
+  caregiverId String                @map("caregiver_id") @db.Uuid
+  kind        CaregiverDocumentKind
+  fileId      String                @map("file_id") @db.Uuid
+  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  caregiver CaregiverProfile @relation(fields: [caregiverId], references: [userId], onDelete: Cascade)
+  file      File             @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@id([caregiverId, kind])
+  @@index([fileId])
+  @@map("caregiver_documents")
 }
 
 /// RN-CUI-04: districts the caregiver covers.
@@ -259,14 +306,14 @@ model CaregiverDistrict {
 /// RN-CUI-17, RN-PRE-01. A row means the caregiver offers that service. The price
 /// range depends on the caregiver's level, not on the pets' (RN-PRE-01).
 model CaregiverServicePrice {
-  caregiverId String    @map("caregiver_id") @db.Uuid
-  serviceId   String    @map("service_id") @db.Uuid
+  caregiverId String   @map("caregiver_id") @db.Uuid
+  serviceId   String   @map("service_id") @db.Uuid
   /// Price for one pet, before fees. Null means the suggested price in force for the
   /// caregiver's level (setting pricing.priceRanges, RN-PRE-01). The range can change after the caregiver sets a
   /// price, so it isn't a CHECK: pricing clamps the price to the current range.
-  priceCents  Int?      @map("price_cents")
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  priceCents  Int?     @map("price_cents")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   caregiver CaregiverProfile @relation(fields: [caregiverId], references: [userId], onDelete: Cascade)
   service   Service          @relation(fields: [serviceId], references: [id])
@@ -346,6 +393,77 @@ model CaregiverCertification {
 
   @@index([caregiverId, certificationTypeId])
   @@map("caregiver_certifications")
+}
+
+// ─── Courses (RN-CUI-02, RN-CUI-08) ─────────────────────────────────────────────
+
+/// A course in the app, with its modules and the exam at the end. The demo has the
+/// welcome course (RN-CUI-02), and its content comes from the seed.
+model Course {
+  id    String @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  /// Stable identifier, such as "WELCOME".
+  code  String @unique
+  title String
+
+  modules  CourseModule[]
+  attempts CourseAttempt[]
+
+  @@map("courses")
+}
+
+/// A lesson of a course, with the exam questions about it.
+model CourseModule {
+  id       String @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  courseId String @map("course_id") @db.Uuid
+  /// Order within the course, from 1.
+  position Int    @db.SmallInt
+  title    String
+  /// The lesson, in paragraphs separated by blank lines.
+  body     String
+
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions CourseQuestion[]
+
+  @@unique([courseId, position])
+  @@map("course_modules")
+}
+
+/// A multiple-choice question. CHECK: at least two options, and correctOption is the
+/// index of one of them. The app never receives correctOption.
+model CourseQuestion {
+  id            String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  moduleId      String   @map("module_id") @db.Uuid
+  /// Order within the module, from 1.
+  position      Int      @db.SmallInt
+  prompt        String
+  options       String[]
+  correctOption Int      @map("correct_option") @db.SmallInt
+
+  module CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, position])
+  @@map("course_questions")
+}
+
+/// An exam a caregiver sent, graded by the API. It can be repeated (RN-CUI-02).
+/// CHECK: scoreBp between 0 and 10 000.
+model CourseAttempt {
+  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  courseId    String   @map("course_id") @db.Uuid
+  caregiverId String   @map("caregiver_id") @db.Uuid
+  /// Share of right answers, rounded down, in basis points.
+  scoreBp     Int      @map("score_bp")
+  /// Against the minimum score in force when it was sent (certifications.minExamScoreBp).
+  passed      Boolean
+  /// The option chosen for each question, by question id, as the exam was then.
+  answers     Json
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  caregiver CaregiverProfile @relation(fields: [caregiverId], references: [userId], onDelete: Cascade)
+
+  @@index([caregiverId, courseId])
+  @@map("course_attempts")
 }
 
 // ─── Pets (RN-MAS) ──────────────────────────────────────────────────────────────
@@ -504,6 +622,10 @@ enum FilePurpose {
   CAREGIVER_PHOTO
   VET_INSTRUCTION
   VACCINATION_RECORD
+  /// RN-CUI-01: the caregiver's documents. Never shown to owners.
+  ID_DOCUMENT
+  SELFIE
+  BACKGROUND_CHECK
 
   @@map("file_purpose")
 }
@@ -523,11 +645,12 @@ model File {
   uploadedAt   DateTime?   @map("uploaded_at") @db.Timestamptz(3)
   createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  uploadedBy        User               @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
-  caregiverProfiles CaregiverProfile[]
-  pets              Pet[]              @relation("PetPhoto")
-  vaccinations      PetVaccination[]   @relation("VaccinationRecord")
-  vetInstructions   VetInstruction[]   @relation("VetInstructionDocument")
+  uploadedBy         User                @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  caregiverProfiles  CaregiverProfile[]
+  caregiverDocuments CaregiverDocument[]
+  pets               Pet[]               @relation("PetPhoto")
+  vaccinations       PetVaccination[]    @relation("VaccinationRecord")
+  vetInstructions    VetInstruction[]    @relation("VetInstructionDocument")
 
   @@index([uploadedById])
   @@map("files")
@@ -559,44 +682,44 @@ enum BookingStatus {
 /// foreign key of booking_slots, so changing it cascades to the slots, where the
 /// exclusion constraint reads it.
 model Booking {
-  id                          String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  ownerId                     String        @map("owner_id") @db.Uuid
-  caregiverId                 String        @map("caregiver_id") @db.Uuid
+  id                          String         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  ownerId                     String         @map("owner_id") @db.Uuid
+  caregiverId                 String         @map("caregiver_id") @db.Uuid
   /// The booked service. An overnight booking can also have home visit slots for the
   /// daytime (RN-SER-03), priced as visits at the booking's level.
-  serviceId                   String        @map("service_id") @db.Uuid
+  serviceId                   String         @map("service_id") @db.Uuid
   /// RN-MAS-05, RN-MAS-06: SPECIAL if any pet is Special on the booking's dates. It
   /// requires the ⭐ but doesn't change the price.
-  careLevel                   CareLevel     @map("care_level")
+  careLevel                   CareLevel      @map("care_level")
   /// RN-NIV-06, RN-PRE-07: the caregiver's level when the booking was created.
   caregiverLevel              CaregiverLevel @map("caregiver_level")
   /// RN-PRE-09: the booking took the owner's first service without a service fee.
-  firstServiceFeeWaived       Boolean       @default(false) @map("first_service_fee_waived")
+  firstServiceFeeWaived       Boolean        @default(false) @map("first_service_fee_waived")
   status                      BookingStatus
-  blocksCalendar              Boolean       @map("blocks_calendar")
+  blocksCalendar              Boolean        @map("blocks_calendar")
   /// Start of the first slot and end of the last one. CHECK: startsAt < endsAt.
-  startsAt                    DateTime      @map("starts_at") @db.Timestamptz(3)
-  endsAt                      DateTime      @map("ends_at") @db.Timestamptz(3)
+  startsAt                    DateTime       @map("starts_at") @db.Timestamptz(3)
+  endsAt                      DateTime       @map("ends_at") @db.Timestamptz(3)
   /// RN-CTA-04: a copy of the address, so editing or deleting it later doesn't
   /// change the booking. addressId only says where it came from.
-  addressId                   String?       @map("address_id") @db.Uuid
-  districtId                  String        @map("district_id") @db.Uuid
-  addressStreet               String        @map("address_street")
-  addressDetails              String?       @map("address_details")
+  addressId                   String?        @map("address_id") @db.Uuid
+  districtId                  String         @map("district_id") @db.Uuid
+  addressStreet               String         @map("address_street")
+  addressDetails              String?        @map("address_details")
   /// RN-RES-03
   instructions                String?
   /// RN-RES-04
-  emergencyContactName        String        @map("emergency_contact_name")
-  emergencyContactPhone       String        @map("emergency_contact_phone")
-  emergencyVetName            String?       @map("emergency_vet_name")
-  emergencyVetPhone           String?       @map("emergency_vet_phone")
+  emergencyContactName        String         @map("emergency_contact_name")
+  emergencyContactPhone       String         @map("emergency_contact_phone")
+  emergencyVetName            String?        @map("emergency_vet_name")
+  emergencyVetPhone           String?        @map("emergency_vet_phone")
   /// Declared by the owner; nothing is charged up front (RN-EME-04).
-  emergencyPreauthorizedCents Int           @map("emergency_preauthorized_cents")
-  emergencyClinicConsent      Boolean       @map("emergency_clinic_consent")
+  emergencyPreauthorizedCents Int            @map("emergency_preauthorized_cents")
+  emergencyClinicConsent      Boolean        @map("emergency_clinic_consent")
   /// RN-RES-06. CHECK: set while REQUESTED.
-  responseDueAt               DateTime?     @map("response_due_at") @db.Timestamptz(3)
+  responseDueAt               DateTime?      @map("response_due_at") @db.Timestamptz(3)
   /// RN-RES-07. CHECK: set while PENDING_PAYMENT.
-  paymentDueAt                DateTime?     @map("payment_due_at") @db.Timestamptz(3)
+  paymentDueAt                DateTime?      @map("payment_due_at") @db.Timestamptz(3)
 
   // Copy of the prices and settings used (RN-PRE-07). Each amount is rounded once.
   // CHECK: totalCents = subtotalCents + ownerServiceFeeCents, and

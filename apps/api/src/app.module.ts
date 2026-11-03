@@ -11,6 +11,7 @@ import { BookingsModule } from './bookings/bookings.module.js';
 import { CaregiversModule } from './caregivers/caregivers.module.js';
 import { CatalogModule } from './catalog/catalog.module.js';
 import { ClockModule } from './common/time/clock.module.js';
+import { CoursesModule } from './courses/courses.module.js';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter.js';
 import { ApiValidationPipe } from './common/errors/api-validation.pipe.js';
 import { AppConfigModule } from './config/config.module.js';
@@ -91,6 +92,7 @@ const VALID_REQUEST_ID = /^[\w-]{1,128}$/;
     PaymentsModule,
     MaintenanceModule,
     CaregiversModule,
+    CoursesModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ApiValidationPipe },

@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Role } from '../generated/prisma/enums.js';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsOptional } from 'class-validator';
+import { AppMode, Role } from '../generated/prisma/enums.js';
 
 /** The signed-in user's own account. */
 export class UserProfile {
@@ -28,6 +29,26 @@ export class UserProfile {
     isArray: true,
   })
   roles: Role[];
+
+  @ApiProperty({
+    enum: AppMode,
+    enumName: 'AppMode',
+    description:
+      'RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.',
+  })
+  mode: AppMode;
+}
+
+/** RN-CTA-06: what the account can change about itself. Each field left out stays as it is. */
+export class UpdateMeRequest {
+  @ApiPropertyOptional({
+    enum: AppMode,
+    enumName: 'AppMode',
+    description: 'CAREGIVER necesita el perfil de cuidador (POST /v1/caregivers/me).',
+  })
+  @IsOptional()
+  @IsEnum(AppMode, { message: 'Elige el modo dueño o el modo cuidador.' })
+  mode?: AppMode;
 }
 
 /** `GET /v1/users/me`: the account plus what depends on the owner's history. */

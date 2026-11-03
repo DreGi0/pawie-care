@@ -1,4 +1,4 @@
-import { overlaps, scheduleCovers, type WeeklyWindow } from './availability.js';
+import { overlaps, scheduleCovers, scheduleProblem, type WeeklyWindow } from './availability.js';
 
 const sv = (dateTime: string) => new Date(`${dateTime}-06:00`);
 const slot = (from: string, to: string) => ({ startsAt: sv(from), endsAt: sv(to) });
@@ -65,5 +65,38 @@ describe('overlaps', () => {
         slot('2026-11-16T09:59', '2026-11-16T11:00'),
       ),
     ).toBe(true);
+  });
+});
+
+describe('scheduleProblem (RN-CUI-04)', () => {
+  it('accepts days and nights that touch, as the app saves its time ranges', () => {
+    const morning = { weekday: 1, startMinute: 7 * 60, endMinute: 12 * 60 };
+    const afternoon = { weekday: 1, startMinute: 12 * 60, endMinute: 19 * 60 };
+
+    expect(scheduleProblem([morning, afternoon, ...NIGHTS])).toBeNull();
+    expect(scheduleProblem([])).toBeNull();
+  });
+
+  it('refuses two windows of the same day that overlap', () => {
+    expect(
+      scheduleProblem([
+        { weekday: 2, startMinute: 7 * 60, endMinute: 13 * 60 },
+        { weekday: 2, startMinute: 12 * 60, endMinute: 19 * 60 },
+      ]),
+    ).toMatch(/se cruzan/);
+  });
+
+  it('lets a night overlap the next morning, which is another day', () => {
+    expect(
+      scheduleProblem([
+        { weekday: 1, startMinute: 19 * 60, endMinute: 32 * 60 },
+        { weekday: 2, startMinute: 7 * 60, endMinute: 12 * 60 },
+      ]),
+    ).toBeNull();
+  });
+
+  it('refuses a window that ends before it starts or lasts more than a day', () => {
+    expect(scheduleProblem([{ weekday: 1, startMinute: 600, endMinute: 600 }])).not.toBeNull();
+    expect(scheduleProblem([{ weekday: 1, startMinute: 0, endMinute: 1441 }])).not.toBeNull();
   });
 });

@@ -58,7 +58,8 @@ export class CaregiversController {
   @ApiOkResponse({ type: CaregiverProfileResponse })
   @ApiNotFoundResponse({
     type: ErrorResponse,
-    description: '`CAREGIVER_NOT_FOUND`: no existe, no está aprobado o no está activo.',
+    description:
+      '`CAREGIVER_NOT_FOUND`: no existe, no está aprobado, no aprobó el curso de bienvenida o está en pausa.',
   })
   profile(
     @Param('caregiverId', ParseUUIDPipe) caregiverId: string,

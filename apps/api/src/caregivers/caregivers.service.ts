@@ -142,7 +142,7 @@ export class CaregiversService {
   }
 
   /**
-   * RN-RES-01: approved and active caregivers who cover the district, offer every
+   * RN-RES-01: visible caregivers (visibleAt) who cover the district, offer every
    * service of the slots, are free on every slot and, for a Special booking, hold a ⭐
    * valid through its last day (RN-MAS-06). The filters narrow it down: the minimum
    * level, the certifications and the minimum rating.
@@ -412,11 +412,15 @@ export class CaregiversService {
   }
 }
 
-/** RN-RES-01, RN-CAN-05: approved, active and not suspended. */
+/**
+ * RN-CUI-03, RN-RES-01: approved and with the welcome course; RN-CUI-20: not paused;
+ * RN-CAN-05: not suspended. setup-steps.ts says the same to the caregiver.
+ */
 function visibleAt(now: Date) {
   return {
     status: CaregiverStatus.APPROVED,
-    isActive: true,
+    welcomeCoursePassedAt: { not: null },
+    isPaused: false,
     OR: [{ suspendedUntil: null }, { suspendedUntil: { lte: now } }],
   } satisfies Prisma.CaregiverProfileWhereInput;
 }

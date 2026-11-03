@@ -265,11 +265,10 @@ export const SETTINGS = {
 
   // ─── Certifications (RN-CUI-07 to RN-CUI-10) and levels (RN-NIV) ───
   'certifications.minExamScoreBp': setting({
-    description: 'Nota mínima del examen de una certificación',
-    rules: ['RN-CUI-08'],
+    description: 'Nota mínima del examen de un curso: el de bienvenida y los de cada certificación',
+    rules: ['RN-CUI-02', 'RN-CUI-08'],
     parse: basisPoints,
     initialValue: 8000,
-    postDemo: true,
   }),
   'certifications.validityMonths': setting({
     description: 'Vigencia de una certificación',

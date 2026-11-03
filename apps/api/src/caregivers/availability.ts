@@ -59,3 +59,27 @@ export function scheduleCovers(windows: readonly WeeklyWindow[], slot: TimeRange
 export function overlaps(a: TimeRange, b: TimeRange): boolean {
   return a.startsAt < b.endsAt && b.startsAt < a.endsAt;
 }
+
+/**
+ * RN-CUI-04: why a weekly schedule can't be saved, or null. Each window ends after it
+ * starts and lasts at most a day, as the CHECK on caregiver_availability asks, and two
+ * windows of the same day can't overlap. Windows that touch are fine: scheduleCovers
+ * joins them.
+ */
+export function scheduleProblem(windows: readonly WeeklyWindow[]): string | null {
+  if (
+    windows.some(
+      ({ startMinute, endMinute }) => endMinute <= startMinute || endMinute > startMinute + 1440,
+    )
+  ) {
+    return 'Cada horario tiene que terminar después de empezar, y durar hasta 24 horas.';
+  }
+  const sorted = windows.toSorted((a, b) => a.weekday - b.weekday || a.startMinute - b.startMinute);
+  const overlap = sorted.some(
+    (window, index) =>
+      index > 0 &&
+      window.weekday === sorted[index - 1].weekday &&
+      window.startMinute < sorted[index - 1].endMinute,
+  );
+  return overlap ? 'Dos horarios del mismo día se cruzan. Únelos en uno solo.' : null;
+}

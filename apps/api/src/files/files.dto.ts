@@ -2,19 +2,19 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsIn, IsInt, IsString, MaxLength, Min } from 'class-validator';
 import { FilePurpose } from '../generated/prisma/enums.js';
-import { OWNER_UPLOAD_PURPOSES } from './file-rules.js';
+import { UPLOAD_PURPOSES } from './file-rules.js';
 
-export type OwnerUploadPurpose = (typeof OWNER_UPLOAD_PURPOSES)[number];
+export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number];
 
 export class CreateUploadRequest {
-  @ApiProperty({ enum: OWNER_UPLOAD_PURPOSES, enumName: 'UploadPurpose' })
-  @IsIn(OWNER_UPLOAD_PURPOSES, { message: 'Ese tipo de archivo no se puede subir.' })
-  purpose: OwnerUploadPurpose;
+  @ApiProperty({ enum: UPLOAD_PURPOSES, enumName: 'UploadPurpose' })
+  @IsIn(UPLOAD_PURPOSES, { message: 'Ese tipo de archivo no se puede subir.' })
+  purpose: UploadPurpose;
 
   @ApiProperty({
     example: 'image/jpeg',
     description:
-      'Fotos: JPEG, PNG, WebP o HEIC, hasta 10 MB. Recetas y carnés de vacunas: también PDF, hasta 15 MB.',
+      'Fotos y selfie: JPEG, PNG, WebP o HEIC, hasta 10 MB. Recetas, carnés de vacunas, DUI y antecedentes: también PDF, hasta 15 MB.',
   })
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
