@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=390" />
+    <title>Placas: Perfil del cuidador</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Gabarito:wght@500;600;700;800&display=block"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="placas.css" />
+    <style>
+      .topbar {
+        padding: 2px 20px 0;
+      }
+
+      .hero {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 6px 20px 0;
+      }
+
+      .hero .collar {
+        flex: 1;
+        margin-top: 18px;
+      }
+
+      .name {
+        padding: 18px 20px 0;
+        font: 800 32px/1.05 var(--display);
+        letter-spacing: -0.015em;
+      }
+
+      .where {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 20px 0;
+        color: var(--ink-2);
+        font-size: 15px;
+      }
+
+      .where svg.i {
+        width: 18px;
+        height: 18px;
+      }
+
+      .stats {
+        display: flex;
+        gap: 32px;
+        padding: 18px 20px 0;
+      }
+
+      .stat b {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font: 800 30px/1 var(--display);
+        letter-spacing: -0.02em;
+      }
+
+      .stat b svg.i {
+        width: 22px;
+        height: 22px;
+        fill: var(--ink);
+      }
+
+      .stat span {
+        display: block;
+        margin-top: 4px;
+        color: var(--ink-2);
+        font-size: 14px;
+      }
+
+      .bio {
+        font-size: 16px;
+      }
+
+      .skills {
+        margin-top: 10px;
+        color: var(--ink-2);
+        font-size: 15px;
+      }
+
+      .prices li {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-height: 64px;
+      }
+
+      .prices li + li {
+        border-top: 1.5px solid var(--line);
+      }
+
+      .swatch {
+        display: grid;
+        flex: none;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+      }
+
+      .prices .what {
+        flex: 1;
+        font: 700 17px/1.2 var(--display);
+      }
+
+      .prices .what small {
+        display: block;
+        color: var(--ink-2);
+        font: 400 14px/1.3 var(--text);
+      }
+
+      .prices b {
+        font: 800 26px/1 var(--display);
+      }
+
+      .total b {
+        display: block;
+        font: 800 26px/1 var(--display);
+        letter-spacing: -0.02em;
+      }
+
+      .total small {
+        display: block;
+        margin-top: 4px;
+        color: var(--ink-2);
+        font-size: 13px;
+        line-height: 1.25;
+      }
+
+      .bottombar .btn-primary {
+        flex: none;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol>
+        <symbol id="i-star" viewBox="0 0 24 24">
+          <path
+            d="M12 2.5l2.9 5.9 6.5.95-4.7 4.58 1.1 6.47L12 17.35l-5.8 3.05 1.1-6.47L2.6 9.35l6.5-.95z"
+          />
+        </symbol>
+        <symbol id="i-pin" viewBox="0 0 24 24">
+          <path
+            d="M20 10c0 5-5.5 10.2-7.4 11.8a1 1 0 0 1-1.2 0C9.5 20.2 4 15 4 10a8 8 0 0 1 16 0"
+          />
+          <circle cx="12" cy="10" r="3" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+        <symbol id="i-cap" viewBox="0 0 24 24">
+          <path
+            d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"
+          />
+          <path d="M22 10v6M6 12.5V16a6 3 0 0 0 12 0v-3.5" />
+        </symbol>
+        <symbol id="i-house" viewBox="0 0 24 24">
+          <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+          <path
+            d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+          />
+        </symbol>
+        <symbol id="i-moon" viewBox="0 0 24 24">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+        </symbol>
+
+        <clipPath id="nimbus-clip">
+          <path
+            d="M80 36C112 36 132 60 132 92C132 120 110 136 80 136C50 136 28 120 28 92C28 60 48 36 80 36Z"
+          />
+          <ellipse cx="124" cy="54" rx="11" ry="20" transform="rotate(32 124 54)" />
+        </clipPath>
+        <mask id="fuera-del-cuerpo">
+          <rect width="160" height="160" fill="#fff" />
+          <path
+            d="M80 36C112 36 132 60 132 92C132 120 110 136 80 136C50 136 28 120 28 92C28 60 48 36 80 36Z"
+            fill="#000"
+          />
+        </mask>
+        <g id="nimbus-linea" fill="none" stroke="#25204A" stroke-width="3.5">
+          <ellipse
+            cx="124"
+            cy="54"
+            rx="11"
+            ry="20"
+            transform="rotate(32 124 54)"
+            mask="url(#fuera-del-cuerpo)"
+            vector-effect="non-scaling-stroke"
+          />
+          <path
+            d="M80 36C112 36 132 60 132 92C132 120 110 136 80 136C50 136 28 120 28 92C28 60 48 36 80 36Z"
+            vector-effect="non-scaling-stroke"
+          />
+        </g>
+
+        <g id="fig-valeria">
+          <path d="M30 150C30 124 50 110 80 110C110 110 130 124 130 150Z" fill="#D98C9A" />
+          <path
+            d="M57 84C55 59 66 50 80 50C95 50 105 59 103 84C104 98 107 109 112 120H48C53 109 56 98 57 84Z"
+            fill="#2E1D17"
+          />
+          <path d="M71 92H89V111C89 117 71 117 71 111Z" fill="#B9825C" />
+          <ellipse cx="80" cy="80" rx="18" ry="21" fill="#D29C74" />
+          <path
+            d="M61 82C59 63 68 55 80 55C93 55 101 63 99 80C96 71 90 66 82 65C76 71 68 75 61 82Z"
+            fill="#2E1D17"
+          />
+        </g>
+      </defs>
+    </svg>
+
+    <main class="screen">
+      <div class="status">
+        <span>9:41</span>
+        <svg viewBox="0 0 72 13" width="72" height="13" aria-hidden="true">
+          <g fill="currentColor">
+            <rect x="0" y="9" width="3" height="4" rx="1" />
+            <rect x="5" y="6" width="3" height="7" rx="1" />
+            <rect x="10" y="3" width="3" height="10" rx="1" />
+            <rect x="15" y="0" width="3" height="13" rx="1" />
+          </g>
+          <path
+            d="M24 4.5a11 11 0 0 1 14 0M26.5 7.5a7 7 0 0 1 9 0M29 10.5a3 3 0 0 1 4 0"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+          <rect
+            x="44"
+            y="1"
+            width="24"
+            height="11"
+            rx="3.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-opacity=".4"
+          />
+          <rect x="46" y="3" width="18" height="7" rx="2" fill="currentColor" />
+          <path
+            d="M70 4.5v4"
+            stroke="currentColor"
+            stroke-opacity=".4"
+            stroke-width="1.5"
+            stroke-linecap="round"
+          />
+        </svg>
+      </div>
+
+      <div class="scroll">
+        <div class="topbar">
+          <a class="icon-btn" href="#" aria-label="Volver"
+            ><svg class="i"><use href="#i-back" /></svg
+          ></a>
+        </div>
+
+        <section class="hero">
+          <svg class="ava-xl" viewBox="22 30 120 110" role="img" aria-label="Foto de Valeria">
+            <g clip-path="url(#nimbus-clip)">
+              <rect width="160" height="160" fill="#E4E0F7" />
+              <use href="#fig-valeria" />
+            </g>
+            <use href="#nimbus-linea" />
+          </svg>
+          <div class="collar">
+            <span class="argolla"></span>
+            <div class="placa-xl super">
+              <small>Nivel</small>
+              <b>Súper Cuidador</b>
+            </div>
+          </div>
+        </section>
+
+        <h1 class="name">Valeria Martínez</h1>
+        <p class="where">
+          <svg class="i"><use href="#i-pin" /></svg>San Salvador, Antiguo Cuscatlán y Santa Tecla
+        </p>
+
+        <div class="stats">
+          <p class="stat">
+            <b
+              ><svg class="i"><use href="#i-star" /></svg>4.8</b
+            ><span>de 46 reseñas</span>
+          </p>
+          <p class="stat"><b>52</b><span>servicios en Pawie</span></p>
+        </div>
+
+        <section class="section">
+          <h2>Verificado por Pawie</h2>
+          <div class="placas grid">
+            <span class="placa"
+              ><svg class="i"><use href="#i-check" /></svg>Identidad verificada</span
+            >
+            <span class="placa"
+              ><svg class="i"><use href="#i-check" /></svg>Antecedentes verificados</span
+            >
+            <span class="placa"
+              ><svg class="i"><use href="#i-cap" /></svg>Estudiante de veterinaria</span
+            >
+            <span class="placa estrella"
+              ><svg class="i"><use href="#i-star" /></svg>Cuidado especial</span
+            >
+            <span class="placa cert">Primeros auxilios</span>
+            <span class="placa cert">Gatos</span>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>Sobre Valeria</h2>
+          <p class="bio">
+            Estudiante de último año de Medicina Veterinaria. Me especializo en perros mayores y en
+            recuperaciones post-operatorias.
+          </p>
+          <p class="skills">Dice que tiene experiencia con mascotas mayores y gatos.</p>
+        </section>
+
+        <section class="section" style="padding-bottom: 24px">
+          <h2>Sus precios</h2>
+          <ul class="prices">
+            <li>
+              <span class="swatch s-visita"
+                ><svg class="i"><use href="#i-house" /></svg
+              ></span>
+              <span class="what">Visita a domicilio<small>Hasta 60 minutos</small></span>
+              <b>$18</b>
+            </li>
+            <li>
+              <span class="swatch s-pernocta"
+                ><svg class="i"><use href="#i-moon" /></svg
+              ></span>
+              <span class="what">Pernocta<small>De 7:00 p. m. a 8:00 a. m.</small></span>
+              <b>$40</b>
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="bottombar">
+        <p class="total" style="flex: 1">
+          <b>$18.00</b>
+          <small>Visita para Toby. Sin tarifa: es tu primer servicio</small>
+        </p>
+        <a class="btn btn-primary" href="#">Reservar visita</a>
+        <span class="home-indicator"></span>
+      </div>
+    </main>
+  </body>
+</html>

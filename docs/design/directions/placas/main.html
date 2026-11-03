@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=390" />
+    <title>Placas: Buscar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Gabarito:wght@500;600;700;800&display=block"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="placas.css" />
+    <style>
+      .hello {
+        padding: 8px 20px 0;
+      }
+
+      .hello h1 {
+        font: 800 30px/1.1 var(--display);
+        letter-spacing: -0.01em;
+      }
+
+      .hello p {
+        margin-top: 4px;
+        color: var(--ink-2);
+        font-size: 17px;
+      }
+
+      .services {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        padding: 18px 20px 0;
+      }
+
+      .service {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 152px;
+        padding: 16px 14px 14px;
+        border-radius: 26px;
+      }
+
+      .service svg.i {
+        width: 32px;
+        height: 32px;
+        stroke-width: 1.8;
+      }
+
+      .service b {
+        display: block;
+        font: 700 22px/1.05 var(--display);
+        letter-spacing: -0.01em;
+      }
+
+      .service small {
+        display: block;
+        margin-top: 4px;
+        color: var(--ink-2);
+        font-size: 13px;
+        line-height: 1.2;
+      }
+
+      .service.on {
+        box-shadow: inset 0 0 0 3px var(--ink);
+      }
+
+      .service .tick {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--ink);
+        color: var(--white);
+      }
+
+      .service .tick svg.i {
+        width: 16px;
+        height: 16px;
+        stroke-width: 3;
+      }
+
+      .query {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 7px;
+        padding: 18px 20px 0;
+        font-size: 17px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        height: 48px;
+        padding: 0 14px;
+        border-radius: 24px;
+        background: var(--white);
+        box-shadow: inset 0 0 0 1.5px var(--line);
+        color: var(--primary);
+        font: 700 16px/1 var(--text);
+      }
+
+      .chip.con-foto {
+        padding-left: 6px;
+      }
+
+      .chip .pet {
+        width: 36px;
+        height: 36px;
+      }
+
+      .chip svg.i {
+        width: 18px;
+        height: 18px;
+      }
+
+      .results-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 26px 20px 4px;
+      }
+
+      .results-head h2 {
+        font: 700 21px/1.2 var(--display);
+      }
+
+      .results-head p {
+        color: var(--ink-2);
+        font-size: 14px;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 20px;
+      }
+
+      .row .body {
+        display: flex;
+        flex: 1;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        padding: 14px 0;
+      }
+
+      .row + .row .body {
+        border-top: 1.5px solid var(--line);
+      }
+
+      .row .who {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .row h3 {
+        font: 700 18px/1.2 var(--display);
+      }
+
+      .rating {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 2px;
+        color: var(--ink-2);
+        font-size: 14px;
+      }
+
+      .rating svg.i {
+        width: 15px;
+        height: 15px;
+        fill: var(--ink);
+        stroke: var(--ink);
+      }
+
+      .rating b {
+        color: var(--ink);
+      }
+
+      .row .placas {
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .price {
+        text-align: right;
+      }
+
+      .price b {
+        display: block;
+        font: 800 32px/1 var(--display);
+        letter-spacing: -0.02em;
+      }
+
+      .price small {
+        color: var(--ink-2);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-search" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
+        </symbol>
+        <symbol id="i-sliders" viewBox="0 0 24 24">
+          <path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4" />
+        </symbol>
+        <symbol id="i-footprints" viewBox="0 0 24 24">
+          <path
+            d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"
+          />
+          <path
+            d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"
+          />
+          <path d="M16 17h4M4 13h4" />
+        </symbol>
+        <symbol id="i-house" viewBox="0 0 24 24">
+          <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+          <path
+            d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+          />
+        </symbol>
+        <symbol id="i-moon" viewBox="0 0 24 24">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+        <symbol id="i-star" viewBox="0 0 24 24">
+          <path
+            d="M12 2.5l2.9 5.9 6.5.95-4.7 4.58 1.1 6.47L12 17.35l-5.8 3.05 1.1-6.47L2.6 9.35l6.5-.95z"
+          />
+        </symbol>
+        <symbol id="i-pin" viewBox="0 0 24 24">
+          <path
+            d="M20 10c0 5-5.5 10.2-7.4 11.8a1 1 0 0 1-1.2 0C9.5 20.2 4 15 4 10a8 8 0 0 1 16 0"
+          />
+          <circle cx="12" cy="10" r="3" />
+        </symbol>
+        <symbol id="i-calendar" viewBox="0 0 24 24">
+          <path d="M8 2v4M16 2v4" />
+          <rect width="18" height="18" x="3" y="4" rx="2" />
+          <path d="M3 10h18" />
+        </symbol>
+        <symbol id="i-paw" viewBox="0 0 24 24">
+          <circle cx="11" cy="4" r="2" />
+          <circle cx="18" cy="8" r="2" />
+          <circle cx="20" cy="16" r="2" />
+          <path
+            d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"
+          />
+        </symbol>
+        <symbol id="i-user" viewBox="0 0 24 24">
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </symbol>
+
+        <!-- Silueta de Nimbus (cuerpo y mano que saluda), en el espacio de 160 × 160 de Nimbus.tsx -->
+        <clipPath id="nimbus-clip">
+          <path
+            d="M80 36C112 36 132 60 132 92C132 120 110 136 80 136C50 136 28 120 28 92C28 60 48 36 80 36Z"
+          />
+          <ellipse cx="124" cy="54" rx="11" ry="20" transform="rotate(32 124 54)" />
+        </clipPath>
+        <mask id="fuera-del-cuerpo">
+          <rect width="160" height="160" fill="#fff" />
+          <path
+            d="M80 36C112 36 132 60 132 92C132 120 110 136 80 136C50 136 28 120 28 92C28 60 48 36 80 36Z"
+            fill="#000"
+          />
+        </mask>
+        <g
+          id="nimbus-linea"
+          fill="none"
+          stroke="#25204A"
+          stroke-width="2.5"
+          vector-effect="non-scaling-stroke"
+        >
+          <ellipse
+            cx="124"
+            cy="54"
+            rx="11"
+            ry="20"
+            transform="rotate(32 124 54)"
+            mask="url(#fuera-del-cuerpo)"
+            vector-effect="non-scaling-stroke"
+          />
+          <path
+            d="M80 36C112 36 132 60 132 92C132 120 110 136 80 136C50 136 28 120 28 92C28 60 48 36 80 36Z"
+            vector-effect="non-scaling-stroke"
+          />
+        </g>
+
+        <!-- Fotos de relleno: ilustraciones planas, sin personas reales -->
+        <g id="fig-valeria">
+          <path d="M30 150C30 124 50 110 80 110C110 110 130 124 130 150Z" fill="#D98C9A" />
+          <path
+            d="M57 84C55 59 66 50 80 50C95 50 105 59 103 84C104 98 107 109 112 120H48C53 109 56 98 57 84Z"
+            fill="#2E1D17"
+          />
+          <path d="M71 92H89V111C89 117 71 117 71 111Z" fill="#B9825C" />
+          <ellipse cx="80" cy="80" rx="18" ry="21" fill="#D29C74" />
+          <path
+            d="M61 82C59 63 68 55 80 55C93 55 101 63 99 80C96 71 90 66 82 65C76 71 68 75 61 82Z"
+            fill="#2E1D17"
+          />
+        </g>
+        <g id="fig-gabriela">
+          <path d="M30 150C30 124 50 110 80 110C110 110 130 124 130 150Z" fill="#5B8FA8" />
+          <path
+            d="M67 111L80 124L93 111"
+            fill="none"
+            stroke="#fff"
+            stroke-width="3"
+            stroke-linejoin="round"
+          />
+          <path d="M71 92H89V110C89 116 71 116 71 110Z" fill="#D4A47F" />
+          <ellipse cx="80" cy="80" rx="18" ry="21" fill="#EBC3A0" />
+          <circle cx="80" cy="51" r="10" fill="#5A3825" />
+          <path
+            d="M62 80C60 63 69 56 80 56C92 56 100 63 98 80C95 72 89 66 80 66C71 66 65 72 62 80Z"
+            fill="#5A3825"
+          />
+        </g>
+        <g id="fig-ricardo">
+          <path d="M28 150C28 122 50 108 80 108C110 108 132 122 132 150Z" fill="#8AA36B" />
+          <path d="M71 92H89V110C89 116 71 116 71 110Z" fill="#84553A" />
+          <ellipse cx="80" cy="80" rx="18" ry="21" fill="#9C6644" />
+          <path
+            d="M62 84C63 98 71 103 80 103C89 103 97 98 98 84C94 91 88 94 80 94C72 94 66 91 62 84Z"
+            fill="#1E1A18"
+          />
+          <path
+            d="M62 77C61 61 70 56 80 56C91 56 99 61 98 77C95 69 89 65 80 65C71 65 65 69 62 77Z"
+            fill="#1E1A18"
+          />
+        </g>
+        <g id="fig-andrea">
+          <path d="M30 150C30 124 50 110 80 110C110 110 130 124 130 150Z" fill="#E0B44C" />
+          <g fill="#3A2318">
+            <circle cx="61" cy="80" r="11" />
+            <circle cx="99" cy="80" r="11" />
+            <circle cx="61" cy="95" r="9" />
+            <circle cx="99" cy="95" r="9" />
+          </g>
+          <path d="M71 92H89V111C89 117 71 117 71 111Z" fill="#A9714A" />
+          <ellipse cx="80" cy="80" rx="18" ry="21" fill="#C68A5E" />
+          <g fill="#3A2318">
+            <circle cx="64" cy="67" r="10" />
+            <circle cx="73" cy="59" r="10" />
+            <circle cx="86" cy="58" r="10" />
+            <circle cx="96" cy="66" r="10" />
+            <circle cx="80" cy="54" r="8" />
+          </g>
+          <g fill="none" stroke="#2A2A2A" stroke-width="2.2">
+            <circle cx="73" cy="83" r="6" />
+            <circle cx="87" cy="83" r="6" />
+            <path d="M79 83h2" />
+          </g>
+        </g>
+        <g id="fig-carlos">
+          <path d="M28 150C28 122 50 108 80 108C110 108 132 122 132 150Z" fill="#3D4F7A" />
+          <path d="M69 108L80 119L91 108Z" fill="#fff" />
+          <path d="M71 92H89V110C89 116 71 116 71 110Z" fill="#C99872" />
+          <ellipse cx="80" cy="80" rx="18" ry="21" fill="#E2B48C" />
+          <path
+            d="M62 78C60 61 70 55 81 55C93 55 100 62 98 78C96 70 92 66 86 65C80 64 70 66 62 78Z"
+            fill="#4A4038"
+          />
+          <g fill="none" stroke="#2A2A2A" stroke-width="2.2">
+            <rect x="66" y="78" width="12" height="9" rx="3" />
+            <rect x="82" y="78" width="12" height="9" rx="3" />
+            <path d="M78 82h4" />
+          </g>
+        </g>
+        <g id="fig-toby">
+          <path d="M44 62C30 70 30 104 42 112C52 116 56 100 56 82Z" fill="#5A3A22" />
+          <path d="M116 62C130 70 130 104 118 112C108 116 104 100 104 82Z" fill="#5A3A22" />
+          <path
+            d="M80 44C102 44 110 62 110 80C110 104 98 122 80 122C62 122 50 104 50 80C50 62 58 44 80 44Z"
+            fill="#C8894F"
+          />
+          <path
+            d="M75 48C77 45 83 45 85 48L88 92C97 95 102 103 99 112C94 122 66 122 61 112C58 103 63 95 72 92Z"
+            fill="#fff"
+          />
+          <ellipse cx="80" cy="98" rx="8" ry="6" fill="#1F1A17" />
+          <circle cx="66" cy="78" r="4" fill="#1F1A17" />
+          <circle cx="94" cy="78" r="4" fill="#1F1A17" />
+          <path
+            d="M80 104v5M72 109c4 4 12 4 16 0"
+            fill="none"
+            stroke="#1F1A17"
+            stroke-width="2.5"
+            stroke-linecap="round"
+          />
+        </g>
+      </defs>
+    </svg>
+
+    <main class="screen">
+      <div class="status">
+        <span>9:41</span>
+        <svg viewBox="0 0 72 13" width="72" height="13" aria-hidden="true">
+          <g fill="currentColor">
+            <rect x="0" y="9" width="3" height="4" rx="1" />
+            <rect x="5" y="6" width="3" height="7" rx="1" />
+            <rect x="10" y="3" width="3" height="10" rx="1" />
+            <rect x="15" y="0" width="3" height="13" rx="1" />
+          </g>
+          <path
+            d="M24 4.5a11 11 0 0 1 14 0M26.5 7.5a7 7 0 0 1 9 0M29 10.5a3 3 0 0 1 4 0"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+          <rect
+            x="44"
+            y="1"
+            width="24"
+            height="11"
+            rx="3.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-opacity=".4"
+          />
+          <rect x="46" y="3" width="18" height="7" rx="2" fill="currentColor" />
+          <path
+            d="M70 4.5v4"
+            stroke="currentColor"
+            stroke-opacity=".4"
+            stroke-width="1.5"
+            stroke-linecap="round"
+          />
+        </svg>
+      </div>
+
+      <div class="scroll">
+        <header class="hello">
+          <h1>Hola, Daniela</h1>
+          <p>¿Qué necesita Toby esta semana?</p>
+        </header>
+
+        <nav class="services" aria-label="Servicio">
+          <a class="service s-paseo" href="#">
+            <svg class="i"><use href="#i-footprints" /></svg>
+            <span><b>Paseo</b><small>Solo perros</small></span>
+          </a>
+          <a class="service s-visita on" href="#" aria-current="true">
+            <span class="tick"
+              ><svg class="i"><use href="#i-check" /></svg
+            ></span>
+            <svg class="i"><use href="#i-house" /></svg>
+            <span><b>Visita</b><small>En tu casa</small></span>
+          </a>
+          <a class="service s-pernocta" href="#">
+            <svg class="i"><use href="#i-moon" /></svg>
+            <span><b>Pernocta</b><small>Toda la noche</small></span>
+          </a>
+        </nav>
+
+        <p class="query">
+          <span>Para</span>
+          <a class="chip con-foto" href="#">
+            <svg class="pet" viewBox="40 40 80 80" aria-hidden="true">
+              <rect x="0" y="0" width="160" height="160" fill="#DDE6F3" />
+              <use href="#fig-toby" />
+            </svg>
+            Toby
+          </a>
+          <span>el</span>
+          <a class="chip" href="#"
+            ><svg class="i"><use href="#i-calendar" /></svg>mar 3, 4:00 p. m.</a
+          >
+          <span>en</span>
+          <a class="chip" href="#"
+            ><svg class="i"><use href="#i-pin" /></svg>San Salvador</a
+          >
+        </p>
+
+        <div class="results-head">
+          <div>
+            <h2>5 cuidadores libres</h2>
+            <p>Ordenados por calificación</p>
+          </div>
+          <a class="btn btn-secondary" href="#"
+            ><svg class="i"><use href="#i-sliders" /></svg>Filtros</a
+          >
+        </div>
+
+        <ul>
+          <li class="row">
+            <div class="body">
+              <svg class="ava" viewBox="22 30 120 110" role="img" aria-label="Foto de Valeria">
+                <g clip-path="url(#nimbus-clip)">
+                  <rect width="160" height="160" fill="#E4E0F7" />
+                  <use href="#fig-valeria" />
+                </g>
+                <use href="#nimbus-linea" />
+              </svg>
+              <div class="who">
+                <h3>Valeria Martínez</h3>
+                <p class="rating">
+                  <svg class="i"><use href="#i-star" /></svg><b>4.8</b> de 46 reseñas
+                </p>
+                <div class="placas">
+                  <span class="placa sm nivel super">Súper Cuidador</span>
+                  <span
+                    class="placa sm estrella solo-estrella"
+                    aria-label="Con certificación de cuidado especial"
+                    ><svg class="i"><use href="#i-star" /></svg
+                  ></span>
+                </div>
+              </div>
+              <p class="price"><b>$18</b><small>la visita</small></p>
+            </div>
+          </li>
+          <li class="row">
+            <div class="body">
+              <svg class="ava" viewBox="22 30 120 110" role="img" aria-label="Foto de Gabriela">
+                <g clip-path="url(#nimbus-clip)">
+                  <rect width="160" height="160" fill="#DDE6F3" />
+                  <use href="#fig-gabriela" />
+                </g>
+                <use href="#nimbus-linea" />
+              </svg>
+              <div class="who">
+                <h3>Gabriela Flores</h3>
+                <p class="rating">
+                  <svg class="i"><use href="#i-star" /></svg><b>4.8</b> de 58 reseñas
+                </p>
+                <div class="placas">
+                  <span class="placa sm nivel">Pro</span>
+                  <span
+                    class="placa sm estrella solo-estrella"
+                    aria-label="Con certificación de cuidado especial"
+                    ><svg class="i"><use href="#i-star" /></svg
+                  ></span>
+                </div>
+              </div>
+              <p class="price"><b>$14</b><small>la visita</small></p>
+            </div>
+          </li>
+          <li class="row">
+            <div class="body">
+              <svg class="ava" viewBox="22 30 120 110" role="img" aria-label="Foto de Ricardo">
+                <g clip-path="url(#nimbus-clip)">
+                  <rect width="160" height="160" fill="#E9E4F5" />
+                  <use href="#fig-ricardo" />
+                </g>
+                <use href="#nimbus-linea" />
+              </svg>
+              <div class="who">
+                <h3>Ricardo Portillo</h3>
+                <p class="rating">
+                  <svg class="i"><use href="#i-star" /></svg><b>4.8</b> de 104 reseñas
+                </p>
+                <div class="placas">
+                  <span class="placa sm nivel">Pro</span>
+                  <span
+                    class="placa sm estrella solo-estrella"
+                    aria-label="Con certificación de cuidado especial"
+                    ><svg class="i"><use href="#i-star" /></svg
+                  ></span>
+                </div>
+              </div>
+              <p class="price"><b>$13</b><small>la visita</small></p>
+            </div>
+          </li>
+          <li class="row">
+            <div class="body">
+              <svg class="ava" viewBox="22 30 120 110" role="img" aria-label="Foto de Andrea">
+                <g clip-path="url(#nimbus-clip)">
+                  <rect width="160" height="160" fill="#E4E0F7" />
+                  <use href="#fig-andrea" />
+                </g>
+                <use href="#nimbus-linea" />
+              </svg>
+              <div class="who">
+                <h3>Andrea López</h3>
+                <p class="rating">
+                  <svg class="i"><use href="#i-star" /></svg><b>4.8</b> de 12 reseñas
+                </p>
+                <div class="placas">
+                  <span class="placa sm nivel">Confiable</span>
+                </div>
+              </div>
+              <p class="price"><b>$11</b><small>la visita</small></p>
+            </div>
+          </li>
+          <li class="row">
+            <div class="body">
+              <svg class="ava" viewBox="22 30 120 110" role="img" aria-label="Foto de Carlos">
+                <g clip-path="url(#nimbus-clip)">
+                  <rect width="160" height="160" fill="#DDE6F3" />
+                  <use href="#fig-carlos" />
+                </g>
+                <use href="#nimbus-linea" />
+              </svg>
+              <div class="who">
+                <h3>Carlos Hernández</h3>
+                <p class="rating">
+                  <svg class="i"><use href="#i-star" /></svg><b>4.7</b> de 71 reseñas
+                </p>
+                <div class="placas">
+                  <span class="placa sm nivel">Pro</span>
+                  <span
+                    class="placa sm estrella solo-estrella"
+                    aria-label="Con certificación de cuidado especial"
+                    ><svg class="i"><use href="#i-star" /></svg
+                  ></span>
+                </div>
+              </div>
+              <p class="price"><b>$13</b><small>la visita</small></p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <nav class="tabbar" aria-label="Pestañas">
+        <a class="tab on" href="#" aria-current="page"
+          ><span class="pill"
+            ><svg class="i"><use href="#i-search" /></svg></span
+          >Buscar</a
+        >
+        <a class="tab" href="#"
+          ><span class="pill"
+            ><svg class="i"><use href="#i-calendar" /></svg></span
+          >Mis visitas</a
+        >
+        <a class="tab" href="#"
+          ><span class="pill"
+            ><svg class="i"><use href="#i-paw" /></svg></span
+          >Mascotas</a
+        >
+        <a class="tab" href="#"
+          ><span class="pill"
+            ><svg class="i"><use href="#i-user" /></svg></span
+          >Cuenta</a
+        >
+        <span class="home-indicator"></span>
+      </nav>
+    </main>
+  </body>
+</html>

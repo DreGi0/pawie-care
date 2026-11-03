@@ -1,0 +1,427 @@
+/* Dirección A, "Placas": la placa del collar como señal de confianza.
+   Mockup estático de 390 × 844, sin JS. Las fotos son ilustraciones de relleno. */
+
+:root {
+  --bg: #f2f5fa;
+  --ink: #25204a;
+  --ink-2: #575272;
+  --primary: #3e2f9e;
+  --tint: #e4e0f7;
+  --line: #d9deea;
+  --white: #ffffff;
+  --paseo: #bde3f7;
+  --visita: #c9edd8;
+  --pernocta: #d8cdf6;
+  --star: #ffe07a;
+  --display: 'Gabarito', system-ui, sans-serif;
+  --text: 'Atkinson Hyperlegible', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background: var(--bg);
+}
+
+body {
+  width: 390px;
+  height: 844px;
+  overflow: hidden;
+  color: var(--ink);
+  font: 400 16px/1.45 var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul {
+  list-style: none;
+}
+
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 390px;
+  height: 844px;
+  overflow: hidden;
+}
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.scroll::-webkit-scrollbar {
+  display: none;
+}
+
+svg.i {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.muted {
+  color: var(--ink-2);
+}
+
+/* Barra de estado, pestañas y barra inferior */
+
+.status {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 47px;
+  padding: 4px 26px 0 38px;
+  font: 600 16px var(--display);
+}
+
+.tabbar {
+  position: relative;
+  flex: none;
+  display: flex;
+  justify-content: space-around;
+  height: 84px;
+  padding: 6px 8px 0;
+  border-top: 1.5px solid var(--line);
+  background: var(--bg);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 76px;
+  height: 52px;
+  color: var(--ink-2);
+  font: 600 13px/1 var(--display);
+}
+
+.tab .pill {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 30px;
+  border-radius: 15px;
+}
+
+.tab.on {
+  color: var(--primary);
+}
+
+.tab.on .pill {
+  background: var(--tint);
+}
+
+.home-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 134px;
+  height: 5px;
+  margin-left: -67px;
+  border-radius: 3px;
+  background: var(--ink);
+}
+
+.bottombar {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px 38px;
+  border-top: 1.5px solid var(--line);
+  background: var(--bg);
+}
+
+/* Botones: 48 px como mínimo. Uno solo primario por pantalla. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 16px;
+  font: 700 16px/1 var(--display);
+}
+
+.btn-primary {
+  min-height: 56px;
+  padding: 0 24px;
+  background: var(--primary);
+  color: var(--white);
+  font-size: 18px;
+}
+
+.btn-secondary {
+  box-shadow: inset 0 0 0 2px var(--ink);
+  color: var(--ink);
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+/* Placas de collar: el nivel, las insignias y las certificaciones */
+
+.placas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.placa {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 13px 0 9px;
+  border-radius: 16px;
+  background: var(--white);
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+  color: var(--ink);
+  font: 600 14px/1 var(--display);
+  white-space: nowrap;
+}
+
+/* El agujero de la placa, por donde pasa la argolla */
+.placa::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+
+.placa svg.i {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.4;
+}
+
+.placa.sm {
+  height: 28px;
+  padding: 0 11px 0 8px;
+  font-size: 13px;
+}
+
+/* En una cuadrícula de dos columnas, la placa admite dos líneas */
+.placas.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.placas.grid .placa {
+  height: auto;
+  min-height: 48px;
+  padding: 8px 12px 8px 10px;
+  border-radius: 16px;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.count {
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 14px;
+  background: var(--primary);
+  color: var(--white);
+  font: 700 14px/1 var(--display);
+}
+
+.placa.cert {
+  background: var(--tint);
+  box-shadow: none;
+}
+
+.placa.estrella {
+  background: var(--star);
+  box-shadow: none;
+}
+
+.placa.estrella svg.i {
+  fill: var(--ink);
+  stroke-width: 1.5;
+}
+
+/* La ⭐ sola es una medalla redonda, sin agujero */
+.placa.solo-estrella {
+  justify-content: center;
+  width: 28px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.placa.solo-estrella::before {
+  display: none;
+}
+
+.placa.nivel {
+  background: var(--tint);
+  box-shadow: none;
+}
+
+.placa.nivel.super {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.placa.cert::before,
+.placa.estrella::before,
+.placa.nivel::before {
+  box-shadow: none;
+}
+
+/* La placa grande del nivel, colgada de su argolla */
+
+.collar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: none;
+}
+
+.collar::before {
+  /* la correa del collar */
+  content: '';
+  width: 100%;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--ink);
+}
+
+.argolla {
+  width: 22px;
+  height: 30px;
+  margin-top: -6px;
+  margin-bottom: -14px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+}
+
+.placa-xl {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 104px;
+  min-height: 112px;
+  padding: 30px 8px 16px;
+  border-radius: 24px 24px 44px 44px;
+  background: var(--tint);
+  color: var(--ink);
+  text-align: center;
+}
+
+.placa-xl::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: var(--bg);
+}
+
+.placa-xl small {
+  font: 600 13px/1 var(--display);
+  opacity: 0.8;
+}
+
+.placa-xl b {
+  margin-top: 6px;
+  font: 800 21px/1 var(--display);
+  letter-spacing: -0.01em;
+}
+
+.placa-xl.super {
+  background: var(--primary);
+  color: var(--white);
+}
+
+/* Fotos recortadas con la silueta de Nimbus */
+
+.ava {
+  flex: none;
+  display: block;
+  width: 64px;
+  height: 59px;
+}
+
+.ava-xl {
+  flex: none;
+  display: block;
+  width: 186px;
+  height: 171px;
+}
+
+.pet {
+  flex: none;
+  display: block;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+}
+
+/* Colores de servicio, siempre los mismos */
+
+.s-paseo {
+  background: var(--paseo);
+}
+
+.s-visita {
+  background: var(--visita);
+}
+
+.s-pernocta {
+  background: var(--pernocta);
+}
+
+/* Títulos de sección */
+
+.section {
+  padding: 24px 20px 0;
+}
+
+.section > h2 {
+  font: 700 20px/1.2 var(--display);
+}
+
+.section > h2 + * {
+  margin-top: 12px;
+}
