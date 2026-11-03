@@ -76,9 +76,69 @@ flowchart LR
 
 ## Etapa D: nuevo design system
 
-La etapa D define un design system nuevo para la app. Su detalle (la dirección elegida, los tokens y las reglas) se escribe aquí en el PR de esa etapa. Hasta entonces valen `tokens.json` y las [reglas de arriba](#reglas-del-design-system).
+**Dirección elegida: Placas** (2026-11-02). La placa del collar es la señal de confianza: el nivel, las insignias y las certificaciones se muestran como placas. La referencia visual son los mockups de [directions/](directions/README.md).
 
-Las pantallas del cuidador (etapas 9a y 9b) no llevan mockup en HTML: su referencia visual es la dirección elegida en la etapa D.
+La app todavía usa `tokens.json` y las [reglas de arriba](#reglas-del-design-system). La parte 2 de la etapa D lleva Placas a la app y reemplaza esas dos secciones. Las pantallas del cuidador (etapas 9a y 9b) no llevan mockup en HTML: se construyen con estos tokens y componentes.
+
+### Tokens
+
+Los siete primeros definen la dirección. Los otros cuatro salen de los mockups.
+
+| Token      | Valor     | Uso                                                                         |
+| ---------- | --------- | --------------------------------------------------------------------------- |
+| `bg`       | `#F2F5FA` | Fondo de todas las pantallas                                                |
+| `ink`      | `#25204A` | Texto, bordes y contorno de las fotos                                       |
+| `primary`  | `#3E2F9E` | Botón primario, pestaña activa y placa de Súper Cuidador                    |
+| `paseo`    | `#BDE3F7` | Solo el paseo                                                               |
+| `visita`   | `#C9EDD8` | Solo la visita                                                              |
+| `pernocta` | `#D8CDF6` | Solo la pernocta                                                            |
+| `star`     | `#FFE07A` | Solo la ⭐                                                                  |
+| `inkMuted` | `#575272` | Texto secundario; cumple AA sobre `bg` y sobre los tres colores de servicio |
+| `tint`     | `#E4E0F7` | Placas de nivel y de certificación, y fondo de la pestaña activa            |
+| `line`     | `#D9DEEA` | Divisores y bordes suaves                                                   |
+| `white`    | `#FFFFFF` | Placas de insignia y chips de búsqueda                                      |
+
+### Tipografía
+
+Gabarito (`@expo-google-fonts/gabarito`, pesos 500 a 800) para títulos, precios, placas, botones y pestañas. Atkinson Hyperlegible (`@expo-google-fonts/atkinson-hyperlegible`, 400 y 700) para el texto. Reemplazan a Nunito.
+
+| Estilo                     | Fuente y tamaño                                  |
+| -------------------------- | ------------------------------------------------ |
+| Título de pantalla         | Gabarito 800, 30 px (32 en el nombre del perfil) |
+| Título de sección          | Gabarito 700, 20 px                              |
+| Precio                     | Gabarito 800, de 26 a 32 px                      |
+| Placas, botones y pestañas | Gabarito 600 o 700, de 13 a 18 px                |
+| Texto                      | Atkinson 400, 16 px; 700 para resaltar           |
+| Secundario                 | Atkinson 400, 14 px, en `inkMuted`               |
+| Mínimo                     | 13 px                                            |
+
+### Componentes
+
+- **Placa:** una pastilla de 32 px con un agujero a la izquierda. Tiene cinco variantes:
+  - insignia: blanca, con borde `ink` e ícono;
+  - certificación: en `tint`;
+  - ⭐: en `star`;
+  - nivel: en `tint`, y la de Súper Cuidador en `primary` con texto blanco;
+  - servicio: en el color del servicio.
+
+  En una cuadrícula de dos columnas, la placa admite dos líneas. En las listas, la ⭐ sola es una medalla redonda de 28 px, sin agujero.
+
+- **Placa del nivel:** una placa grande que cuelga de una argolla en una correa `ink`. Va en el perfil y en CuiInicio.
+- **Foto del cuidador:** se recorta con la silueta de Nimbus (el cuerpo y la mano que saluda, del SVG de `Nimbus.tsx`) y lleva su contorno en `ink`. Las mascotas van en círculo.
+- **Bloques de servicio:** grandes, en el color del servicio, con ícono, nombre y una línea. El elegido lleva un borde `ink` de 3 px y un check.
+- **Filas:** sin tarjeta, separadas por `line`, con el precio grande a la derecha.
+- **Chips de búsqueda:** de 48 px, blancos, con borde `line` y texto `primary`. Van dentro de una frase: "Para Toby el mar 3, 4:00 p. m. en San Salvador".
+- **Botones:** el primario mide 56 px, en `primary` con texto blanco. El secundario mide 48 px, con borde `ink` de 2 px. Los dos con radio de 16 px.
+
+### Reglas
+
+- Cada pantalla tiene un solo botón primario. En una lista, solo lo lleva la acción más urgente.
+- Los colores de servicio solo marcan servicios, nunca un estado ni otra cosa.
+- `star` es solo para la ⭐. La estrella de la calificación va en `ink`.
+- No hay sombras: las superficies se separan con color, bordes o divisores.
+- Están prohibidos el fondo crema, las tarjetas blancas idénticas, las etiquetas en mayúsculas, los textos con "·" y los gradientes decorativos.
+- Nimbus, como personaje, aparece como máximo una vez por pantalla y nunca en listas ni formularios. La silueta de las fotos no cuenta como aparición.
+- Las áreas táctiles miden al menos 48 px, el contraste cumple AA y el texto mínimo es de 13 px.
 
 ## Pantallas para la v0.6
 
