@@ -2,78 +2,79 @@ import type { BottomTabBarProps } from 'expo-router/tabs';
 import { StyleSheet, View } from 'react-native';
 import Animated, { css } from 'react-native-reanimated';
 
-import { colors, fontFamily, shadow, space } from '@/theme/tokens';
+import { borderWidth, colors, fontFamily, space } from '@/theme/tokens';
 
 import { Text } from './Text';
 import { Touchable } from './Touchable';
 
-const BAR_HEIGHT = 68;
-const PILL = { width: 56, height: 32 };
+const PILL = { width: 60, height: 30 };
 
 /**
- * The `tabBar` of expo-router's Tabs: a bar that floats over the bottom edge, with a pill
- * that grows behind the icon of the current tab. Each screen sets `title`, `tabBarIcon` and,
- * to show a count, `tabBarBadge` and `tabBarAccessibilityLabel` (such as "Visitas, 1
- * pendiente de pago").
+ * The `tabBar` of expo-router's Tabs: a bar on the bottom edge, with a `tint` pill that grows
+ * behind the icon of the current tab. Each screen sets `title`, `tabBarIcon` and, to show a
+ * count, `tabBarBadge` and `tabBarAccessibilityLabel` (such as "Visitas, 1 pendiente de pago").
  */
 export function TabBar({ state, descriptors, emitter, navigateToTab, insets }: BottomTabBarProps) {
   return (
-    <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, space[3]) }]}>
-      <View accessibilityRole="tablist" style={styles.bar}>
-        {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key];
-          const focused = state.index === index;
-          const label = options.title ?? route.name;
+    <View
+      accessibilityRole="tablist"
+      style={[styles.bar, { paddingBottom: Math.max(insets.bottom, space[2]) }]}
+    >
+      {state.routes.map((route, index) => {
+        const { options } = descriptors[route.key];
+        const focused = state.index === index;
+        const label = options.title ?? route.name;
+        const color = focused ? colors.primary : colors.inkMuted;
 
-          const onPress = () => {
-            const event = emitter.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-            if (!focused && !event.defaultPrevented) {
-              navigateToTab(route.key);
-            }
-          };
+        const onPress = () => {
+          const event = emitter.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
+          if (!focused && !event.defaultPrevented) {
+            navigateToTab(route.key);
+          }
+        };
 
-          return (
-            <Touchable
-              key={route.key}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: focused }}
-              accessibilityLabel={options.tabBarAccessibilityLabel ?? label}
-              onPress={onPress}
-              pressedScale={0.92}
-              style={styles.tab}
+        return (
+          <Touchable
+            key={route.key}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: focused }}
+            accessibilityLabel={options.tabBarAccessibilityLabel ?? label}
+            onPress={onPress}
+            pressedScale={0.92}
+            style={styles.tab}
+          >
+            <View style={styles.iconBox}>
+              <Animated.View
+                style={[
+                  styles.pill,
+                  { opacity: focused ? 1 : 0, transform: [{ scaleX: focused ? 1 : 0.4 }] },
+                  transitions.pill,
+                ]}
+              />
+              <View>{options.tabBarIcon?.({ focused, color, size: 24 })}</View>
+              {options.tabBarBadge !== undefined && (
+                <View style={styles.badge}>
+                  <Text variant="footnote" color="white" style={styles.badgeText}>
+                    {options.tabBarBadge}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text
+              variant="footnote"
+              color={focused ? 'primary' : 'inkMuted'}
+              style={styles.label}
+              numberOfLines={1}
             >
-              <View style={styles.iconBox}>
-                <Animated.View
-                  style={[
-                    styles.pill,
-                    { opacity: focused ? 1 : 0, transform: [{ scaleX: focused ? 1 : 0.4 }] },
-                    transitions.pill,
-                  ]}
-                />
-                <View>{options.tabBarIcon?.({ focused, color: colors.ink, size: 24 })}</View>
-                {options.tabBarBadge !== undefined && (
-                  <View style={styles.badge}>
-                    <Text variant="caption" color="card" style={styles.badgeText}>
-                      {options.tabBarBadge}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <Text
-                variant="caption"
-                color={focused ? 'ink' : 'inkMuted'}
-                style={focused && styles.labelFocused}
-              >
-                {label}
-              </Text>
-            </Touchable>
-          );
-        })}
-      </View>
+              {label}
+            </Text>
+          </Touchable>
+        );
+      })}
     </View>
   );
 }
@@ -89,35 +90,33 @@ const transitions = css.create({
 // The radii are exactly half of each height instead of radius.pill, so no platform has to
 // clamp an oversized radius.
 const styles = StyleSheet.create({
-  wrapper: { paddingHorizontal: space[4], paddingTop: space[2] },
   bar: {
-    height: BAR_HEIGHT,
     flexDirection: 'row',
-    alignItems: 'center',
+    paddingTop: 6,
     paddingHorizontal: space[2],
-    backgroundColor: colors.card,
-    borderRadius: BAR_HEIGHT / 2,
-    boxShadow: shadow.soft,
+    backgroundColor: colors.bg,
+    borderTopWidth: borderWidth.hairline,
+    borderTopColor: colors.line,
   },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, height: BAR_HEIGHT },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3, minHeight: 56 },
   iconBox: { ...PILL, alignItems: 'center', justifyContent: 'center' },
   pill: {
     ...StyleSheet.absoluteFill,
     borderRadius: PILL.height / 2,
-    backgroundColor: colors.grape,
+    backgroundColor: colors.tint,
   },
   badge: {
     position: 'absolute',
-    top: -2,
+    top: -4,
     right: space[2],
-    minWidth: 18,
-    height: 18,
+    minWidth: 20,
+    height: 20,
     paddingHorizontal: space[1],
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 9,
-    backgroundColor: colors.grapeDeep,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
   },
-  badgeText: { fontFamily: fontFamily.extraBold },
-  labelFocused: { fontFamily: fontFamily.bold },
+  badgeText: { fontFamily: fontFamily.displayBold, lineHeight: 16 },
+  label: { fontFamily: fontFamily.displaySemiBold },
 });

@@ -1,9 +1,9 @@
 import type { PetResponse } from '@pawie/api-client';
 import { differenceInMonths, parseISO } from 'date-fns';
 
-/** "Perro · Labrador · 3 años". */
+/** "Perro, Labrador, 3 años". */
 export function describePet(pet: PetResponse, today = new Date()): string {
-  return [pet.species.name, pet.breed, petAge(pet, today)].filter(Boolean).join(' · ');
+  return [pet.species.name, pet.breed, petAge(pet, today)].filter(Boolean).join(', ');
 }
 
 /** "3 años", "8 meses", or "aprox. 3 años" when the owner doesn't know the exact birth date. */

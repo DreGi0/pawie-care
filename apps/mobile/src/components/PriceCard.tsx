@@ -2,10 +2,9 @@ import type { BookingPrice } from '@pawie/api-client';
 import { StyleSheet, View } from 'react-native';
 
 import { formatMoney } from '@/lib/format';
-import { colors, space } from '@/theme/tokens';
+import { borderWidth, colors, space } from '@/theme/tokens';
 
 import { Card } from './Card';
-import { Tag } from './Tag';
 import { Text } from './Text';
 
 export type PriceCardProps = {
@@ -31,7 +30,7 @@ export function PriceCard({ lines, price }: PriceCardProps) {
         <Line key={index} label={label} amount={formatMoney(amountCents)} />
       ))}
       {firstServiceFeeWaived ? (
-        <View style={styles.waived}>
+        <View>
           <View style={styles.line}>
             <Text style={styles.label}>Tarifa de servicio</Text>
             {waivedServiceFeeCents > 0 && (
@@ -39,9 +38,11 @@ export function PriceCard({ lines, price }: PriceCardProps) {
                 {formatMoney(waivedServiceFeeCents)}
               </Text>
             )}
-            <Text>{formatMoney(serviceFeeCents)}</Text>
+            <Text variant="bodyStrong">{formatMoney(serviceFeeCents)}</Text>
           </View>
-          <Tag tone="success" label="Primer servicio" />
+          <Text variant="caption" color="inkMuted">
+            Sin tarifa: es tu primer servicio
+          </Text>
         </View>
       ) : (
         <Line
@@ -50,8 +51,10 @@ export function PriceCard({ lines, price }: PriceCardProps) {
         />
       )}
       <View style={styles.total}>
-        <Text variant="heading">Total</Text>
-        <Text variant="heading">{formatMoney(totalCents)}</Text>
+        <Text variant="heading" style={styles.label}>
+          Total
+        </Text>
+        <Text variant="priceSmall">{formatMoney(totalCents)}</Text>
       </View>
     </Card>
   );
@@ -61,7 +64,7 @@ function Line({ label, amount }: { label: string; amount: string }) {
   return (
     <View style={styles.line}>
       <Text style={styles.label}>{label}</Text>
-      <Text>{amount}</Text>
+      <Text variant="bodyStrong">{amount}</Text>
     </View>
   );
 }
@@ -71,12 +74,11 @@ const styles = StyleSheet.create({
   line: { flexDirection: 'row', gap: space[2] },
   label: { flex: 1 },
   struck: { textDecorationLine: 'line-through' },
-  waived: { gap: space[2] },
   total: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: space[3],
-    borderTopWidth: 1,
+    borderTopWidth: borderWidth.hairline,
     borderTopColor: colors.line,
   },
 });

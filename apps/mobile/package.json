@@ -14,7 +14,8 @@
     "test": "node --test \"src/**/*.test.mjs\""
   },
   "dependencies": {
-    "@expo-google-fonts/nunito": "^0.4.2",
+    "@expo-google-fonts/gabarito": "^0.4.2",
+    "@expo-google-fonts/lexend": "^0.4.1",
     "@expo/ui": "~58.0.20",
     "@hookform/resolvers": "^5.9.2",
     "@pawie/api-client": "workspace:*",

@@ -5,27 +5,21 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 
 import Animated, { css, FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Avatar } from '@/components/Avatar';
 import { Banner } from '@/components/Banner';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
-import { Icon, type IconName } from '@/components/Icon';
+import { CaregiverPhoto } from '@/components/CaregiverPhoto';
+import { Icon } from '@/components/Icon';
 import { Nimbus } from '@/components/Nimbus';
+import { Row } from '@/components/Row';
+import { Status } from '@/components/Status';
 import { Tag } from '@/components/Tag';
 import { Text } from '@/components/Text';
 import { Touchable } from '@/components/Touchable';
-import { isUpcoming, joinNames, statusTag, type StatusTag } from '@/lib/bookings';
+import { firstName, isUpcoming, joinNames, statusTag } from '@/lib/bookings';
 import { formatDayTime, formatMoney } from '@/lib/format';
-import { colors, shadow, space } from '@/theme/tokens';
+import { borderWidth, colors, gutter, space } from '@/theme/tokens';
 
 type Filter = 'upcoming' | 'past';
-
-const TAG_ICONS: Record<StatusTag['tone'], IconName> = {
-  info: 'rotate-cw',
-  warning: 'clock',
-  success: 'check',
-  error: 'x',
-};
 
 export default function VisitsScreen() {
   const bookings = useBookingsList();
@@ -66,8 +60,8 @@ export default function VisitsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refresh}
-            colors={[colors.grapeDeep]}
-            tintColor={colors.grapeDeep}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
       >
@@ -77,7 +71,7 @@ export default function VisitsScreen() {
         <Segmented value={filter} onChange={setFilter} />
 
         {bookings.isPending ? (
-          <ActivityIndicator color={colors.grapeDeep} style={styles.loading} />
+          <ActivityIndicator color={colors.primary} style={styles.loading} />
         ) : bookings.isError ? (
           <>
             <Banner
@@ -90,10 +84,14 @@ export default function VisitsScreen() {
           <NoVisits filter={filter} petName={pets.data?.[0]?.name} />
         ) : (
           // The key replays the entrance when switching between upcoming and past.
-          <View key={filter} style={styles.list}>
+          <View key={filter}>
             {shown.map((booking, index) => (
               <Animated.View key={booking.id} entering={FadeInDown.delay(index * 60).duration(300)}>
-                <VisitCard booking={booking} primary={booking.id === mostUrgent} />
+                <VisitRow
+                  booking={booking}
+                  primary={booking.id === mostUrgent}
+                  divider={index > 0}
+                />
               </Animated.View>
             ))}
           </View>
@@ -125,7 +123,7 @@ function Segmented({ value, onChange }: { value: Filter; onChange: (value: Filte
             <Animated.View
               style={[styles.segmentFill, selected && styles.segmentSelected, transitions.segment]}
             >
-              <Text variant="label" color={selected ? 'ink' : 'inkMuted'}>
+              <Text variant="label" color={selected ? 'primary' : 'inkMuted'}>
                 {option.label}
               </Text>
             </Animated.View>
@@ -136,55 +134,60 @@ function Segmented({ value, onChange }: { value: Filter; onChange: (value: Filte
   );
 }
 
-function VisitCard({ booking, primary }: { booking: BookingResponse; primary: boolean }) {
-  const tag = statusTag(booking);
-  const name = booking.caregiver.displayName;
+function VisitRow({
+  booking,
+  primary,
+  divider,
+}: {
+  booking: BookingResponse;
+  primary: boolean;
+  divider: boolean;
+}) {
+  const status = statusTag(booking);
+  const name = firstName(booking.caregiver.displayName);
   const pets = joinNames(booking.pets.map((pet) => pet.name));
   const open = () => router.push(`/reservas/${booking.id}`);
   const toPay = booking.status === 'PENDING_PAYMENT';
 
-  // With "Pagar", the button opens the booking: a card that is also a button would nest them.
+  // With "Pagar", the button opens the booking: a row that is also a button would nest them.
   return (
-    <Card
-      style={styles.card}
+    <Row
+      divider={divider}
       onPress={toPay ? undefined : open}
-      accessibilityLabel={toPay ? undefined : `${pets} con ${name}, ${tag.label}`}
+      accessibilityLabel={toPay ? undefined : `${pets} con ${name}, ${status.label}`}
+      style={styles.visit}
     >
-      <Tag tone={tag.tone} label={tag.label} icon={<Icon name={TAG_ICONS[tag.tone]} size={14} />} />
-      <View style={styles.row}>
-        <Avatar name={name} photoUrl={booking.caregiver.photoUrl} />
-        <View style={styles.flex}>
-          <Text variant="bodyStrong">
-            {pets} con {name}
-          </Text>
-          <Text variant="caption" color="inkMuted">
-            {formatDayTime(booking.startsAt)} · {kind(booking)}
+      <CaregiverPhoto name={booking.caregiver.displayName} photoUrl={booking.caregiver.photoUrl} />
+      <View style={styles.visitText}>
+        <Text variant="subheading">
+          {pets} con {name}
+        </Text>
+        <View style={styles.when}>
+          <Tag kind="service" service={booking.serviceCode} size="sm" />
+          <Text variant="caption" color="inkMuted" style={styles.flex}>
+            {formatDayTime(booking.startsAt)}
+            {booking.careLevel === 'SPECIAL' && ', cuidado especial'}
           </Text>
         </View>
-        {!toPay && <Icon name="chevron-right" color="inkMuted" />}
+        <Status {...status} />
+        {toPay && (
+          <Button
+            variant={primary ? 'primary' : 'secondary'}
+            label={`Pagar ${formatMoney(booking.price.totalCents)}`}
+            onPress={open}
+            style={styles.pay}
+          />
+        )}
       </View>
-      {toPay && (
-        <Button
-          variant={primary ? 'primary' : 'secondary'}
-          label={`Pagar ${formatMoney(booking.price.totalCents)}`}
-          onPress={open}
-        />
-      )}
-    </Card>
+      {!toPay && <Icon name="chevron-right" color="inkMuted" />}
+    </Row>
   );
-}
-
-/** "Visita a domicilio", "Visita especial", "Pernocta" or "Pernocta especial". */
-function kind(booking: BookingResponse): string {
-  const special = booking.careLevel === 'SPECIAL';
-  if (booking.serviceCode === 'OVERNIGHT_STAY') return special ? 'Pernocta especial' : 'Pernocta';
-  return special ? 'Visita especial' : 'Visita a domicilio';
 }
 
 function NoVisits({ filter, petName }: { filter: Filter; petName?: string }) {
   return (
     <Animated.View entering={FadeInDown.duration(400)} style={styles.empty}>
-      <Nimbus pose="durmiendo" background="sky" size={128} />
+      <Nimbus pose="durmiendo" background="tint" size={128} />
       <View style={styles.emptyText}>
         <Text variant="heading" style={styles.centered}>
           {filter === 'upcoming' ? 'Aún no tienes visitas' : 'Aún no tienes visitas pasadas'}
@@ -205,8 +208,14 @@ const transitions = css.create({
 const SEGMENT = 44;
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
-  content: { flexGrow: 1, gap: space[4], padding: space[4], paddingTop: space[6] },
+  screen: { flex: 1, backgroundColor: colors.bg },
+  content: {
+    flexGrow: 1,
+    gap: space[4],
+    paddingHorizontal: gutter,
+    paddingTop: space[2],
+    paddingBottom: space[6],
+  },
   loading: { marginTop: space[8] },
   flex: { flex: 1 },
   centered: { textAlign: 'center' },
@@ -215,8 +224,9 @@ const styles = StyleSheet.create({
     gap: space[1],
     padding: space[1],
     borderRadius: (SEGMENT + space[2]) / 2,
-    backgroundColor: colors.card,
-    boxShadow: shadow.soft,
+    borderWidth: borderWidth.hairline,
+    borderColor: colors.line,
+    backgroundColor: colors.white,
   },
   segment: { flex: 1 },
   segmentFill: {
@@ -225,10 +235,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: SEGMENT / 2,
   },
-  segmentSelected: { backgroundColor: colors.grape },
-  list: { gap: space[3] },
-  card: { gap: space[3] },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  segmentSelected: { backgroundColor: colors.tint },
+  visit: { alignItems: 'flex-start' },
+  visitText: { flex: 1, gap: 6 },
+  when: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  pay: { alignSelf: 'stretch', marginTop: space[1] },
   empty: { flexGrow: 1, justifyContent: 'center', gap: space[4] },
   emptyText: { gap: space[1] },
 });

@@ -118,7 +118,7 @@ function loginErrorMessage(error: unknown): string {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
+  screen: { flex: 1, backgroundColor: colors.bg },
   content: {
     flexGrow: 1,
     gap: space[6],

@@ -21,7 +21,7 @@ Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las 
 
 | Área                     | Hoy en el código                                                        | Falta para la v0.6                                                                                                          | Etapa            |
 | ------------------------ | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| Design system            | El de la v0.4: `tokens.json` y mockups en HTML                          | Un design system nuevo                                                                                                      | D                |
+| Design system            | Placas (etapa D, hecha)                                                 | Nada                                                                                                                        | D                |
 | Alta del cuidador        | No existe; cuidadores del seed                                          | Modo cuidador, documentos, curso de bienvenida, aprobación con script, perfil, horario, distritos y precios con calculadora | 9a               |
 | Métricas del piloto      | Nada                                                                    | Script `metrics:report`                                                                                                     | Métricas         |
 | Ficha                    | Datos, salud, vacunas, indicaciones y tareas de cuidado                 | Alimento, horarios de comida y medicinas, premios, rutina y celo; pantalla de la mascota                                    | 7                |
@@ -114,9 +114,9 @@ La v0.6 no agrega settings: las metas del reporte del piloto son constantes del 
 - El ejemplo de RN-PRE (cuidador Confiable a $6.50: el dueño paga $7.48 y el cuidador recibe $6.50) es un test de las funciones de `src/pricing/` con el precio en centavos. Como el paseo llega en la etapa 8, el test no usa el servicio.
 - Las insignias y las certificaciones salen en la búsqueda y en el perfil.
 
-### Etapa D: nuevo design system
+### Etapa D: nuevo design system (hecha)
 
-Nuevo design system; detalle en [docs/design/README.md](design/README.md#etapa-d-nuevo-design-system).
+Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#design-system-placas). **Parte 1 (hecha, solo docs):** dos direcciones exploradas en HTML y Placas elegida, con sus mockups en `docs/design/directions/`. **Parte 2 (hecha, app):** tokens y fuentes (Gabarito y Lexend en lugar de Nunito), componentes nuevos (placas, placa del nivel, foto con la silueta de Nimbus, bloques de servicio y filas) y el layout de Main, Perfil, Reservar, Visitas y Mis mascotas. Los mockups de `docs/design/screens/` quedan como referencia de textos de la v0.4. **La etapa D está hecha.**
 
 ### Etapa 9a: alta del cuidador
 

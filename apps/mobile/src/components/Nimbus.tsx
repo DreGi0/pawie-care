@@ -14,6 +14,17 @@ export type NimbusProps = {
 
 const ink = colors.ink;
 
+/** Nimbus's body and waving hand, in its 160 × 160 box. CaregiverPhoto crops photos with them. */
+export const NIMBUS_BODY =
+  'M80 36C112 36 132 60 132 92C132 120 110 136 80 136C50 136 28 120 28 92C28 60 48 36 80 36Z';
+export const NIMBUS_HAND = {
+  cx: 124,
+  cy: 54,
+  rx: 11,
+  ry: 20,
+  transform: 'rotate(32 124 54)',
+} as const;
+
 /**
  * Nimbus, the mascot, inside a pastel circle. At most once per screen, and never in lists or
  * forms. It floats while it says hello and breathes while it sleeps. It's drawn from the
@@ -37,19 +48,10 @@ export function Nimbus({ pose, background, size = 160 }: NimbusProps) {
         <Svg width={size} height={size} viewBox="0 0 160 160">
           {pose === 'hola' ? (
             <>
-              <Ellipse
-                cx={124}
-                cy={54}
-                rx={11}
-                ry={20}
-                transform="rotate(32 124 54)"
-                fill={colors.card}
-                stroke={ink}
-                strokeWidth={3.5}
-              />
+              <Ellipse {...NIMBUS_HAND} fill={colors.white} stroke={ink} strokeWidth={3.5} />
               <Path
-                d="M80 36C112 36 132 60 132 92C132 120 110 136 80 136C50 136 28 120 28 92C28 60 48 36 80 36Z"
-                fill={colors.card}
+                d={NIMBUS_BODY}
+                fill={colors.white}
                 stroke={ink}
                 strokeWidth={3.5}
                 strokeLinejoin="round"
@@ -68,7 +70,7 @@ export function Nimbus({ pose, background, size = 160 }: NimbusProps) {
             <>
               <Path
                 d="M80 74C118 74 140 98 140 116C140 128 128 132 80 132C32 132 20 128 20 116C20 98 42 74 80 74Z"
-                fill={colors.card}
+                fill={colors.white}
                 stroke={ink}
                 strokeWidth={3.5}
                 strokeLinejoin="round"

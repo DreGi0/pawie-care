@@ -1,17 +1,18 @@
 import { StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { colors, fontFamily, radius, space, type ColorName } from '@/theme/tokens';
+import { borderWidth, colors, radius, space, type ColorName } from '@/theme/tokens';
 
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
 
+// The icon tells the tones apart: the service colors can't mark a state, and `star` is only for
+// the ⭐. A warning gets an ink outline to stand out from information.
 const tones = {
-  info: { background: 'sky', text: 'ink', icon: 'info' },
-  success: { background: 'sage', text: 'ink', icon: 'check' },
-  // butter is for real warnings only, like a payment about to expire.
-  warning: { background: 'butter', text: 'ink', icon: 'clock' },
-  error: { background: 'rose', text: 'roseDeep', icon: 'circle-alert' },
+  info: { background: 'tint', text: 'ink', icon: 'info' },
+  success: { background: 'tint', text: 'ink', icon: 'check' },
+  warning: { background: 'white', text: 'ink', icon: 'circle-alert' },
+  error: { background: 'dangerTint', text: 'danger', icon: 'circle-alert' },
 } satisfies Record<string, { background: ColorName; text: ColorName; icon: IconName }>;
 
 export type BannerProps = {
@@ -21,7 +22,7 @@ export type BannerProps = {
   icon?: IconName;
 };
 
-/** A colored notice. An error is announced to screen readers as soon as it shows up. */
+/** A notice. An error is announced to screen readers as soon as it shows up. */
 export function Banner({ tone, message, icon }: BannerProps) {
   const { background, text, icon: toneIcon } = tones[tone];
   const isError = tone === 'error';
@@ -31,10 +32,14 @@ export function Banner({ tone, message, icon }: BannerProps) {
       entering={FadeIn.duration(250)}
       accessibilityRole={isError ? 'alert' : undefined}
       accessibilityLiveRegion={isError ? 'assertive' : 'none'}
-      style={[styles.banner, { backgroundColor: colors[background] }]}
+      style={[
+        styles.banner,
+        { backgroundColor: colors[background] },
+        tone === 'warning' && styles.outlined,
+      ]}
     >
       <Icon name={icon ?? toneIcon} color={text} />
-      <Text color={text} style={[styles.message, isError && styles.errorMessage]}>
+      <Text variant={isError ? 'bodyStrong' : 'body'} color={text} style={styles.message}>
         {message}
       </Text>
     </Animated.View>
@@ -49,6 +54,6 @@ const styles = StyleSheet.create({
     padding: space[4],
     borderRadius: radius.md,
   },
+  outlined: { borderWidth: borderWidth.strong, borderColor: colors.ink },
   message: { flex: 1 },
-  errorMessage: { fontFamily: fontFamily.semiBold },
 });

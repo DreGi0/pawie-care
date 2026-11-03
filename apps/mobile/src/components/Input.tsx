@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
-import { colors, fontFamily, radius, space } from '@/theme/tokens';
+import { borderWidth, colors, fontFamily, radius, space } from '@/theme/tokens';
 
 import { Text } from './Text';
 
@@ -61,8 +61,8 @@ export function Input({
           accessibilityLabel={optional ? `${label} (opcional)` : label}
           accessibilityHint={message}
           placeholderTextColor={colors.inkMuted}
-          cursorColor={colors.grapeDeep}
-          selectionColor={colors.grapeDeep}
+          cursorColor={colors.primary}
+          selectionColor={colors.primary}
           multiline={multiline}
           style={[
             styles.input,
@@ -83,7 +83,7 @@ export function Input({
         {accessory}
       </View>
       {message && (
-        <Text variant="caption" color={error ? 'roseDeep' : 'inkMuted'}>
+        <Text variant="caption" color={error ? 'danger' : 'inkMuted'}>
           {message}
         </Text>
       )}
@@ -93,22 +93,22 @@ export function Input({
 
 const styles = StyleSheet.create({
   field: { gap: space[2] },
-  optional: { fontFamily: fontFamily.semiBold },
+  optional: { fontFamily: fontFamily.displayMedium },
   box: {
-    minHeight: 52,
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1.5,
-    borderColor: colors.lineStrong,
-    borderRadius: radius.sm,
+    backgroundColor: colors.white,
+    borderWidth: borderWidth.hairline,
+    borderColor: colors.inkMuted,
+    borderRadius: radius.md,
   },
   multilineBox: { minHeight: 96, alignItems: 'stretch' },
-  boxError: { borderColor: colors.roseDeep },
+  boxError: { borderWidth: borderWidth.strong, borderColor: colors.danger },
   boxFocused: {
     outlineWidth: 3,
     outlineStyle: 'solid',
-    outlineColor: colors.grapeDeep,
+    outlineColor: colors.primary,
     outlineOffset: 1,
   },
   prefix: {
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     paddingHorizontal: space[4],
     paddingVertical: 0,
-    fontFamily: fontFamily.regular,
+    fontFamily: fontFamily.text,
     fontSize: 16,
     color: colors.ink,
   },

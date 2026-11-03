@@ -1,6 +1,6 @@
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, radius, shadow, touchTarget, type ColorName } from '@/theme/tokens';
+import { borderWidth, colors, radius, touchTarget, type ColorName } from '@/theme/tokens';
 
 import { Icon, type IconName } from './Icon';
 import { Touchable, type TouchableProps } from './Touchable';
@@ -9,15 +9,15 @@ export type IconButtonProps = Omit<TouchableProps, 'children' | 'style'> & {
   icon: IconName;
   /** Says what the button does, since there is no text. */
   accessibilityLabel: string;
-  /** `raised` sits on cream, like back and close; `plain` goes inside other controls. */
-  variant?: 'raised' | 'plain';
+  /** `outlined` is a circle with an ink border, like back; `plain` goes inside other controls. */
+  variant?: 'outlined' | 'plain';
   color?: ColorName;
   style?: StyleProp<ViewStyle>;
 };
 
 export function IconButton({
   icon,
-  variant = 'raised',
+  variant = 'outlined',
   color = 'ink',
   style,
   ...props
@@ -28,7 +28,7 @@ export function IconButton({
       pressedScale={0.9}
       style={(pressed) => [
         styles.base,
-        variant === 'raised' && styles.raised,
+        variant === 'outlined' && styles.outlined,
         pressed && styles.pressed,
         style,
       ]}
@@ -47,6 +47,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.pill,
   },
-  raised: { backgroundColor: colors.card, boxShadow: shadow.soft },
+  outlined: {
+    backgroundColor: colors.bg,
+    borderWidth: borderWidth.strong,
+    borderColor: colors.ink,
+  },
   pressed: { opacity: 0.7 },
 });

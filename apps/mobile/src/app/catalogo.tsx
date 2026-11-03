@@ -1,3 +1,4 @@
+import type { ServiceCode } from '@pawie/api-client';
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -5,22 +6,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatar';
 import { Banner } from '@/components/Banner';
-import { Button } from '@/components/Button';
 import { BottomBar } from '@/components/BottomBar';
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { CaregiverPhoto } from '@/components/CaregiverPhoto';
 import { Checkbox } from '@/components/Checkbox';
 import { Chip } from '@/components/Chip';
 import { Icon, type IconName } from '@/components/Icon';
 import { IconButton } from '@/components/IconButton';
 import { icons } from '@/components/icons.generated';
 import { Input } from '@/components/Input';
+import { LevelTag } from '@/components/LevelTag';
 import { Nimbus } from '@/components/Nimbus';
+import { Row } from '@/components/Row';
 import { Select } from '@/components/Select';
+import { ServiceBlock } from '@/components/ServiceBlock';
 import { Sheet } from '@/components/Sheet';
+import { Status } from '@/components/Status';
 import { StepBar } from '@/components/StepBar';
-import { Tag } from '@/components/Tag';
+import { StarMedal, Tag } from '@/components/Tag';
 import { Text } from '@/components/Text';
-import { colors, space } from '@/theme/tokens';
+import { colors, gutter, space } from '@/theme/tokens';
 
 // Catalog of the components, to review them on a device. Only exists in development.
 // It breaks "one primary button per screen" on purpose, to show every state.
@@ -30,6 +36,7 @@ export default function ComponentCatalog() {
   const [approximate, setApproximate] = useState(true);
   const [district, setDistrict] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [service, setService] = useState<ServiceCode>('HOME_VISIT');
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -44,13 +51,21 @@ export default function ComponentCatalog() {
         <Text variant="display">Componentes</Text>
 
         <Section title="Texto">
-          <Text variant="title">title · Cuidadores cerca de ti</Text>
-          <Text variant="heading">heading · Próxima visita</Text>
-          <Text>body · Ana cuidará a Luna el sábado de 9:00 a 13:00.</Text>
-          <Text variant="bodyStrong">bodyStrong · $12 por visita</Text>
-          <Text variant="label">label · Reservar visita</Text>
+          <Text variant="display">Valeria Martínez</Text>
+          <Text variant="title">Hola, Daniela</Text>
+          <Text variant="heading">Verificado por Pawie</Text>
+          <Text variant="subheading">Gabriela Flores</Text>
+          <Text variant="price">$18</Text>
+          <Text variant="priceSmall">$13.20</Text>
+          <Text variant="label">Reservar visita</Text>
+          <Text variant="placa">Súper Cuidador</Text>
+          <Text>Ana cuidará a Luna el sábado de 9:00 a 13:00.</Text>
+          <Text variant="bodyStrong">Disponible para Luna</Text>
           <Text variant="caption" color="inkMuted">
-            caption · Hace 5 min · 1.2 km
+            Ordenados por calificación
+          </Text>
+          <Text variant="footnote" color="inkMuted">
+            por visita
           </Text>
         </Section>
 
@@ -100,27 +115,73 @@ export default function ComponentCatalog() {
           />
         </Section>
 
-        <Section title="Card">
+        <Section title="Row y Card">
+          <View>
+            <Row onPress={() => {}} accessibilityLabel="Ana Martínez, ver perfil">
+              <CaregiverPhoto name="Ana Martínez" />
+              <View style={styles.flex}>
+                <Text variant="subheading">Ana Martínez</Text>
+                <Text variant="caption" color="inkMuted">
+                  Se puede tocar
+                </Text>
+              </View>
+              <Text variant="price">$12</Text>
+            </Row>
+            <Row divider>
+              <Avatar name="Luna" />
+              <Text variant="subheading" style={styles.flex}>
+                Luna
+              </Text>
+            </Row>
+          </View>
           <Card>
-            <Text variant="heading">Próxima visita</Text>
-            <Text color="inkMuted">Lun 19 oct, 9:00 · Visita a domicilio</Text>
-          </Card>
-          <Card onPress={() => {}} accessibilityLabel="Ana Martínez, ver perfil">
-            <Text variant="bodyStrong">Ana Martínez (se puede tocar)</Text>
-            <Text variant="caption" color="inkMuted">
-              4.9 (38) · 126 servicios · por visita
-            </Text>
+            <Text variant="heading">Un grupo de campos</Text>
+            <Text color="inkMuted">O un desglose, como el precio de Reservar.</Text>
           </Card>
         </Section>
 
-        <Section title="Tag">
+        <Section title="Tag (placas)">
           <View style={styles.tags}>
-            <Tag tone="certified" label="⭐ Certificada" />
-            <Tag tone="info" label="Estudiante de veterinaria" />
-            <Tag tone="warning" label="Falta pagar · antes de las 17:30" />
-            <Tag tone="success" label="Visita confirmada" />
-            <Tag tone="special" label="Cuidado especial" />
-            <Tag tone="error" label="Cancelada" />
+            <Tag kind="badge" label="Identidad verificada" icon="check" />
+            <Tag kind="certification" label="Primeros auxilios" />
+            <Tag kind="star" label="Cuidado especial" />
+            <Tag kind="level" level="PRO" />
+            <Tag kind="level" level="SUPER" />
+            <Tag kind="service" service="HOME_VISIT" />
+            <Tag kind="service" service="OVERNIGHT_STAY" size="sm" />
+            <StarMedal />
+          </View>
+          <View style={styles.row}>
+            <View style={styles.flex}>
+              <LevelTag level="TRUSTED" caption="Tu nivel" />
+            </View>
+            <View style={styles.flex}>
+              <LevelTag level="SUPER" />
+            </View>
+          </View>
+        </Section>
+
+        <Section title="Status">
+          <Status tone="info" label="Ana responde antes de las 17:30" />
+          <Status tone="warning" label="Falta pagar antes de las 17:30" />
+          <Status tone="success" label="Visita confirmada" />
+          <Status tone="error" label="La cancelaste" />
+        </Section>
+
+        <Section title="ServiceBlock">
+          <View style={styles.row}>
+            <ServiceBlock
+              service="HOME_VISIT"
+              detail="En tu casa"
+              selected={service === 'HOME_VISIT'}
+              onPress={() => setService('HOME_VISIT')}
+            />
+            <ServiceBlock
+              service="OVERNIGHT_STAY"
+              detail="Toda la noche"
+              selected={service === 'OVERNIGHT_STAY'}
+              onPress={() => setService('OVERNIGHT_STAY')}
+            />
           </View>
         </Section>
 
@@ -143,6 +204,21 @@ export default function ComponentCatalog() {
         </Section>
 
         <Section title="Chip">
+          <View style={styles.tags}>
+            <Text>Para</Text>
+            <Chip
+              label="Luna"
+              photo={<Avatar name="Luna" size={36} />}
+              accessibilityLabel="Mascotas: Luna. Cambiar"
+              onPress={() => {}}
+            />
+            <Text>en</Text>
+            <Chip
+              label="San Salvador"
+              icon={<Icon name="map-pin" size={18} color="primary" />}
+              onPress={() => {}}
+            />
+          </View>
           <View style={styles.row}>
             <View style={styles.flex}>
               <Chip label="Perro" selected={species === 'dog'} onPress={() => setSpecies('dog')} />
@@ -181,22 +257,23 @@ export default function ComponentCatalog() {
 
         <Section title="Nimbus">
           <View style={styles.row}>
-            <Nimbus pose="hola" background="grape" size={96} />
-            <Nimbus pose="durmiendo" background="sky" size={96} />
+            <Nimbus pose="hola" background="tint" size={96} />
+            <Nimbus pose="durmiendo" background="tint" size={96} />
           </View>
         </Section>
 
         <Section title="BottomBar">
-          <BottomBar caption="Luna · 1 visita" amount="$12">
+          <BottomBar amount="$12" caption="Precio por visita">
             <Button label="Reservar visita" onPress={() => {}} />
           </BottomBar>
         </Section>
 
-        <Section title="Avatar">
+        <Section title="Avatar y CaregiverPhoto">
           <View style={styles.row}>
-            <Avatar name="Luna" size={40} />
-            <Avatar name="Ana Martínez" />
-            <Avatar name="Mishi" size={56} />
+            <Avatar name="Luna" size={36} />
+            <Avatar name="Mishi" />
+            <CaregiverPhoto name="Ana Martínez" />
+            <CaregiverPhoto name="Valeria Martínez" width={120} />
           </View>
         </Section>
 
@@ -207,7 +284,7 @@ export default function ComponentCatalog() {
             <IconButton
               icon="plus"
               variant="plain"
-              color="grapeDeep"
+              color="primary"
               accessibilityLabel="Agregar mascota"
               onPress={() => {}}
             />
@@ -241,10 +318,10 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
-  content: { padding: space[4], gap: space[8] },
+  screen: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: gutter, gap: space[8] },
   section: { gap: space[4] },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space[2] },
   row: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
   flex: { flex: 1 },
   icons: { flexDirection: 'row', flexWrap: 'wrap', gap: space[4] },

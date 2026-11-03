@@ -13,13 +13,13 @@ import { colors, radius, space, type ColorName } from '@/theme/tokens';
 const reasons: { icon: IconName | '⭐'; background: ColorName; text: string }[] = [
   {
     icon: '⭐',
-    background: 'butter',
+    background: 'star',
     text: 'Cuidadores ⭐ con curso de cuidado especial, para mascotas mayores o en recuperación.',
   },
-  { icon: 'check', background: 'sage', text: 'Pagas solo cuando el cuidador acepta tu visita.' },
+  { icon: 'check', background: 'tint', text: 'Pagas solo cuando el cuidador acepta tu visita.' },
   {
     icon: 'lock',
-    background: 'sky',
+    background: 'tint',
     text: 'Tu dirección solo la ve quien confirma una visita contigo.',
   },
 ];
@@ -33,7 +33,7 @@ export default function WelcomeScreen() {
         </Text>
 
         <Animated.View entering={FadeInDown.duration(500)} style={styles.hero}>
-          <Nimbus pose="hola" background="grape" size={144} />
+          <Nimbus pose="hola" background="tint" size={144} />
           <View style={styles.heroText}>
             <Text variant="display" style={styles.centered} accessibilityRole="header">
               Cuidadores de confianza para tu mascota
@@ -75,7 +75,7 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
+  screen: { flex: 1, backgroundColor: colors.bg },
   content: { flexGrow: 1, gap: space[6], padding: space[4], paddingTop: space[6] },
   centered: { textAlign: 'center' },
   hero: { alignItems: 'center', gap: space[6] },

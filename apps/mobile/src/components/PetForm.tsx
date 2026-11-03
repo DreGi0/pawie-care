@@ -138,7 +138,7 @@ export function PetForm({ submitLabel, onSaved, petId }: PetFormProps) {
             <Image source={photo.uri} contentFit="cover" style={styles.photoImage} />
             {uploading && (
               <View style={styles.photoBusy}>
-                <ActivityIndicator color={colors.card} />
+                <ActivityIndicator color={colors.white} />
               </View>
             )}
           </>
@@ -185,7 +185,7 @@ export function PetForm({ submitLabel, onSaved, petId }: PetFormProps) {
                   onPress={() => field.onChange(species.id)}
                 />
               </View>
-            )) ?? <ActivityIndicator color={colors.grapeDeep} />}
+            )) ?? <ActivityIndicator color={colors.primary} />}
           </ChoiceField>
         )}
       />
@@ -286,7 +286,7 @@ function ChoiceField({
       <Text variant="label">{label}</Text>
       <View style={styles.choices}>{children}</View>
       {error && (
-        <Text variant="caption" color="roseDeep">
+        <Text variant="caption" color="danger">
           {error}
         </Text>
       )}
@@ -309,8 +309,8 @@ const styles = StyleSheet.create({
     borderRadius: PHOTO / 2,
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: colors.lineStrong,
-    backgroundColor: colors.grape,
+    borderColor: colors.inkMuted,
+    backgroundColor: colors.tint,
   },
   photoImage: { ...StyleSheet.absoluteFill },
   photoBusy: {
