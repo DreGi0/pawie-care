@@ -1,18 +1,28 @@
 # Pawie Care: reglas de negocio
 
-**Versión:** 0.5 · **Fecha:** 2026-10-28 · **Estado:** aprobada para planificar. Reemplaza a la v0.4.
+**Versión:** 0.6 · **Fecha:** 2026-11-02 · **Estado:** aprobada para planificar. Reemplaza a la v0.5.
 
-La v0.5 alinea el producto con los documentos de negocio del equipo (Buyer diferencial, Promesa, Vehículo y Pricing). Esos documentos no están en este repositorio. Este archivo es su traducción a reglas que se pueden programar, así que **en el código manda este archivo**.
+La v0.5 alineó el producto con los documentos de negocio del equipo (Buyer diferencial, Promesa, Vehículo y Pricing). La v0.6 suma los referidos y las métricas del piloto, y deja abierta la comisión al cuidador, en la que Pricing y la hoja maestra del plan de negocio no coinciden. Esos documentos no están en este repositorio. Este archivo es su traducción a reglas que se pueden programar, así que **en el código manda este archivo**.
 
 ## Cómo leer este documento
 
-- Cada regla tiene un ID (`RN-XXX-00`) para citarla en el código, los tests y los tickets. Los IDs de la v0.4 se conservan cuando la regla sigue viva, aunque cambie su contenido.
+- Cada regla tiene un ID (`RN-XXX-00`) para citarla en el código, los tests y los tickets. Los IDs de versiones anteriores se conservan cuando la regla sigue viva, aunque cambie su contenido.
 - Los valores entre corchetes, como **[15%]**, son **parámetros configurables**. Están todos en la [sección 15](#15-parámetros-configurables).
 - **`[DEFINIR: …]`** marca una decisión de negocio pendiente. Si tiene un valor provisional, se programa con ese valor. Si no lo tiene, no se inventa: se pregunta.
 - Cada sección empieza con una línea **En la demo** que dice qué parte se construye ahora. Lo que no se menciona ahí es Fase 2. Aun así, el modelo de datos debe contemplarlo para no rehacerlo después.
-- El orden de construcción está en [plan-v0.5.md](plan-v0.5.md).
+- El orden de construcción está en [plan-v0.6.md](plan-v0.6.md).
 
-## Cambios desde la v0.4
+## Cambios desde la v0.5
+
+| Tema                       | v0.5                                                | v0.6                                                                                                                                  | Reglas         |
+| -------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| Comisión al cuidador       | [0%]: el cuidador recibe el 100% de su precio       | [0%] **provisional**, con `[DEFINIR: 0% o 10%]`. La app muestra lo que recibe el cuidador según la API y nunca dice "recibes el 100%" | RN-PRE-04      |
+| Referidos                  | El bono por referir estaba en ideas para después    | Cada cuidador aprobado tiene un **código de referido**, que va en el texto que comparte y que el dueño puede escribir al registrarse  | §18, RN-CUI-22 |
+| Métricas del piloto        | No había                                            | Script `metrics:report` con el número crítico, el embudo de alta y cuatro métricas con meta                                           | §19            |
+| Precio del siguiente nivel | El cuidador veía el rango y el sugerido de su nivel | También ve, en Precios e Inicio, el precio sugerido del siguiente nivel para cada servicio                                            | RN-CUI-17      |
+| Orden de construcción      | `plan-v0.5.md`, etapas 6 a 12b                      | [plan-v0.6](plan-v0.6.md): primero un design system nuevo (etapa D), y la etapa 9 se parte en alta (9a) y solicitudes (9b)            | —              |
+
+## Cambios de la v0.4 a la v0.5
 
 | Tema                   | v0.4                                           | v0.5                                                                                                         | Reglas                    |
 | ---------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------- |
@@ -51,7 +61,7 @@ La demo es una **app móvil** (iOS y Android) con dos modos en la misma app: **d
 
 **Flujo del dueño:**
 
-1. Registrarse e iniciar sesión.
+1. Registrarse, con el código del cuidador que lo recomendó si lo tiene, e iniciar sesión.
 2. Registrar sus mascotas con su ficha.
 3. Buscar y filtrar cuidadores por nivel, certificaciones y calificación, y ver sus perfiles.
 4. Reservar y pagar con Wompi en modo de prueba, con el primer servicio sin tarifa.
@@ -66,7 +76,7 @@ La demo es una **app móvil** (iOS y Android) con dos modos en la misma app: **d
 3. Aceptar o rechazar solicitudes.
 4. Hacer el servicio: check-in, tareas, fotos, ruta y check-out.
 5. Ver su nivel, lo que le falta para subir y sus ganancias.
-6. Compartir su perfil y usar el asistente.
+6. Compartir su perfil con su código de referido y usar el asistente.
 
 **Lo que la demo resuelve de otra forma:**
 
@@ -76,8 +86,9 @@ La demo es una **app móvil** (iOS y Android) con dos modos en la misma app: **d
 - **Reembolsos:** se hacen en el panel de Wompi y se registran con un script (RN-PAG-05).
 - **Cuidadores de prueba:** el seed carga cuidadores aprobados en los cuatro niveles, con Reserva inmediata, para que se pueda reservar sin un segundo teléfono.
 - **Parámetros y contenido del asistente:** se cambian con un script o con el seed.
+- **Métricas del piloto:** un script las imprime en consola (§19), porque el panel de administración es Fase 2.
 
-**Fuera de la demo:** web y perfiles públicos, panel de administración, cursos avanzados de pago, pago real a cuidadores, pago por transferencia, cancelaciones después de pagar, reemplazos, solicitudes abiertas, encuentro previo, botón de emergencia, reseñas del cuidador al dueño, chat interno, hospedaje en casa del cuidador y los demás servicios de la [sección 18](#18-ideas-para-después).
+**Fuera de la demo:** web y perfiles públicos, panel de administración, cursos avanzados de pago, pago real a cuidadores, pago por transferencia, cancelaciones después de pagar, reemplazos, solicitudes abiertas, encuentro previo, botón de emergencia, reseñas del cuidador al dueño, chat interno, hospedaje en casa del cuidador, bono por referir y los demás servicios de la [sección 20](#20-ideas-para-después).
 
 ---
 
@@ -130,7 +141,7 @@ La demo es una **app móvil** (iOS y Android) con dos modos en la misma app: **d
   | Perros grandes      | Cuenta para subir de nivel                                                                                                                                                                    |
   | Gatos               | Cuenta para subir de nivel                                                                                                                                                                    |
 
-- **RN-CUI-08** Para aprobar un curso avanzado hay que sacar al menos **[80%]** en el examen final. El de cuidado especial también exige una demostración práctica, y su contenido lo diseña y valida un veterinario. Los cursos avanzados tienen costo (§18) y son `Fase 2`.
+- **RN-CUI-08** Para aprobar un curso avanzado hay que sacar al menos **[80%]** en el examen final. El de cuidado especial también exige una demostración práctica, y su contenido lo diseña y valida un veterinario. Los cursos avanzados tienen costo (§20) y son `Fase 2`.
 - **RN-CUI-09** Cada certificación dura **[12 meses]** y se renueva con un repaso corto.
 - **RN-CUI-10** La ⭐ se suspende o se retira por un incidente grave, por una calificación promedio menor a **[4.0]** en servicios Especiales, o por cancelar cuidados Especiales (RN-CAN-05).
 - **RN-CUI-11** En el modelo de datos, cada certificación tiene tipo, fecha de obtención, vencimiento y estado. Los tipos son un catálogo, así que se pueden sumar otros sin cambiar el modelo.
@@ -184,7 +195,9 @@ La demo es una **app móvil** (iOS y Android) con dos modos en la misma app: **d
 - **RN-CUI-15** Un cuidador no puede tener tramos que se crucen. Cada tramo (un paseo, una visita o una noche, ver §8.1) bloquea solo su propio horario.
 - **RN-CUI-16** Si el cuidador activa la **Reserva inmediata**, las solicitudes se confirman sin esperar su aprobación.
 - **RN-CUI-17** El cuidador fija su precio para cada servicio **dentro del rango de su nivel** (RN-PRE-01). La app le muestra el precio sugerido como guía. Si no lo cambia, se usa el sugerido. Si su nivel o el rango cambian y su precio queda afuera, se cobra el extremo más cercano del rango vigente.
-- **RN-CUI-22** El cuidador puede **compartir su perfil** en Instagram, Facebook o WhatsApp con la hoja de compartir del teléfono. En la demo se comparte un texto con su nivel, su calificación y sus insignias, y el enlace de la landing (`[DEFINIR: URL]`). El perfil público con su propia URL llega con la web. `Fase 2`
+  - En **Precios** y en **Inicio**, la app le muestra para cada servicio el precio sugerido del **siguiente nivel**, por ejemplo: "En Pro, tu paseo sugerido sube de $6.50 a $11". Los rangos y los sugeridos son los de RN-PRE-01 y los devuelve la API; la app no los calcula.
+  - Un Súper Cuidador no ve esa línea, porque no hay un nivel siguiente.
+- **RN-CUI-22** El cuidador puede **compartir su perfil** en Instagram, Facebook o WhatsApp con la hoja de compartir del teléfono. En la demo se comparte un texto con su nivel, su calificación, sus insignias y su código de referido (RN-REF-02), y el enlace de la landing (`[DEFINIR: URL]`). El perfil público con su propia URL llega con la web. `Fase 2`
 
 ## 5. Mascotas
 
@@ -219,7 +232,7 @@ El nivel de cuidado (**Normal** o **Especial**) ya **no** cambia el precio. Solo
 - **RN-SER-02** **Pernocta en casa del dueño:** de **[19:00]** a **[08:00]** del día siguiente, con los cuidados de la noche y de la mañana. Se cobra por noche.
 - **RN-SER-03** En estadías de varios días, el dueño puede sumar visitas durante el día. Van como tramos de visita dentro de la misma reserva, al precio de visita del cuidador.
 - **RN-SER-05** **Paseo:** **[45 min]** que empiezan y terminan en la dirección del dueño. **Solo para perros**, hasta **[2]** perros por paseo. Se cobra por paseo y se pueden agendar varios en un día. Durante el paseo se registra la ruta (RN-EJE-06).
-- **RN-SER-04** Fuera del alcance por ahora: hospedaje en casa del cuidador, guardería de día, baño o grooming y pet taxi (§18).
+- **RN-SER-04** Fuera del alcance por ahora: hospedaje en casa del cuidador, guardería de día, baño o grooming y pet taxi (§20).
 
 ## 7. Precios y tarifas
 
@@ -237,7 +250,8 @@ El nivel de cuidado (**Normal** o **Especial**) ya **no** cambia el precio. Solo
 
 - **RN-PRE-02** Cada mascota adicional en la misma reserva suma **[50%]** del precio del cuidador.
 - **RN-PRE-03** El **dueño paga** el precio del cuidador más una **tarifa de servicio de [15%]**, que cubre el pago seguro y la garantía de reembolso.
-- **RN-PRE-04** El **cuidador recibe el 100%** de su precio: la **comisión al cuidador es [0%]**. Se mantiene como parámetro por si cambia el modelo.
+- **RN-PRE-04** La **comisión al cuidador es [0%]**, provisional. `[DEFINIR: 0% según Pricing o 10% según la hoja maestra del plan de negocio]`. Es un parámetro, así que cambiarla no requiere cambiar el código.
+  - Ningún texto de la app dice "recibes el 100%" ni algo parecido. Donde el cuidador ve lo que gana o lo que recibe, la app muestra el monto que devuelve la API, que ya descuenta la comisión vigente.
 - **RN-PRE-05** No hay descuentos por repetir con el mismo cuidador.
 - **RN-PRE-06** De la tarifa de servicio salen el **IVA ([13%])**, la comisión de la pasarela ([3.5%]) y el **fondo de la garantía ([2%] de lo que paga el dueño)**. El dueño siempre ve el precio final. `[DEFINIR: cómo se aplica el IVA, con un contador]`
 - **RN-PRE-07** **Cada reserva guarda una copia** de los precios, las tarifas, el nivel del cuidador y el incentivo vigentes **al crearse**. Si después cambia algo, solo afecta a las reservas nuevas.
@@ -248,12 +262,12 @@ El nivel de cuidado (**Normal** o **Especial**) ya **no** cambia el precio. Solo
   - la comisión es un porcentaje del subtotal, y el cuidador recibe el subtotal menos la comisión.
 - **RN-PRE-09** **Primer servicio sin tarifa:** si el dueño crea una reserva dentro de los **[15 días]** siguientes a su registro y nunca ha pagado una reserva, esa reserva no lleva tarifa de servicio.
   - Solo una reserva activa (`REQUESTED`, `PENDING_PAYMENT` o posterior) puede llevar el beneficio a la vez. Si esa reserva se rechaza, vence o se cancela sin pagarse, el beneficio vuelve a estar disponible mientras siga dentro del plazo.
-  - El cuidador cobra igual el 100% y la garantía sigue aplicando.
+  - Lo que recibe el cuidador no cambia y la garantía sigue aplicando.
   - En la app: al registrarse aparece "Tu primer servicio sin tarifa" con los días que quedan, y al pagar la línea de la tarifa aparece tachada en $0.00 con el texto "Primer servicio".
   - La pasarela y el fondo de garantía de ese servicio los absorbe Pawie.
 - **RN-PRE-10** El precio que ve el dueño antes de reservar lo calcula la API, nunca la app.
 
-**Ejemplo (paseo con un cuidador Confiable):** el cuidador cobra $6.50. El dueño paga **$7.48** ($6.50 + 15%) y el cuidador recibe **$6.50**. Pawie se queda con $0.98 brutos; después de la pasarela ($0.26) y el fondo de garantía ($0.15) le quedan unos **$0.57** antes del IVA. Si es el primer servicio, el dueño paga $6.50 y Pawie pone unos $0.36.
+**Ejemplo (paseo con un cuidador Confiable, comisión en 0%):** el cuidador cobra $6.50. El dueño paga **$7.48** ($6.50 + 15%) y el cuidador recibe **$6.50**; con una comisión de 10% recibiría $5.85. Pawie se queda con $0.98 brutos; después de la pasarela ($0.26) y el fondo de garantía ($0.15) le quedan unos **$0.57** antes del IVA. Si es el primer servicio, el dueño paga $6.50 y Pawie pone unos $0.36.
 
 ## 8. Reservas
 
@@ -269,7 +283,7 @@ Una reserva es con un cuidador y un servicio, para una o varias mascotas. Tiene 
 - **RN-RES-03** Al solicitar, el dueño elige las mascotas (hasta **[3]** por reserva, o [2] perros en un paseo), el servicio, las fechas y horas, y deja **instrucciones para ese servicio** (por ejemplo, un premio o un cambio de horario). Si la reserva es Especial, se adjuntan automáticamente las indicaciones del veterinario del perfil de la mascota.
 - **RN-RES-04** Al solicitar, el dueño deja sus **datos de emergencia**: veterinario de cabecera, un contacto de emergencia, un **monto preautorizado para emergencias** y su consentimiento para que lleven a la mascota a una clínica. Sin ese consentimiento no se puede reservar. El monto solo se declara: no se cobra al reservar.
 - **RN-RES-05** Una solicitud debe hacerse con al menos **[2 h]** de anticipación al inicio del servicio.
-- **RN-RES-11** El cuidador ve en cada solicitud: las mascotas con su ficha, si alguna está en celo o es Especial, el servicio, las fechas y horas, el distrito (no la dirección exacta, RN-CTA-04) y **lo que va a ganar**. Acepta o rechaza desde la app.
+- **RN-RES-11** El cuidador ve en cada solicitud: las mascotas con su ficha, si alguna está en celo o es Especial, el servicio, las fechas y horas, el distrito (no la dirección exacta, RN-CTA-04) y **lo que va a ganar**, con el monto que devuelve la API (RN-PRE-04). Acepta o rechaza desde la app.
 
 ### 8.2 Estados de una reserva
 
@@ -378,42 +392,44 @@ Una reserva es con un cuidador y un servicio, para una o varias mascotas. Tiene 
 
 Se guardan en la base de datos, no en el código (`src/settings/settings.registry.ts`). En la demo se cambian con un script o con el seed. Cambiarlos no afecta las reservas ya creadas (RN-PRE-07).
 
-| Parámetro                                            | Valor inicial                       | Regla                |
-| ---------------------------------------------------- | ----------------------------------- | -------------------- |
-| Tarifa de servicio al dueño                          | 15%                                 | RN-PRE-03            |
-| Comisión al cuidador                                 | 0%                                  | RN-PRE-04            |
-| Recargo por mascota adicional                        | 50%                                 | RN-PRE-02            |
-| Rangos y precios sugeridos por servicio y nivel      | Ver tabla de RN-PRE-01              | RN-PRE-01            |
-| Días para usar el primer servicio sin tarifa         | 15 días                             | RN-PRE-09            |
-| Fondo de la garantía                                 | 2%                                  | RN-PRE-06            |
-| IVA                                                  | 13%                                 | RN-PRE-06            |
-| Comisión de la pasarela                              | 3.5%                                | RN-PAG-01            |
-| Requisitos de cada nivel                             | Ver tabla de RN-NIV-02              | RN-NIV-02            |
-| Duración del paseo                                   | 45 min                              | RN-SER-05            |
-| Máximo de perros por paseo                           | 2                                   | RN-SER-05            |
-| Duración máxima de una visita                        | 60 min                              | RN-SER-01            |
-| Horario de pernocta                                  | 19:00–08:00                         | RN-SER-02            |
-| Máximo de mascotas por reserva                       | 3                                   | RN-RES-03            |
-| Anticipación mínima para solicitar                   | 2 h                                 | RN-RES-05            |
-| Plazo de respuesta del cuidador                      | 24 h / 6 h / 1 h                    | RN-RES-06            |
-| Plazo de pago                                        | 2 h                                 | RN-RES-07            |
-| Retención del pago y plazo del reclamo               | 48 h                                | RN-PAG-03, RN-GAR-02 |
-| Anticipación que cuenta como "último momento"        | 24 h                                | RN-GAR-01            |
-| Plazo para resolver un reclamo                       | 5 días hábiles                      | RN-GAR-03            |
-| Tolerancia de check-in                               | 30 min                              | RN-EJE-02            |
-| Fotos mínimas por tramo                              | 1                                   | RN-EJE-03            |
-| Intervalo de la ruta del paseo                       | 15 s                                | RN-EJE-06            |
-| Plazo para escribir una reseña                       | 7 días                              | RN-RSE-01            |
-| Nota mínima de los cursos                            | 80%                                 | RN-CUI-02, RN-CUI-08 |
-| Vigencia de una certificación                        | 12 meses                            | RN-CUI-09            |
-| Calificación mínima para conservar la ⭐             | 4.0 en servicios Especiales         | RN-CUI-10            |
-| Horario de atención del equipo                       | Todos los días, 07:00–21:00         | RN-SOP-03            |
-| Ventanas de cancelación del dueño                    | 48 h y 24 h; 100% / 50% / 0%        | RN-CAN-01            |
-| Cancelaciones del cuidador antes de suspender        | 3 en 90 días; suspensión de 15 días | RN-CAN-05            |
-| Suspensión de la ⭐ por cancelar un cuidado Especial | 30 días                             | RN-CAN-05            |
-| Crédito al dueño si no hay reemplazo                 | 10%                                 | RN-CAN-06            |
-| Espera al dueño en emergencias sin señales de alarma | 10 min                              | RN-EME-03            |
-| Umbral de revisión por calificación                  | 4.0 después de 5 servicios          | RN-RSE-03            |
+Las metas, los umbrales y los plazos del reporte del piloto (§19) **no** son parámetros: son constantes del script.
+
+| Parámetro                                            | Valor inicial                           | Regla                |
+| ---------------------------------------------------- | --------------------------------------- | -------------------- |
+| Tarifa de servicio al dueño                          | 15%                                     | RN-PRE-03            |
+| Comisión al cuidador                                 | 0%, provisional (`[DEFINIR: 0% o 10%]`) | RN-PRE-04            |
+| Recargo por mascota adicional                        | 50%                                     | RN-PRE-02            |
+| Rangos y precios sugeridos por servicio y nivel      | Ver tabla de RN-PRE-01                  | RN-PRE-01            |
+| Días para usar el primer servicio sin tarifa         | 15 días                                 | RN-PRE-09            |
+| Fondo de la garantía                                 | 2%                                      | RN-PRE-06            |
+| IVA                                                  | 13%                                     | RN-PRE-06            |
+| Comisión de la pasarela                              | 3.5%                                    | RN-PAG-01            |
+| Requisitos de cada nivel                             | Ver tabla de RN-NIV-02                  | RN-NIV-02            |
+| Duración del paseo                                   | 45 min                                  | RN-SER-05            |
+| Máximo de perros por paseo                           | 2                                       | RN-SER-05            |
+| Duración máxima de una visita                        | 60 min                                  | RN-SER-01            |
+| Horario de pernocta                                  | 19:00–08:00                             | RN-SER-02            |
+| Máximo de mascotas por reserva                       | 3                                       | RN-RES-03            |
+| Anticipación mínima para solicitar                   | 2 h                                     | RN-RES-05            |
+| Plazo de respuesta del cuidador                      | 24 h / 6 h / 1 h                        | RN-RES-06            |
+| Plazo de pago                                        | 2 h                                     | RN-RES-07            |
+| Retención del pago y plazo del reclamo               | 48 h                                    | RN-PAG-03, RN-GAR-02 |
+| Anticipación que cuenta como "último momento"        | 24 h                                    | RN-GAR-01            |
+| Plazo para resolver un reclamo                       | 5 días hábiles                          | RN-GAR-03            |
+| Tolerancia de check-in                               | 30 min                                  | RN-EJE-02            |
+| Fotos mínimas por tramo                              | 1                                       | RN-EJE-03            |
+| Intervalo de la ruta del paseo                       | 15 s                                    | RN-EJE-06            |
+| Plazo para escribir una reseña                       | 7 días                                  | RN-RSE-01            |
+| Nota mínima de los cursos                            | 80%                                     | RN-CUI-02, RN-CUI-08 |
+| Vigencia de una certificación                        | 12 meses                                | RN-CUI-09            |
+| Calificación mínima para conservar la ⭐             | 4.0 en servicios Especiales             | RN-CUI-10            |
+| Horario de atención del equipo                       | Todos los días, 07:00–21:00             | RN-SOP-03            |
+| Ventanas de cancelación del dueño                    | 48 h y 24 h; 100% / 50% / 0%            | RN-CAN-01            |
+| Cancelaciones del cuidador antes de suspender        | 3 en 90 días; suspensión de 15 días     | RN-CAN-05            |
+| Suspensión de la ⭐ por cancelar un cuidado Especial | 30 días                                 | RN-CAN-05            |
+| Crédito al dueño si no hay reemplazo                 | 10%                                     | RN-CAN-06            |
+| Espera al dueño en emergencias sin señales de alarma | 10 min                                  | RN-EME-03            |
+| Umbral de revisión por calificación                  | 4.0 después de 5 servicios              | RN-RSE-03            |
 
 ## 16. Avisos, calendario y fidelización
 
@@ -443,21 +459,56 @@ Se guardan en la base de datos, no en el código (`src/settings/settings.registr
 - **RN-SOP-06** **Emergencias de salud:** el asistente no las atiende. Al dueño le indica llamar de inmediato a su veterinario de cabecera, con su teléfono de la ficha. Al cuidador, llamar al dueño y seguir RN-EME-02 si hay una señal de alarma.
 - **RN-SOP-07** Los videos cortos en Instagram y TikTok son parte del soporte, pero no del producto.
 
-## 18. Ideas para después
+## 18. Referidos
+
+**En la demo:** todo. Referir todavía no da ningún beneficio: se registra para medir el crecimiento del piloto (RN-MET-06). El bono por referir está en la [sección 20](#20-ideas-para-después).
+
+- **RN-REF-01** Cada cuidador aprobado (RN-CUI-03) tiene un **código de referido** corto y único. Se crea cuando se aprueba su alta y no cambia.
+- **RN-REF-02** El texto que el cuidador comparte con su perfil (RN-CUI-22) incluye su código.
+- **RN-REF-03** El registro acepta un código opcional, con la pregunta **"¿Te recomendó un cuidador?"**.
+  - Si el código no existe, la API responde **422** con un mensaje claro, como "No encontramos ese código. Revísalo o deja el campo vacío.", y no crea la cuenta.
+  - Si existe, la cuenta guarda qué cuidador refirió al dueño.
+
+## 19. Métricas del piloto
+
+**En la demo:** todo, con un script, porque el panel de administración es Fase 2.
+
+- **RN-MET-01** El script **`metrics:report`** imprime en consola el reporte del piloto: el número crítico, el embudo de alta y cuatro métricas con su meta (RN-MET-02 a RN-MET-07). Solo lee datos.
+  - Las **metas y los umbrales son constantes del reporte**, no parámetros de la [§15](#15-parámetros-configurables). Los plazos de 15 y 60 días también, porque son parte de la definición de cada métrica: los 15 días de RN-MET-04 no siguen al parámetro de RN-PRE-09.
+  - Una **reserva pagada** es una que llegó a `CONFIRMADA` (RN-PAG-02), y su **fecha de pago** es cuando llegó.
+  - Las métricas con plazo solo cuentan a quienes ya tuvieron el plazo completo: en RN-MET-04, a los dueños registrados hace al menos 15 días, y en RN-MET-07, a los que pagaron su primera reserva hace al menos 60 días.
+  - No cuentan las cuentas de prueba del seed.
+  - Cada métrica muestra su porcentaje, de cuántos sale y su meta.
+- **RN-MET-02** **Número crítico: cuidadores verificados activos.** El reporte muestra el número contra tres umbrales: **15** (rojo), **25** (verde) y **35** (súper verde). Cuenta a los cuidadores que cumplen todo esto a la vez:
+  - están aprobados (RN-CUI-03) y aprobaron el curso de bienvenida (RN-CUI-02);
+  - no están pausados (RN-CUI-20);
+  - tienen al menos una ventana en su horario semanal y al menos un distrito en San Salvador o Santa Tecla (RN-CUI-04).
+- **RN-MET-03** **Embudo de alta:** cuántos cuidadores llegaron a cada paso. Cada paso cuenta solo a quienes también cumplen los anteriores:
+  1. Activaron el modo cuidador (RN-CTA-06).
+  2. Subieron sus documentos (RN-CUI-01).
+  3. Aprobaron el curso de bienvenida (RN-CUI-02).
+  4. Fueron aprobados (RN-CUI-03).
+- **RN-MET-04** **Valor:** el % de los dueños que paga su primera reserva dentro de los **15 días** siguientes a su registro. Meta: **20%**.
+- **RN-MET-05** **Oferta:** el % de los cuidadores que inician el alta (paso 1 del embudo) que la terminan (paso 4). Meta: **60%**.
+- **RN-MET-06** **Crecimiento:** el % de las primeras reservas pagadas que son de dueños que se registraron con un código de referido (RN-REF-03). Meta: **50%**.
+- **RN-MET-07** **Retención:** el % de los dueños con una reserva pagada que paga otra dentro de los **60 días** siguientes a la primera. Meta: **40%**.
+
+## 20. Ideas para después
 
 - **Hospedaje en casa del cuidador**, con el filtro de espacio disponible (casa con patio, sin jaulas) que pide el Vehículo. Es el siguiente segmento del Buyer: dueños que viajan.
 - Guardería de día, baño o grooming y pet taxi.
 - **Cursos avanzados de pago** (primeros auxilios, perros grandes, gatos y cuidado especial), con el **50% de descuento en el primero** para los primeros [10] cuidadores que verifiquen su identidad y terminen el curso de bienvenida en [15 días].
-- Bono por referir y Cuidador del mes.
+- Bono por referir, sobre los referidos que ya se registran (§18), y Cuidador del mes.
 - Certificación "Inyectables" (insulina, sueros).
 - Animales exóticos, cada uno con su propia certificación.
 - Plan Protección Pawie: una suscripción de seguro o asistencia contratada con un socio.
 - Paquetes prepagados, bonos de temporada alta y convenios con clínicas veterinarias.
 
-## 19. Pendientes por validar
+## 21. Pendientes por validar
 
 | Tema                            | Qué validar                                                  | Con quién                   |
 | ------------------------------- | ------------------------------------------------------------ | --------------------------- |
+| Comisión al cuidador            | 0% según Pricing o 10% según la hoja maestra (RN-PRE-04)     | Equipo                      |
 | Precios                         | Los rangos de visita y pernocta por nivel (RN-PRE-01)        | Unos 10 dueños y cuidadores |
 | Niveles                         | Los umbrales de RN-NIV-02                                    | Piloto                      |
 | Transferencia                   | Cómo recibir y confirmar pagos por transferencia (RN-PAG-09) | Wompi y banco               |

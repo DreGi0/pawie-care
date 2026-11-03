@@ -2,7 +2,7 @@
 
 Mockups de alta fidelidad de la app del dueño (iPhone, 390 × 844) y tokens del design system **Pawie Care**. Son la referencia visual y de textos para `apps/mobile`.
 
-> **Reglas v0.5:** los mockups de esta carpeta son de la v0.4. Antes de programar las etapas 6 a 12b de [plan-v0.5.md](../plan-v0.5.md) hay que actualizar los del dueño y crear los del cuidador. La lista está en [Pantallas para la v0.5](#pantallas-para-la-v05).
+> **Reglas v0.6:** los mockups de esta carpeta son de la v0.4. La etapa D de [plan-v0.6.md](../plan-v0.6.md) define un design system nuevo ([Etapa D](#etapa-d-nuevo-design-system)). Las pantallas que faltan están en [Pantallas para la v0.6](#pantallas-para-la-v06).
 
 > **Los mockups son referencia, no código para copiar.** Están en HTML. La app se construye con Expo + React Native y Expo Router. Si un mockup contradice [las reglas de negocio](../reglas-de-negocio.md) o el contrato [`apps/api/openapi.json`](../../apps/api/openapi.json), mandan las reglas y el contrato.
 
@@ -74,16 +74,23 @@ flowchart LR
 - **Nimbus:** está dibujado en SVG inline. Hay que reemplazarlo por los assets finales (`nimbus-hola.svg`, `nimbus-durmiendo.svg`).
 - **Fotos de cuidadores:** son marcadores `[Foto N]`.
 
-## Pantallas para la v0.5
+## Etapa D: nuevo design system
 
-Mismo design system y mismas reglas de arriba. Cada pantalla nueva lleva su `.dc.html` en `screens/` y una fila en las tablas de [Pantallas y flujo](#pantallas-y-flujo) cuando esté lista.
+La etapa D define un design system nuevo para la app. Su detalle (la dirección elegida, los tokens y las reglas) se escribe aquí en el PR de esa etapa. Hasta entonces valen `tokens.json` y las [reglas de arriba](#reglas-del-design-system).
+
+Las pantallas del cuidador (etapas 9a y 9b) no llevan mockup en HTML: su referencia visual es la dirección elegida en la etapa D.
+
+## Pantallas para la v0.6
+
+Cada pantalla nueva del dueño lleva su `.dc.html` en `screens/` y una fila en las tablas de [Pantallas y flujo](#pantallas-y-flujo) cuando esté lista. Las del cuidador se construyen directamente con la dirección de la [etapa D](#etapa-d-nuevo-design-system).
 
 ### Del dueño: cambiar
 
-| Pantalla    | Qué cambia                                                                              | Reglas    | Etapa |
-| ----------- | --------------------------------------------------------------------------------------- | --------- | ----- |
-| `Main`      | Paseo como servicio (los filtros, el nivel y el aviso de la etapa 6 ya están en la app) | RN-SER-05 | 8     |
-| `Esperando` | Ya no simula la aceptación: espera la respuesta real del cuidador                       | RN-RES-06 | 9     |
+| Pantalla    | Qué cambia                                                                              | Reglas    | Etapa        |
+| ----------- | --------------------------------------------------------------------------------------- | --------- | ------------ |
+| `Main`      | Paseo como servicio (los filtros, el nivel y el aviso de la etapa 6 ya están en la app) | RN-SER-05 | 8            |
+| `Esperando` | Ya no simula la aceptación: espera la respuesta real del cuidador                       | RN-RES-06 | 9b           |
+| `Registro`  | Campo opcional "¿Te recomendó un cuidador?", con el mensaje de la API si no existe      | RN-REF-03 | 11 (eventos) |
 
 ### Del dueño: nuevas
 
@@ -99,23 +106,24 @@ Mismo design system y mismas reglas de arriba. Cada pantalla nueva lleva su `.dc
 
 Las pestañas del modo cuidador son **Inicio**, **Agenda**, **Ganancias** y **Cuenta** (RN-CTA-06).
 
-| Pantalla        | Qué muestra                                                                                                    | Reglas               | Etapa |
-| --------------- | -------------------------------------------------------------------------------------------------------------- | -------------------- | ----- |
-| `CuiActivar`    | Desde Cuenta: qué pide Pawie para ser cuidador y botón para empezar                                            | RN-CTA-06            | 9     |
-| `CuiDocumentos` | Subir DUI, selfie y antecedentes, con el estado de la revisión                                                 | RN-CUI-01, RN-CUI-03 | 9     |
-| `CuiCurso`      | Módulos del curso de bienvenida y examen, con el resultado y la opción de repetir                              | RN-CUI-02            | 9     |
-| `CuiInicio`     | Nivel actual, lo que falta para el siguiente y las solicitudes pendientes, la más urgente primero              | RN-NIV-05, RN-RES-11 | 9     |
-| `CuiSolicitud`  | Mascotas con su ficha, celo o Especial, servicio, fechas, distrito y **lo que va a ganar**. Aceptar o rechazar | RN-RES-11, RN-CTA-04 | 9     |
-| `CuiAgenda`     | Próximos servicios por día, con "Agregar al calendario"                                                        | RN-CAL-01            | 9, 11 |
-| `CuiPerfil`     | Editar foto, descripción, habilidades, distritos, horario semanal, Reserva inmediata y pausa                   | RN-CUI-18, RN-CUI-20 | 9     |
-| `CuiPrecios`    | Precio por servicio con el rango de su nivel y el sugerido como guía                                           | RN-CUI-17, RN-PRE-01 | 9     |
-| `CuiServicio`   | Servicio en curso: check-in, ficha, tareas del tramo, fotos, ruta del paseo y check-out                        | §11                  | 10    |
-| `CuiGanancias`  | Por cobrar, pagado (simulado en la demo) y total del mes                                                       | RN-PAG-03, RN-PAG-10 | 9     |
-| `CuiCompartir`  | Vista previa del texto y botón para compartir el perfil                                                        | RN-CUI-22            | 11    |
+| Pantalla        | Qué muestra                                                                                                                                                            | Reglas                          | Etapa            |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ---------------- |
+| `CuiActivar`    | Desde Cuenta: qué pide Pawie para ser cuidador y botón para empezar                                                                                                    | RN-CTA-06                       | 9a               |
+| `CuiDocumentos` | Subir DUI, selfie y antecedentes, con el estado de la revisión                                                                                                         | RN-CUI-01, RN-CUI-03            | 9a               |
+| `CuiCurso`      | Módulos del curso de bienvenida y examen, con el resultado y la opción de repetir                                                                                      | RN-CUI-02                       | 9a               |
+| `CuiInicio`     | Lo que falta del alta; ya aprobado, nivel actual, lo que falta para el siguiente, el sugerido del siguiente nivel y las solicitudes pendientes, la más urgente primero | RN-NIV-05, RN-CUI-17, RN-RES-11 | 9a, 9b           |
+| `CuiSolicitud`  | Mascotas con su ficha, celo o Especial, servicio, fechas, distrito y **lo que va a ganar**. Aceptar o rechazar                                                         | RN-RES-11, RN-CTA-04            | 9b               |
+| `CuiAgenda`     | Próximos servicios por día, con "Agregar al calendario"                                                                                                                | RN-CAL-01                       | 9b, 11 (eventos) |
+| `CuiPerfil`     | Editar foto, descripción, habilidades, distritos, horario semanal, Reserva inmediata y pausa                                                                           | RN-CUI-18, RN-CUI-20            | 9a               |
+| `CuiPrecios`    | La calculadora: precio por servicio con el rango y el sugerido de su nivel, el sugerido del siguiente nivel y lo que recibe según la API                               | RN-CUI-17, RN-PRE-01, RN-PRE-04 | 9a               |
+| `CuiServicio`   | Servicio en curso: check-in, ficha, tareas del tramo, fotos, ruta del paseo y check-out                                                                                | §11                             | 10               |
+| `CuiGanancias`  | Por cobrar, pagado (simulado en la demo) y total del mes                                                                                                               | RN-PAG-03, RN-PAG-10            | 9b               |
+| `CuiCompartir`  | Vista previa del texto, con su código de referido, y botón para compartir el perfil                                                                                    | RN-CUI-22, RN-REF-02            | 11 (eventos)     |
 
 Reglas para las pantallas del cuidador:
 
 - **Un solo botón primario.** En `CuiSolicitud` es **Aceptar**; Rechazar va en secundario. En `CuiServicio` es la siguiente acción del tramo: Check-in, después Tomar foto y al final Check-out.
 - **Cuánto gana se muestra grande**, antes que los detalles. Es lo que decide si acepta en segundos.
+- **Lo que gana o recibe es el monto de la API.** Ningún texto dice "recibes el 100%" (RN-PRE-04).
 - **La ⭐ solo marca el cuidado especial.** El nivel no usa `butter`: es un `Tag` en `grape`, y las demás certificaciones también son `Tag`.
 - **Nimbus aparece** en `CuiInicio`, en el estado vacío de solicitudes, y en `CuiCurso` al aprobar. No aparece en `CuiServicio`, que tiene que ser rápida de leer.

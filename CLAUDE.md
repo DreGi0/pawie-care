@@ -8,22 +8,22 @@ Marketplace de cuidadores de perros y gatos en San Salvador y Santa Tecla. Monor
 
 ## Fuente de verdad, en este orden
 
-1. **[docs/reglas-de-negocio.md](docs/reglas-de-negocio.md) (v0.5):** qué hace el producto. Manda sobre todo lo demás.
+1. **[docs/reglas-de-negocio.md](docs/reglas-de-negocio.md) (v0.6):** qué hace el producto. Manda sobre todo lo demás.
 2. **`apps/api/openapi.json`:** el contrato entre la API y la app.
 3. **[docs/arquitectura.md](docs/arquitectura.md):** cómo se construye. Sus decisiones (§4) no se cambian sin actualizar el documento.
 4. **[docs/design/](docs/design/README.md):** referencia visual y textos. Si contradice 1 o 2, mandan 1 y 2.
 
-Los documentos de negocio del equipo (Buyer, Promesa, Vehículo y Pricing) **no están en el repo**; las reglas v0.5 ya los traducen. Si una tarea necesita algo que las reglas no dicen, pregunta: no lo inventes.
+Los documentos de negocio del equipo (Buyer, Promesa, Vehículo, Pricing y la hoja maestra del plan de negocio) **no están en el repo**; las reglas v0.6 ya los traducen. Si una tarea necesita algo que las reglas no dicen, pregunta: no lo inventes.
 
 ## Estado actual
 
-- El código del commit `d088fba` implementa las **reglas v0.4**: precio por nivel de la mascota, tarifa de 10% y comisión de 15%, solo visita y pernocta, y sin app del cuidador.
-- Lo que falta para la v0.5 está en **[docs/plan-v0.5.md](docs/plan-v0.5.md)**, en las etapas 6 a 12b.
-- Si el código contradice las reglas v0.5, no es un bug que haya que respetar: es trabajo pendiente de una etapa. Revisa el plan antes de "arreglarlo" fuera de su etapa.
+- El código de `main` implementa las **reglas v0.4 más la etapa 6**: niveles del cuidador, precio por nivel del cuidador, tarifa de 15% y comisión de 0%, primer servicio sin tarifa y filtros de búsqueda. Todavía tiene solo visita y pernocta, y no tiene app del cuidador.
+- Lo que falta para la v0.6 está en **[docs/plan-v0.6.md](docs/plan-v0.6.md)**, en este orden: D, 9a, métricas, 7, 8, 9b, base de la 11, 10, eventos de la 11, 12a y 12b.
+- Si el código contradice las reglas v0.6, no es un bug que haya que respetar: es trabajo pendiente de una etapa. Revisa el plan antes de "arreglarlo" fuera de su etapa.
 
 ## Cómo trabajar una tarea
 
-1. **Ubica la etapa** en `docs/plan-v0.5.md` y lee las reglas que cita, por su ID (`RN-XXX-00`).
+1. **Ubica la etapa** en `docs/plan-v0.6.md` y lee las reglas que cita, por su ID (`RN-XXX-00`).
 2. **Una etapa por rama y por PR**, con commits convencionales (`feat(api): …`, `feat(mobile): …`, `docs: …`). Si es grande, divídela en API y app.
 3. **La API primero.** Las reglas de negocio viven solo en la API (arquitectura §4.2): la app muestra resultados, no calcula precios, niveles ni permisos.
 4. **Si cambias un DTO o un endpoint**, regenera y commitea el contrato y el cliente. El CI falla si quedaron viejos:
@@ -34,7 +34,7 @@ Los documentos de negocio del equipo (Buyer, Promesa, Vehículo y Pricing) **no 
 5. **Base de datos:**
    - Cambia `prisma/schema.prisma` y crea la migración con `pnpm --filter @pawie/api db:migrate`.
    - Los `CHECK`, las exclusiones y los índices parciales van en SQL escrito a mano dentro de la migración (arquitectura §4.8).
-6. **Un parámetro con corchetes en las reglas**, como **[15%]**, va en `src/settings/settings.registry.ts`, con su regla, y en la tabla §15 de las reglas. Nunca como constante en el código.
+6. **Un parámetro con corchetes en las reglas**, como **[15%]**, va en `src/settings/settings.registry.ts`, con su regla, y en la tabla §15 de las reglas. Nunca como constante en el código. La excepción son las metas del reporte del piloto (RN-MET-01): son constantes del script, no settings.
 7. **Cita el ID de la regla** en los comentarios y en los nombres de los tests que la cubren.
 8. **Termina con todo en verde:**
    ```bash
