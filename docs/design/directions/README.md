@@ -2,7 +2,7 @@
 
 Mockups de la dirección elegida para el nuevo design system, el 2026-11-02. Son HTML estático de 390 × 844, sin JS, y cada uno tiene su captura al lado (`.png`, a 2x). Se abren en el navegador; las fuentes vienen de Google Fonts.
 
-Los tokens, los componentes y las reglas están en [docs/design/README.md](../README.md#etapa-d-nuevo-design-system).
+Los tokens, los componentes y las reglas están en [docs/design/README.md](../README.md#design-system-placas). La app los usa desde la parte 2 de la etapa D.
 
 | Pantalla                        | Mockup                                    | Captura                                 |
 | ------------------------------- | ----------------------------------------- | --------------------------------------- |

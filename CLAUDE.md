@@ -52,7 +52,7 @@ Los documentos de negocio del equipo (Buyer, Promesa, Vehículo, Pricing y la ho
 - Lee [apps/mobile/AGENTS.md](apps/mobile/AGENTS.md). Expo SDK 58 cambia APIs entre versiones: consulta la documentación versionada antes de usar un módulo.
 - Instala con `npx expo install <paquete>` desde `apps/mobile`, nunca con `pnpm add`.
 - Módulos nativos nuevos (`expo-location`, `expo-notifications`, `react-native-maps`, `expo-calendar`) necesitan la development build: `npx expo run:android` o `npx expo run:ios`.
-- Componentes propios en `src/components/` y tokens en `src/theme/`. Sigue las reglas del design system de `docs/design/README.md`: un botón primario por pantalla, Nimbus como máximo una vez, `butter` solo para la ⭐.
+- Componentes propios en `src/components/` y tokens en `src/theme/`. Sigue las reglas del design system de `docs/design/README.md` (Placas): un botón primario por pantalla, Nimbus como máximo una vez, `star` solo para la ⭐ y los colores de servicio solo para servicios.
 - Datos del servidor siempre con los hooks de `@pawie/api-client` y TanStack Query.
 
 ## Entorno
