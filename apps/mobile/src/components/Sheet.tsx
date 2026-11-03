@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { SlideInDown } from 'react-native-reanimated';
+import Animated, { css, cubicBezier } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, gutter, radius, space } from '@/theme/tokens';
@@ -38,8 +38,11 @@ export function Sheet({ visible, onClose, title, children, footer }: SheetProps)
           onPress={onClose}
         />
         <Animated.View
-          entering={SlideInDown.springify().damping(20).stiffness(180)}
-          style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, space[4]) }]}
+          style={[
+            styles.sheet,
+            { paddingBottom: Math.max(insets.bottom, space[4]) },
+            animations.slideUp,
+          ]}
         >
           <View style={styles.handle} />
           <View style={styles.header}>
@@ -57,6 +60,21 @@ export function Sheet({ visible, onClose, title, children, footer }: SheetProps)
     </Modal>
   );
 }
+
+// A CSS animation of the transform, not a layout animation: inside a Modal on Android, the
+// layout animation (SlideInDown) ended ~80 dp above the bottom edge when the sheet was short.
+const slideUp = css.keyframes({
+  from: { transform: [{ translateY: '100%' }] },
+  to: { transform: [{ translateY: 0 }] },
+});
+
+const animations = css.create({
+  slideUp: {
+    animationName: slideUp,
+    animationDuration: 320,
+    animationTimingFunction: cubicBezier(0.2, 0.9, 0.3, 1),
+  },
+});
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
