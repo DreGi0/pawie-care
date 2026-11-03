@@ -29,7 +29,7 @@ export function CaregiverPhoto({ name, photoUrl, width = 64 }: CaregiverPhotoPro
   const height = (width * BOX.height) / BOX.width;
   // The outline keeps its width whatever the size of the photo.
   const strokeWidth = (STROKE * BOX.width) / width;
-  const fontSize = Math.round(width * 0.26);
+  const fontSize = Math.max(13, Math.round(width * 0.26));
   const initials = name
     .trim()
     .split(/\s+/)

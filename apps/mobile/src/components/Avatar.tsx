@@ -29,7 +29,8 @@ export function Avatar({ name, photoUrl, size = 56 }: AvatarProps) {
     .slice(0, 2)
     .map((word) => word.charAt(0).toUpperCase())
     .join('');
-  const fontSize = Math.round(size * 0.36);
+  // Never under 13 px, the smallest text in the app, not even in the 28 px avatar of a chip.
+  const fontSize = Math.max(13, Math.round(size * 0.36));
 
   return (
     <View style={[styles.initials, box]} importantForAccessibility="no-hide-descendants">

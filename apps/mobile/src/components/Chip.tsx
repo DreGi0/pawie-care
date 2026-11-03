@@ -42,6 +42,7 @@ export function Chip({ label, onPress, selected, icon, photo, accessibilityLabel
       <Text
         variant={isOption ? 'label' : 'bodyStrong'}
         color={isOption ? 'ink' : 'primary'}
+        style={[!isOption && styles.searchText]}
         numberOfLines={1}
       >
         {label}
@@ -68,7 +69,9 @@ const styles = StyleSheet.create({
     borderWidth: borderWidth.strong,
     borderColor: colors.ink,
   },
-  search: { alignSelf: 'flex-start', paddingHorizontal: 14 },
+  // Compact, so a search sentence takes two lines on a 390 pt phone: Lexend is wide.
+  search: { alignSelf: 'flex-start', maxWidth: '100%', gap: 6, paddingHorizontal: space[3] },
+  searchText: { flexShrink: 1, fontSize: 15, lineHeight: 20 },
   withPhoto: { paddingLeft: 6 },
   pressed: { opacity: 0.8 },
 });

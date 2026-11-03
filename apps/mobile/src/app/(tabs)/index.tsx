@@ -246,6 +246,10 @@ function Query({
 }) {
   const selected = pets.filter((pet) => search.petIds.includes(pet.id));
   const names = joinNames(selected.map((pet) => pet.name));
+  // With several pets the chip says "Toby y 2 más", without a photo: one photo doesn't stand for
+  // all of them, and that keeps the date on the first line, so the sentence takes two lines.
+  const several = selected.length > 1;
+  const shortNames = several ? `${selected[0].name} y ${selected.length - 1} más` : names;
   const date = new Date(atLocalTime(search.day, search.minute));
   const day = formatDay(date).toLowerCase();
   const overnight = search.serviceCode === 'OVERNIGHT_STAY';
@@ -256,11 +260,11 @@ function Query({
     <View style={styles.query}>
       <Text style={styles.queryText}>Para</Text>
       <Chip
-        label={names}
+        label={shortNames}
         photo={
-          selected[0] && (
+          selected[0] && !several ? (
             <Avatar name={selected[0].name} photoUrl={selected[0].photoUrl} size={36} />
-          )
+          ) : undefined
         }
         accessibilityLabel={`Mascotas: ${names}. Cambiar`}
         onPress={() => onPick('pets')}
@@ -268,14 +272,14 @@ function Query({
       <Text style={styles.queryText}>{overnight ? 'la noche del' : 'el'}</Text>
       <Chip
         label={when}
-        icon={<Icon name="calendar" size={18} color="primary" />}
+        icon={<Icon name="calendar" size={16} color="primary" />}
         accessibilityLabel={`${overnight ? 'Noche' : 'Día y hora'}: ${when}. Cambiar`}
         onPress={() => onPick('when')}
       />
       <Text style={styles.queryText}>en</Text>
       <Chip
         label={district}
-        icon={<Icon name="map-pin" size={18} color="primary" />}
+        icon={<Icon name="map-pin" size={16} color="primary" />}
         accessibilityLabel={`Distrito: ${district}. Cambiar`}
         onPress={() => onPick('district')}
       />
@@ -727,7 +731,7 @@ const styles = StyleSheet.create({
   centered: { textAlign: 'center' },
   start: { alignSelf: 'flex-start' },
   services: { flexDirection: 'row', gap: 10 },
-  query: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 7, rowGap: 8 },
+  query: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6, rowGap: 8 },
   queryText: { fontSize: 17 },
   results: { marginTop: space[2] },
   resultsHead: {
