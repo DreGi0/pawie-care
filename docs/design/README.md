@@ -43,7 +43,9 @@ Los siete primeros definen la dirección. Los demás salen de los mockups o los 
 
 ### Tipografía
 
-Gabarito (`@expo-google-fonts/gabarito`, pesos 500 a 800) para títulos, precios, placas, botones y pestañas. Atkinson Hyperlegible (`@expo-google-fonts/atkinson-hyperlegible`, 400 y 700) para leer.
+Gabarito (`@expo-google-fonts/gabarito`, pesos 500 a 800) para títulos, precios, placas, botones y pestañas. Lexend (`@expo-google-fonts/lexend`, 400 y 600) para leer.
+
+Lexend reemplazó a Atkinson Hyperlegible, la fuente de los mockups de Placas. El 0 de Atkinson lleva barra y en horas y precios parecía "Ø", y la versión Next tiene el mismo 0. Lexend deja el 0 sin barra y más angosto que la O, y sigue distinguiendo la I, la l y el 1. Para resaltar usa SemiBold (600), porque la Bold es muy pesada y ancha. Como Lexend es más ancha, los textos ocupan más espacio.
 
 | Variante de `Text` | Fuente y tamaño     | Uso                                                   |
 | ------------------ | ------------------- | ----------------------------------------------------- |
@@ -55,10 +57,10 @@ Gabarito (`@expo-google-fonts/gabarito`, pesos 500 a 800) para títulos, precios
 | `priceSmall`       | Gabarito 800, 26 px | Precios del perfil, totales y barras inferiores       |
 | `label`            | Gabarito 700, 16 px | Botones (18 en el primario), chips y etiquetas        |
 | `placa`            | Gabarito 600, 14 px | Texto de las placas (13 en las listas) y pestañas     |
-| `body`             | Atkinson 400, 16 px | Texto                                                 |
-| `bodyStrong`       | Atkinson 700, 16 px | Resaltar, valores de un resumen y chips de búsqueda   |
-| `caption`          | Atkinson 400, 14 px | Secundario, en `inkMuted`                             |
-| `footnote`         | Atkinson 400, 13 px | El mínimo: la unidad bajo un precio                   |
+| `body`             | Lexend 400, 16 px   | Texto                                                 |
+| `bodyStrong`       | Lexend 600, 16 px   | Resaltar, valores de un resumen y chips de búsqueda   |
+| `caption`          | Lexend 400, 14 px   | Secundario, en `inkMuted`                             |
+| `footnote`         | Lexend 400, 13 px   | El mínimo: la unidad bajo un precio                   |
 
 ### Radios y bordes
 
@@ -92,7 +94,7 @@ Están en `apps/mobile/src/components/`. `/catalogo` los muestra todos (solo en 
 - **Bloque de servicio (`ServiceBlock`):** grande, en el color del servicio, con ícono, nombre y una línea. El elegido lleva borde `ink` de 3 px y un check.
 - **Fila (`Row`):** sin tarjeta, con un divisor `line` arriba (salvo la primera). El precio o la acción va a la derecha.
 - **Chip (`Chip`):** dos usos.
-  - Chip de búsqueda: 48 px, blanco, con borde `line` y texto `primary`, dentro de una frase: "Para [Toby] el [mar 3, 16:00] en [San Salvador]". Abre su hoja.
+  - Chip de búsqueda: 48 px, blanco, con borde `line` y texto `primary` de 15 px, dentro de una frase: "Para [Toby] el [mar 3 nov, 9:00] en [San Salvador]". Abre su hoja. Con varias mascotas dice "Toby y 2 más", sin foto, para que la frase quepa en dos líneas.
   - Opción (con `selected`): blanca con borde `line`; la elegida, en `tint` con borde `ink`.
 - **Botones (`Button`, `IconButton`):** el primario mide 56 px, en `primary` con texto blanco. El secundario mide 48 px, con borde `ink` de 2 px. Los dos con radio 16. `IconButton` es un círculo de 48 px con borde `ink`.
 - **Estado de una reserva (`Status`):** texto con ícono, sin color propio. No es una placa.

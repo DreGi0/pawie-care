@@ -56,13 +56,15 @@ export const fontFamily = {
   displaySemiBold: 'Gabarito_600SemiBold',
   displayBold: 'Gabarito_700Bold',
   displayExtraBold: 'Gabarito_800ExtraBold',
-  text: 'AtkinsonHyperlegible_400Regular',
-  textBold: 'AtkinsonHyperlegible_700Bold',
+  text: 'Lexend_400Regular',
+  textBold: 'Lexend_600SemiBold',
 } as const;
 
 export type FontFamily = (typeof fontFamily)[keyof typeof fontFamily];
 
-// Gabarito for titles, prices, placas and buttons; Atkinson Hyperlegible for reading.
+// Gabarito for titles, prices, placas and buttons; Lexend for reading. Lexend's 0 has no slash
+// (Atkinson Hyperlegible's read like Ø in times and prices), and its emphasis is SemiBold: the Bold
+// is heavy and wide.
 export const typography = {
   /** The caregiver's name in the profile and the hero of Bienvenida. */
   display: {

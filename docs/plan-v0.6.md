@@ -116,7 +116,7 @@ La v0.6 no agrega settings: las metas del reporte del piloto son constantes del 
 
 ### Etapa D: nuevo design system (hecha)
 
-Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#design-system-placas). **Parte 1 (hecha, solo docs):** dos direcciones exploradas en HTML y Placas elegida, con sus mockups en `docs/design/directions/`. **Parte 2 (hecha, app):** tokens y fuentes (Gabarito y Atkinson Hyperlegible en lugar de Nunito), componentes nuevos (placas, placa del nivel, foto con la silueta de Nimbus, bloques de servicio y filas) y el layout de Main, Perfil, Reservar, Visitas y Mis mascotas. Los mockups de `docs/design/screens/` quedan como referencia de textos de la v0.4. **La etapa D está hecha.**
+Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#design-system-placas). **Parte 1 (hecha, solo docs):** dos direcciones exploradas en HTML y Placas elegida, con sus mockups en `docs/design/directions/`. **Parte 2 (hecha, app):** tokens y fuentes (Gabarito y Lexend en lugar de Nunito), componentes nuevos (placas, placa del nivel, foto con la silueta de Nimbus, bloques de servicio y filas) y el layout de Main, Perfil, Reservar, Visitas y Mis mascotas. Los mockups de `docs/design/screens/` quedan como referencia de textos de la v0.4. **La etapa D está hecha.**
 
 ### Etapa 9a: alta del cuidador
 

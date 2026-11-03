@@ -9,7 +9,7 @@ export type TextProps = RNTextProps & {
 
 /**
  * Use it instead of React Native's Text: React Native has no global font, so this is what
- * applies Gabarito and Atkinson Hyperlegible.
+ * applies Gabarito and Lexend.
  */
 export function Text({ variant = 'body', color = 'ink', style, ...props }: TextProps) {
   return <RNText style={[typography[variant], { color: colors[color] }, style]} {...props} />;
