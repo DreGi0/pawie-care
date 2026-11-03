@@ -60,6 +60,7 @@ Los documentos de negocio del equipo (Buyer, Promesa, Vehículo, Pricing y la ho
 - **Nada global.** Node se fija con `.node-version` (fnm) y pnpm con corepack. La infraestructura (PostgreSQL, Redis, Mailpit y SeaweedFS) corre en Docker: `pnpm infra:up`.
 - Primera vez y datos de demo: ver [README.md](README.md). El dueño de demo es `demo@example.com` / `pawie-demo-local`.
 - Cambiar un parámetro en local: `pnpm --filter @pawie/api settings:set <clave> <valor en JSON>`.
+- Aprobar el alta de un cuidador (RN-CUI-03), después de que suba sus documentos: `pnpm --filter @pawie/api caregivers:approve <correo>`.
 
 ## Comandos
 
