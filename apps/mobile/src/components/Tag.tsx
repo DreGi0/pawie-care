@@ -27,11 +27,14 @@ export type TagProps = Kind & {
 };
 
 /**
- * A placa: a collar tag with a hole on the left. It shows what Pawie verified, the level, the
- * certifications and the service. A booking's state is not a placa: see Status.
+ * A placa: a collar tag. It shows what Pawie verified, the level, the certifications and the
+ * service. A booking's state is not a placa: see Status.
  */
 export function Tag({ size = 'md', wrap = false, ...props }: TagProps) {
   const { background, text, label, icon, a11y } = look(props);
+  // Only the level's placa has the hole the ring goes through: on the others, a dot reads like
+  // an unchecked radio button.
+  const hasHole = props.kind === 'level';
 
   return (
     <View
@@ -40,12 +43,13 @@ export function Tag({ size = 'md', wrap = false, ...props }: TagProps) {
       style={[
         styles.tag,
         size === 'sm' && styles.small,
+        hasHole && (size === 'sm' ? styles.smallWithHole : styles.withHole),
         wrap && styles.wrap,
         { backgroundColor: colors[background] },
         props.kind === 'badge' && styles.outlined,
       ]}
     >
-      <View style={[styles.hole, props.kind === 'badge' && styles.holeOutlined]} />
+      {hasHole && <View style={styles.hole} />}
       {icon && <Icon name={icon} size={16} color={text} filled={props.kind === 'star'} />}
       <Text
         variant="placa"
@@ -109,25 +113,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 7,
     height: 32,
-    paddingLeft: 9,
-    paddingRight: 13,
+    paddingHorizontal: 13,
     borderRadius: radius.md,
   },
-  small: { height: 28, gap: 6, paddingLeft: 8, paddingRight: 11, borderRadius: 14 },
+  small: { height: 28, gap: 6, paddingHorizontal: 11, borderRadius: 14 },
+  withHole: { paddingLeft: 9 },
+  smallWithHole: { paddingLeft: 8 },
   smallText: { fontSize: 13, lineHeight: 16 },
   wrap: {
     alignSelf: 'stretch',
     height: 'auto',
     minHeight: 48,
     paddingVertical: space[2],
-    paddingLeft: 10,
-    paddingRight: space[3],
+    paddingHorizontal: space[3],
   },
   outlined: { borderWidth: borderWidth.hairline, borderColor: colors.ink },
   flex: { flex: 1 },
-  // The hole the ring goes through: it shows the screen's background.
+  // It shows the screen's background, like a real hole.
   hole: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.bg },
-  holeOutlined: { borderWidth: borderWidth.hairline, borderColor: colors.line },
   medal: {
     width: 28,
     height: 28,

@@ -78,14 +78,14 @@ El margen lateral de todas las pantallas es `gutter` (20 px).
 
 Están en `apps/mobile/src/components/`. `/catalogo` los muestra todos (solo en desarrollo).
 
-- **Placa (`Tag`):** pastilla de 32 px con un agujero a la izquierda. Tiene cinco variantes:
+- **Placa (`Tag`):** pastilla de 32 px. Solo la de nivel lleva el agujero a la izquierda: en las demás, el punto parecía un botón de opción sin marcar. Tiene cinco variantes:
   - `badge` (insignia): blanca, con borde `ink` e ícono;
   - `certification`: en `tint`;
   - `star` (la ⭐): en `star`, con la estrella rellena;
   - `level`: en `tint`, y la de Súper Cuidador en `primary` con texto blanco;
   - `service`: en el color del servicio.
 
-  Con `wrap`, en una cuadrícula de dos columnas, admite dos líneas. Con `size="sm"` mide 28 px y va en las listas. En las listas, la ⭐ sola es `StarMedal`, una medalla redonda de 28 px sin agujero.
+  Con `wrap`, en una cuadrícula de dos columnas, admite dos líneas. Con `size="sm"` mide 28 px y va en las listas. En las listas, la ⭐ sola es `StarMedal`, una medalla redonda de 28 px.
 
 - **Placa del nivel (`LevelTag`):** placa grande que cuelga de una argolla en una correa `ink`. Va en el perfil y en CuiInicio.
 - **Foto del cuidador (`CaregiverPhoto`):** recortada con la silueta de Nimbus (el cuerpo y la mano que saluda, de `Nimbus.tsx`) y con su contorno en `ink`. Sin foto, las iniciales sobre `tint`. Las mascotas van en círculo (`Avatar`).
