@@ -25,7 +25,7 @@ test('shows dates in San Salvador time', () => {
   assert.equal(formatDay('2026-10-20T02:30:00Z'), 'Lun 19 oct');
   assert.equal(
     formatRange('2026-10-19T15:00:00Z', '2026-10-19T16:00:00Z'),
-    'Lun 19 oct · 9:00–10:00',
+    'Lun 19 oct, de 9:00 a 10:00',
   );
   assert.equal(formatLongDayTime('2026-10-19T15:00:00Z'), 'el lunes 19 de octubre a las 9:00');
 });

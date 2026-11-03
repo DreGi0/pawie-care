@@ -14,7 +14,7 @@ import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, View } from 
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Avatar } from '@/components/Avatar';
+import { CaregiverPhoto } from '@/components/CaregiverPhoto';
 import { Banner } from '@/components/Banner';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -23,10 +23,10 @@ import { IconButton } from '@/components/IconButton';
 import { Nimbus } from '@/components/Nimbus';
 import { PriceCard } from '@/components/PriceCard';
 import { StepBar } from '@/components/StepBar';
-import { Tag } from '@/components/Tag';
+import { Status } from '@/components/Status';
 import { Text } from '@/components/Text';
 import { errorMessage } from '@/lib/api';
-import { firstName, joinNames, serviceName, statusTag } from '@/lib/bookings';
+import { firstName, joinNames, serviceKind, statusTag } from '@/lib/bookings';
 import {
   formatDay,
   formatDeadline,
@@ -71,7 +71,7 @@ export default function BookingScreen() {
             <Button variant="secondary" label="Ver mis visitas" onPress={goToVisits} />
           </View>
         ) : (
-          <ActivityIndicator color={colors.grapeDeep} />
+          <ActivityIndicator color={colors.primary} />
         )}
       </SafeAreaView>
     );
@@ -107,7 +107,7 @@ function petNames(booking: BookingResponse): string {
   return joinNames(booking.pets.map((pet) => pet.name));
 }
 
-/** "Lun 19 oct · 9:00–10:00", or "Noche del Lun 19 oct" for an overnight stay. */
+/** "Lun 19 oct, de 9:00 a 10:00", or "Noche del Lun 19 oct" for an overnight stay. */
 function when(booking: BookingResponse): string {
   return booking.serviceCode === 'OVERNIGHT_STAY'
     ? `Noche del ${formatDay(booking.startsAt)}`
@@ -122,8 +122,8 @@ function Waiting({ booking }: { booking: BookingResponse }) {
     <>
       <StepBar current={2} steps={bookingSteps(booking)} />
       <View style={styles.hero} accessibilityLiveRegion="polite">
-        <Nimbus pose="durmiendo" background="sky" />
-        <Tag tone="info" label="Solicitud enviada" icon={<Icon name="clock" size={16} />} />
+        <Nimbus pose="durmiendo" background="tint" />
+        <Status tone="info" label="Solicitud enviada" />
         <View style={styles.heroText}>
           <Text variant="title" style={styles.centered} accessibilityRole="header">
             Le avisamos a {name}
@@ -142,8 +142,7 @@ function Waiting({ booking }: { booking: BookingResponse }) {
           <Text>
             <Text variant="bodyStrong">{formatMoney(booking.price.totalCents)}</Text>
             <Text variant="caption" color="inkMuted">
-              {' '}
-              · aún no pagas
+              , aún no pagas
             </Text>
           </Text>
         </SummaryRow>
@@ -204,7 +203,10 @@ function Pay({ booking, onPaid }: { booking: BookingResponse; onPaid: () => void
       <StepBar current={bookingSteps(booking).length} steps={bookingSteps(booking)} />
 
       <Animated.View entering={FadeInDown.duration(350)} style={styles.accepted}>
-        <Avatar name={booking.caregiver.displayName} photoUrl={booking.caregiver.photoUrl} />
+        <CaregiverPhoto
+          name={booking.caregiver.displayName}
+          photoUrl={booking.caregiver.photoUrl}
+        />
         <View style={styles.flex}>
           <Text variant="bodyStrong">
             {name} aceptó cuidar a {petNames(booking)}
@@ -227,7 +229,7 @@ function Pay({ booking, onPaid }: { booking: BookingResponse; onPaid: () => void
         <PriceCard
           price={booking.price}
           lines={booking.slots.map((slot) => ({
-            label: `${overnight && slot.serviceCode === 'OVERNIGHT_STAY' ? 'Pernocta' : 'Visita'} · ${petNames(booking)}`,
+            label: `${overnight && slot.serviceCode === 'OVERNIGHT_STAY' ? 'Pernocta' : 'Visita'} para ${petNames(booking)}`,
             amountCents: slot.subtotalCents,
           }))}
         />
@@ -276,10 +278,10 @@ function Confirmed({ booking }: { booking: BookingResponse }) {
   return (
     <>
       <Animated.View entering={ZoomIn.springify().damping(14)} style={styles.hero}>
-        <Nimbus pose="hola" background="sage" />
+        <Nimbus pose="hola" background="tint" />
       </Animated.View>
       <Animated.View entering={FadeIn.delay(200).duration(400)} style={styles.hero}>
-        <Tag tone={tag.tone} label={tag.label} icon={<Icon name="check" size={16} />} />
+        <Status {...tag} />
         <View style={styles.heroText}>
           <Text variant="title" style={styles.centered} accessibilityRole="header">
             {pets} {booking.pets.length > 1 ? 'están' : 'está'} en buenas manos
@@ -292,7 +294,7 @@ function Confirmed({ booking }: { booking: BookingResponse }) {
         </View>
       </Animated.View>
 
-      <Summary booking={booking} certified>
+      <Summary booking={booking}>
         <SummaryRow icon="map-pin">
           <Text style={styles.flex}>{booking.address.street}</Text>
         </SummaryRow>
@@ -307,7 +309,7 @@ function Confirmed({ booking }: { booking: BookingResponse }) {
           <>
             <Button
               label={`Llamar a ${name}`}
-              icon={<Icon name="phone" color="card" />}
+              icon={<Icon name="phone" color="white" />}
               onPress={() => Linking.openURL(`tel:${phone}`)}
             />
             <Button variant="secondary" label="Ver mis visitas" onPress={goToVisits} />
@@ -331,7 +333,7 @@ function Closed({ booking }: { booking: BookingResponse }) {
           Tu reserva
         </Text>
       </View>
-      <Tag tone={tag.tone} label={tag.label} />
+      <Status {...tag} />
       <Summary booking={booking}>
         <SummaryRow icon="credit-card" last>
           <Text style={styles.flex}>Total</Text>
@@ -347,30 +349,21 @@ function Closed({ booking }: { booking: BookingResponse }) {
 }
 
 /** The caregiver, the service and when, plus the rows each state adds. */
-function Summary({
-  booking,
-  certified = false,
-  children,
-}: {
-  booking: BookingResponse;
-  certified?: boolean;
-  children: ReactNode;
-}) {
+function Summary({ booking, children }: { booking: BookingResponse; children: ReactNode }) {
   return (
     <Card style={styles.summary}>
       <SummaryRow>
-        <Avatar
+        <CaregiverPhoto
           name={booking.caregiver.displayName}
           photoUrl={booking.caregiver.photoUrl}
-          size={40}
+          width={48}
         />
         <View style={styles.flex}>
           <Text variant="bodyStrong">{booking.caregiver.displayName}</Text>
           <Text variant="caption" color="inkMuted">
-            {serviceName(booking.serviceCode)} · {petNames(booking)}
+            {serviceKind(booking)} para {petNames(booking)}
           </Text>
         </View>
-        {certified && booking.careLevel === 'SPECIAL' && <Tag tone="special" label="Especial" />}
       </SummaryRow>
       <SummaryRow icon="calendar">
         <Text>{when(booking)}</Text>
@@ -424,7 +417,7 @@ function useCancel(bookingId: string) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
+  screen: { flex: 1, backgroundColor: colors.bg },
   centered: { alignItems: 'center', justifyContent: 'center', textAlign: 'center' },
   padded: { alignSelf: 'stretch', gap: space[4], padding: space[4] },
   content: { flexGrow: 1, gap: space[6], padding: space[4], paddingTop: space[6] },
@@ -438,7 +431,7 @@ const styles = StyleSheet.create({
     gap: space[3],
     padding: space[4],
     borderRadius: 20,
-    backgroundColor: colors.sage,
+    backgroundColor: colors.tint,
   },
   section: { gap: space[3] },
   summary: { paddingVertical: space[1] },

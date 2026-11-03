@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 import { queryClient } from '@/lib/api';
 import { restoreSession, useOnboarding, useSessionStatus } from '@/lib/session';
 import { configureZod } from '@/lib/zod';
-import { nunitoFonts } from '@/theme/fonts';
+import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
@@ -15,14 +15,14 @@ configureZod();
 restoreSession();
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts(nunitoFonts);
+  const [fontsLoaded, fontError] = useFonts(fonts);
   const session = useSessionStatus();
   const onboarding = useOnboarding();
   const ready = (fontsLoaded || fontError !== null) && session !== 'loading';
 
   useEffect(() => {
     if (fontError)
-      console.warn('Nunito failed to load, falling back to the system font', fontError);
+      console.warn('The fonts failed to load, falling back to the system font', fontError);
   }, [fontError]);
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.cream },
+          contentStyle: { backgroundColor: colors.bg },
           animation: 'slide_from_right',
         }}
       >

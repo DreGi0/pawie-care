@@ -45,9 +45,9 @@ export function formatDayTime(date: Date | string): string {
   return `${formatDay(date)}, ${formatTime(date)}`;
 }
 
-/** "Lun 19 oct · 9:00–10:00". */
+/** "Lun 19 oct, de 9:00 a 10:00". */
 export function formatRange(start: Date | string, end: Date | string): string {
-  return `${formatDay(start)} · ${formatTime(start)}–${formatTime(end)}`;
+  return `${formatDay(start)}, de ${formatTime(start)} a ${formatTime(end)}`;
 }
 
 /** "el lunes 19 de octubre a las 9:00". */

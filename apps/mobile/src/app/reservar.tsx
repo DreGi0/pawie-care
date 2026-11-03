@@ -29,26 +29,28 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { z } from 'zod';
 
-import { Avatar } from '@/components/Avatar';
 import { Banner } from '@/components/Banner';
 import { BottomBar } from '@/components/BottomBar';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { CaregiverPhoto } from '@/components/CaregiverPhoto';
 import { Checkbox } from '@/components/Checkbox';
 import { Chip } from '@/components/Chip';
 import { Icon, type IconName } from '@/components/Icon';
 import { IconButton } from '@/components/IconButton';
 import { Input } from '@/components/Input';
 import { PriceCard } from '@/components/PriceCard';
+import { Row } from '@/components/Row';
 import { Sheet } from '@/components/Sheet';
 import { StepBar } from '@/components/StepBar';
+import { StarMedal, Tag } from '@/components/Tag';
 import { Text } from '@/components/Text';
 import { Touchable } from '@/components/Touchable';
 import { errorMessage } from '@/lib/api';
-import { firstName, joinNames, serviceName } from '@/lib/bookings';
+import { firstName, joinNames } from '@/lib/bookings';
 import { formatDay, formatMoney, formatRange, maskPhone, parsePhone } from '@/lib/format';
 import { toSearchRequest, useSearch, useSearchResults, type Search } from '@/lib/search';
-import { colors, radius, space } from '@/theme/tokens';
+import { borderWidth, colors, gutter, radius, space } from '@/theme/tokens';
 
 const AMOUNTS = [50, 100, 200];
 
@@ -96,7 +98,7 @@ export default function BookScreen() {
             <Button variant="secondary" label="Volver" onPress={() => router.back()} />
           </View>
         ) : (
-          <ActivityIndicator color={colors.grapeDeep} />
+          <ActivityIndicator color={colors.primary} />
         )}
       </SafeAreaView>
     );
@@ -247,24 +249,24 @@ function BookingForm({
                 accessibilityLabel={`Volver al perfil de ${name}`}
                 onPress={() => router.back()}
               />
-              <Text variant="title" accessibilityRole="header">
+              <Text variant="title" accessibilityRole="header" style={styles.flex}>
                 {overnight ? 'Solicitar pernocta' : 'Solicitar visita'}
               </Text>
             </View>
             <StepBar current={1} steps={steps} />
           </View>
 
-          <Card style={styles.summary}>
-            <View style={[styles.summaryRow, styles.divider]}>
-              <Avatar name={caregiver.displayName} photoUrl={caregiver.photoUrl} />
-              <View style={styles.flex}>
-                <Text variant="bodyStrong">{caregiver.displayName}</Text>
-                <Text variant="caption" color="inkMuted">
-                  {caregiver.hasSpecialCareCertification && '⭐ Con certificación · '}
-                  {serviceName(search.serviceCode)}
-                </Text>
+          <View>
+            <Row>
+              <CaregiverPhoto name={caregiver.displayName} photoUrl={caregiver.photoUrl} />
+              <View style={styles.who}>
+                <Text variant="subheading">{caregiver.displayName}</Text>
+                <View style={styles.tags}>
+                  <Tag kind="service" service={search.serviceCode} size="sm" />
+                  {caregiver.hasSpecialCareCertification && <StarMedal />}
+                </View>
               </View>
-            </View>
+            </Row>
             <SummaryRow
               icon="paw-print"
               label="Para"
@@ -286,12 +288,11 @@ function BookingForm({
             <SummaryRow
               icon="house"
               label="Dónde"
-              value={address ? `${address.label} · ${address.street}` : 'Agrega una dirección'}
+              value={address ? `${address.label}, ${address.street}` : 'Agrega una dirección'}
               action="Cambiar dirección"
               onAction={() => setChoosingAddress(true)}
-              last
             />
-          </Card>
+          </View>
 
           <Controller
             control={control}
@@ -437,8 +438,8 @@ function BookingForm({
             />
             {!consent && (
               <View style={styles.consentHint}>
-                <Icon name="circle-alert" size={16} color="roseDeep" />
-                <Text variant="caption" color="roseDeep">
+                <Icon name="circle-alert" size={16} color="danger" />
+                <Text variant="caption" color="danger">
                   Marca esta casilla para enviar la solicitud.
                 </Text>
               </View>
@@ -446,12 +447,15 @@ function BookingForm({
           </View>
 
           <View style={styles.section}>
+            <Text variant="heading" accessibilityRole="header">
+              Precio
+            </Text>
             {quote.data ? (
               <PriceCard
                 price={quote.data}
                 lines={[
                   {
-                    label: `${overnight ? 'Pernocta' : 'Visita'}${pets.length > 1 ? ` · ${pets.length} mascotas` : ''}`,
+                    label: `${overnight ? 'Pernocta' : 'Visita'}${pets.length > 1 ? ` para ${pets.length} mascotas` : ''}`,
                     amountCents: quote.data.subtotalCents,
                   },
                 ]}
@@ -462,7 +466,7 @@ function BookingForm({
                 <Button variant="secondary" label="Calcular de nuevo" onPress={askQuote} />
               </>
             ) : (
-              <ActivityIndicator color={colors.grapeDeep} />
+              <ActivityIndicator color={colors.primary} />
             )}
             <Banner
               tone="info"
@@ -476,7 +480,7 @@ function BookingForm({
           </View>
         </ScrollView>
 
-        <BottomBar caption="Total" amount={quote.data ? formatMoney(quote.data.totalCents) : '—'}>
+        <BottomBar amount={quote.data ? formatMoney(quote.data.totalCents) : '—'} caption="Total">
           <Button
             label="Enviar solicitud"
             disabled={!consent || !quote.data}
@@ -504,40 +508,42 @@ function BookingForm({
         {addresses.length === 0 && (
           <Text color="inkMuted">Agrega la dirección donde tu cuidador hará la visita.</Text>
         )}
-        {addresses.map((option) => (
-          <Touchable
-            key={option.id}
-            accessibilityRole="button"
-            accessibilityState={{ selected: option.id === addressId }}
-            onPress={() => {
-              setAddressId(option.id);
-              setChoosingAddress(false);
-            }}
-            pressedScale={0.98}
-            style={[styles.addressOption, option.id === addressId && styles.addressSelected]}
-          >
-            <Icon name="map-pin" />
-            <View style={styles.flex}>
-              <Text variant="bodyStrong">{option.label}</Text>
-              <Text variant="caption" color="inkMuted">
-                {option.street} · {option.district.name}
-              </Text>
-            </View>
-            {option.id === addressId && <Icon name="check" color="grapeDeep" />}
-          </Touchable>
-        ))}
+        <View>
+          {addresses.map((option) => (
+            <Touchable
+              key={option.id}
+              accessibilityRole="button"
+              accessibilityState={{ selected: option.id === addressId }}
+              onPress={() => {
+                setAddressId(option.id);
+                setChoosingAddress(false);
+              }}
+              pressedScale={0.98}
+              style={[styles.addressOption, option.id === addressId && styles.addressSelected]}
+            >
+              <Icon name="map-pin" />
+              <View style={styles.flex}>
+                <Text variant="bodyStrong">{option.label}</Text>
+                <Text variant="caption" color="inkMuted">
+                  {option.street}, {option.district.name}
+                </Text>
+              </View>
+              {option.id === addressId && <Icon name="check" color="primary" />}
+            </Touchable>
+          ))}
+        </View>
       </Sheet>
     </SafeAreaView>
   );
 }
 
+/** One fact of the request, as a row: what it is, its value and "Cambiar". */
 function SummaryRow({
   icon,
   label,
   value,
   action,
   onAction,
-  last = false,
 }: {
   icon: IconName;
   label: string;
@@ -545,11 +551,12 @@ function SummaryRow({
   /** Says what "Cambiar" changes, for screen readers. */
   action: string;
   onAction: () => void;
-  last?: boolean;
 }) {
   return (
-    <View style={[styles.summaryRow, !last && styles.divider]}>
-      <Icon name={icon} />
+    <Row divider>
+      <View style={styles.icon}>
+        <Icon name={icon} />
+      </View>
       <View style={styles.flex}>
         <Text variant="caption" color="inkMuted">
           {label}
@@ -557,49 +564,62 @@ function SummaryRow({
         <Text variant="bodyStrong">{value}</Text>
       </View>
       <Button variant="ghost" label="Cambiar" accessibilityLabel={action} onPress={onAction} />
-    </View>
+    </Row>
   );
 }
 
 function EmergencySummary({ previous }: { previous: BookingEmergency }) {
   return (
-    <Card style={styles.emergencySummary}>
+    <View style={styles.emergencySummary}>
       <Text>
-        <Text variant="bodyStrong">{previous.contactName}</Text> ·{' '}
+        <Text variant="bodyStrong">{previous.contactName}</Text>,{' '}
         {maskPhone(previous.contactPhone.replace(/^\+503/, ''))}
       </Text>
       <Text variant="caption" color="inkMuted">
-        {previous.vetName ? `Veterinario: ${previous.vetName} · ` : ''}Autorizas hasta{' '}
-        {formatMoney(previous.preauthorizedCents, { short: true })}
+        {previous.vetName ? `Veterinario: ${previous.vetName}. ` : ''}Autorizas hasta{' '}
+        {formatMoney(previous.preauthorizedCents, { short: true })} para una clínica.
       </Text>
-    </Card>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
+  screen: { flex: 1, backgroundColor: colors.bg },
   centered: { alignItems: 'center', justifyContent: 'center' },
-  error: { alignSelf: 'stretch', gap: space[4], padding: space[4] },
-  content: { gap: space[6], padding: space[4], paddingBottom: space[8] },
+  error: { alignSelf: 'stretch', gap: space[4], padding: gutter },
+  content: {
+    gap: space[6],
+    paddingHorizontal: gutter,
+    paddingTop: space[1],
+    paddingBottom: space[8],
+  },
   flex: { flex: 1 },
   row: { flexDirection: 'row', gap: space[2] },
   header: { gap: space[4] },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
-  summary: { paddingVertical: space[1] },
-  summaryRow: {
-    flexDirection: 'row',
+  who: { flex: 1, gap: 6 },
+  tags: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  icon: {
+    width: 44,
+    height: 44,
     alignItems: 'center',
-    gap: space[3],
-    paddingVertical: space[2],
+    justifyContent: 'center',
+    borderRadius: 14,
+    backgroundColor: colors.tint,
   },
-  divider: { borderBottomWidth: 1, borderBottomColor: colors.line },
   section: { gap: space[3] },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
   emergency: { gap: space[4] },
-  emergencySummary: { gap: space[2] },
+  emergencySummary: { gap: space[1] },
   amounts: { gap: space[2] },
-  consent: { padding: space[3], borderRadius: radius.sm, backgroundColor: colors.card },
-  consentMissing: { backgroundColor: colors.rose },
+  consent: {
+    padding: space[3],
+    borderRadius: radius.md,
+    borderWidth: borderWidth.hairline,
+    borderColor: colors.line,
+    backgroundColor: colors.white,
+  },
+  consentMissing: { borderColor: colors.danger, backgroundColor: colors.dangerTint },
   consentHint: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginTop: -space[1] },
   addressOption: {
     minHeight: 56,
@@ -610,5 +630,5 @@ const styles = StyleSheet.create({
     paddingVertical: space[2],
     borderRadius: radius.sm,
   },
-  addressSelected: { backgroundColor: colors.grape },
+  addressSelected: { backgroundColor: colors.tint },
 });

@@ -10,13 +10,17 @@ export type IconProps = {
   name: IconName;
   size?: number;
   color?: ColorName;
+  /** Fills the shape, like the rating's star. */
+  filled?: boolean;
 };
 
 /** A Lucide icon. It's decorative: describe the action on the control that contains it. */
-export function Icon({ name, size = 24, color = 'ink' }: IconProps) {
+export function Icon({ name, size = 24, color = 'ink', filled = false }: IconProps) {
+  const body = filled ? icons[name].replaceAll('fill="none"', 'fill="currentColor"') : icons[name];
+
   return (
     <SvgXml
-      xml={`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${icons[name]}</svg>`}
+      xml={`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${body}</svg>`}
       width={size}
       height={size}
       color={colors[color]}

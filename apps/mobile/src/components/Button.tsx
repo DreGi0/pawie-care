@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, radius, space, touchTarget, type ColorName } from '@/theme/tokens';
+import { borderWidth, colors, radius, space, touchTarget, type ColorName } from '@/theme/tokens';
 
 import { Text } from './Text';
 import { Touchable, type TouchableProps } from './Touchable';
@@ -18,15 +18,15 @@ export type ButtonProps = Omit<TouchableProps, 'children' | 'style'> & {
 };
 
 const labelColor: Record<Variant, ColorName> = {
-  primary: 'card',
+  primary: 'white',
   secondary: 'ink',
-  ghost: 'grapeDeep',
-  danger: 'roseDeep',
+  ghost: 'primary',
+  danger: 'danger',
 };
 
 /**
- * Each screen has a single primary button: grape-deep is the one strong color per screen.
- * `ghost` is for text actions such as links, and `danger` for cancelling.
+ * Each screen has a single primary button, the only block of `primary` on it. `secondary` has
+ * an ink outline; `ghost` is for text actions such as links, and `danger` for cancelling.
  */
 export function Button({
   label,
@@ -49,7 +49,7 @@ export function Button({
         styles.base,
         styles[variant],
         pressed && (variant === 'primary' ? styles.primaryPressed : styles.pressed),
-        disabled && variant === 'primary' && styles.primaryDisabled,
+        disabled && (variant === 'primary' ? styles.primaryDisabled : styles.disabled),
         style,
       ]}
       {...props}
@@ -59,7 +59,7 @@ export function Button({
       ) : (
         <>
           {icon}
-          <Text variant="label" color={color}>
+          <Text variant="label" color={color} style={variant === 'primary' && styles.primaryLabel}>
             {label}
           </Text>
         </>
@@ -74,18 +74,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: space[2],
-    borderRadius: radius.pill,
+    borderRadius: radius.md,
   },
-  primary: { minHeight: 52, paddingHorizontal: space[6], backgroundColor: colors.grapeDeep },
+  primary: { minHeight: 56, paddingHorizontal: space[6], backgroundColor: colors.primary },
   secondary: {
-    minHeight: 52,
-    paddingHorizontal: space[6],
-    borderWidth: 1.5,
-    borderColor: colors.lineStrong,
+    minHeight: touchTarget,
+    paddingHorizontal: space[4],
+    borderWidth: borderWidth.strong,
+    borderColor: colors.ink,
   },
   ghost: { minHeight: touchTarget, paddingHorizontal: space[2] },
   danger: { minHeight: touchTarget, paddingHorizontal: space[2] },
-  primaryPressed: { backgroundColor: colors.grapeDeepPressed },
+  primaryLabel: { fontSize: 18, lineHeight: 22 },
+  primaryPressed: { backgroundColor: colors.primaryPressed },
   primaryDisabled: { backgroundColor: colors.line },
+  disabled: { borderColor: colors.line },
   pressed: { opacity: 0.7 },
 });

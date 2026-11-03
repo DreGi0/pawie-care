@@ -8,11 +8,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/Avatar';
 import { Banner } from '@/components/Banner';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { Row } from '@/components/Row';
 import { Icon } from '@/components/Icon';
 import { Text } from '@/components/Text';
 import { describePet } from '@/lib/pets';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, gutter, radius, space } from '@/theme/tokens';
 
 // No mockup: built from the design system. It doesn't show the care level, because it
 // depends on the dates of each service (RN-MAS-05) and only the API computes it.
@@ -34,14 +34,16 @@ export default function PetsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refresh}
-            colors={[colors.grapeDeep]}
-            tintColor={colors.grapeDeep}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
       >
-        <Text variant="title">Mis mascotas</Text>
+        <Text variant="title" accessibilityRole="header">
+          Mis mascotas
+        </Text>
         {pets.isPending ? (
-          <ActivityIndicator color={colors.grapeDeep} style={styles.loading} />
+          <ActivityIndicator color={colors.primary} style={styles.loading} />
         ) : pets.isError ? (
           <>
             <Banner
@@ -54,11 +56,13 @@ export default function PetsScreen() {
           <NoPets />
         ) : (
           <>
-            {pets.data.map((pet, index) => (
-              <Animated.View key={pet.id} entering={FadeInDown.delay(index * 60).duration(300)}>
-                <PetCard pet={pet} />
-              </Animated.View>
-            ))}
+            <View style={styles.list}>
+              {pets.data.map((pet, index) => (
+                <Animated.View key={pet.id} entering={FadeInDown.delay(index * 60).duration(300)}>
+                  <PetRow pet={pet} divider={index > 0} />
+                </Animated.View>
+              ))}
+            </View>
             <AddPetButton />
           </>
         )}
@@ -67,17 +71,17 @@ export default function PetsScreen() {
   );
 }
 
-function PetCard({ pet }: { pet: PetResponse }) {
+function PetRow({ pet, divider }: { pet: PetResponse; divider: boolean }) {
   return (
-    <Card style={styles.pet}>
+    <Row divider={divider}>
       <Avatar name={pet.name} photoUrl={pet.photoUrl} />
       <View style={styles.petText}>
-        <Text variant="bodyStrong">{pet.name}</Text>
+        <Text variant="subheading">{pet.name}</Text>
         <Text variant="caption" color="inkMuted">
           {describePet(pet)}
         </Text>
       </View>
-    </Card>
+    </Row>
   );
 }
 
@@ -105,11 +109,17 @@ function AddPetButton() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
-  content: { flexGrow: 1, gap: space[4], padding: space[4], paddingTop: space[6] },
+  screen: { flex: 1, backgroundColor: colors.bg },
+  content: {
+    flexGrow: 1,
+    gap: space[4],
+    paddingHorizontal: gutter,
+    paddingTop: space[2],
+    paddingBottom: space[6],
+  },
   loading: { marginTop: space[8] },
-  pet: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
-  petText: { flex: 1 },
+  petText: { flex: 1, gap: 2 },
+  list: { marginTop: space[1] },
   empty: { flexGrow: 1, justifyContent: 'center', gap: space[4] },
   emptyArt: {
     alignSelf: 'center',
@@ -118,7 +128,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.pill,
-    backgroundColor: colors.sky,
+    backgroundColor: colors.tint,
   },
   emptyText: { gap: space[1] },
   centered: { textAlign: 'center' },

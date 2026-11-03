@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import Animated, { css } from 'react-native-reanimated';
 
-import { colors, space, touchTarget } from '@/theme/tokens';
+import { borderWidth, colors, space, touchTarget } from '@/theme/tokens';
 
 import { Icon } from './Icon';
 import { Text } from './Text';
@@ -25,7 +25,7 @@ export function Checkbox({ label, checked, onChange }: CheckboxProps) {
       style={styles.row}
     >
       <Animated.View style={[styles.box, checked && styles.checked, transitions.box]}>
-        {checked && <Icon name="check" size={18} color="card" />}
+        {checked && <Icon name="check" size={18} color="white" />}
       </Animated.View>
       <View style={styles.label}>
         <Text>{label}</Text>
@@ -49,10 +49,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: colors.lineStrong,
-    backgroundColor: colors.card,
+    borderWidth: borderWidth.strong,
+    borderColor: colors.ink,
+    backgroundColor: colors.white,
   },
-  checked: { borderColor: colors.grapeDeep, backgroundColor: colors.grapeDeep },
+  checked: { borderColor: colors.primary, backgroundColor: colors.primary },
   label: { flex: 1 },
 });

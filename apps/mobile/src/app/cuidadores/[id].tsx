@@ -2,37 +2,44 @@ import {
   useCaregiversProfile,
   useCatalogGet,
   usePetsList,
+  type CaregiverBadge,
   type CaregiverPrice,
+  type CaregiverProfileResponse,
   type ServiceCode,
 } from '@pawie/api-client';
-import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Banner } from '@/components/Banner';
 import { BottomBar } from '@/components/BottomBar';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
-import { Icon } from '@/components/Icon';
+import { CaregiverPhoto } from '@/components/CaregiverPhoto';
+import { Icon, type IconName } from '@/components/Icon';
 import { IconButton } from '@/components/IconButton';
+import { LevelTag } from '@/components/LevelTag';
+import { Row } from '@/components/Row';
 import { Tag } from '@/components/Tag';
 import { Text } from '@/components/Text';
 import { errorMessage } from '@/lib/api';
 import { firstName, joinNames, serviceName, serviceUnit } from '@/lib/bookings';
-import { BADGE_NAMES, SKILL_NAMES, levelLabel } from '@/lib/caregivers';
+import { BADGE_NAMES, SKILL_NAMES } from '@/lib/caregivers';
 import { formatDay, formatDayTime, formatMoney } from '@/lib/format';
 import { useSearch, useSearchResults } from '@/lib/search';
-import { colors, radius, space } from '@/theme/tokens';
+import { services } from '@/theme/services';
+import { colors, gutter, radius, space, typography } from '@/theme/tokens';
 
-const HEADER = 280;
+const BADGE_ICONS: Record<CaregiverBadge, IconName> = {
+  IDENTITY_VERIFIED: 'check',
+  BACKGROUND_CHECKED: 'check',
+  VET_STUDENT: 'graduation-cap',
+};
 
 // The mockup's gallery of 3 photos waits for the API, which has one photo per caregiver.
 export default function CaregiverProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const insets = useSafeAreaInsets();
   const profile = useCaregiversProfile(id);
   const catalog = useCatalogGet();
   const pets = usePetsList();
@@ -48,7 +55,7 @@ export default function CaregiverProfileScreen() {
             <Button variant="secondary" label="Volver" onPress={() => router.back()} />
           </View>
         ) : (
-          <ActivityIndicator color={colors.grapeDeep} />
+          <ActivityIndicator color={colors.primary} />
         )}
       </SafeAreaView>
     );
@@ -63,44 +70,55 @@ export default function CaregiverProfileScreen() {
   const petNames = joinNames(selectedPets.map((pet) => pet.name));
   const slot = results.data?.slots[0];
   const overnight = search?.serviceCode === 'OVERNIGHT_STAY';
+  const rules = catalog.data?.bookingRules;
 
   return (
-    <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.header}>
-          {caregiver.photoUrl ? (
-            <Image
-              source={caregiver.photoUrl}
-              contentFit="cover"
-              style={StyleSheet.absoluteFill}
-              accessibilityLabel={`Foto de ${name}`}
-            />
-          ) : (
-            <Animated.View entering={FadeIn.duration(400)} style={styles.initials}>
-              <Text variant="display">
-                {caregiver.displayName
-                  .split(' ')
-                  .map((word) => word.charAt(0))
-                  .join('')}
-              </Text>
-            </Animated.View>
-          )}
-        </View>
+    <SafeAreaView edges={['top']} style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <IconButton
+          icon="chevron-left"
+          accessibilityLabel="Volver a los resultados"
+          onPress={() => router.back()}
+        />
+
+        <Animated.View entering={FadeIn.duration(400)} style={styles.hero}>
+          <CaregiverPhoto name={caregiver.displayName} photoUrl={caregiver.photoUrl} width={186} />
+          <View style={styles.collar}>
+            <LevelTag level={caregiver.level} />
+          </View>
+        </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(350)} style={styles.body}>
-          <View style={styles.section}>
-            <Text variant="title" accessibilityRole="header">
+          <View style={styles.identity}>
+            <Text variant="display" accessibilityRole="header">
               {caregiver.displayName}
             </Text>
-            <Tag tone="level" label={levelLabel(caregiver.level)} />
-            <View style={styles.rating}>
-              <Icon name="star" size={18} />
-              <Text>
-                <Text variant="bodyStrong">{caregiver.rating?.toFixed(1) ?? 'Nuevo'}</Text>
-                <Text color="inkMuted">
-                  {caregiver.rating !== null && ` (${caregiver.ratingCount})`} ·{' '}
-                  {caregiver.completedBookingCount} servicios en Pawie
+            {caregiver.districts.length > 0 && (
+              <View style={styles.where}>
+                <Icon name="map-pin" size={18} color="inkMuted" />
+                <Text color="inkMuted" style={[styles.flex, styles.whereText]}>
+                  {joinNames(caregiver.districts.map((d) => d.name))}
                 </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.stats}>
+            <View>
+              <View style={styles.stat}>
+                <Icon name="star" size={22} filled />
+                <Text style={styles.statValue}>{caregiver.rating?.toFixed(1) ?? 'Nuevo'}</Text>
+              </View>
+              <Text variant="caption" color="inkMuted">
+                {caregiver.rating === null
+                  ? 'Aún sin reseñas'
+                  : `de ${caregiver.ratingCount} ${caregiver.ratingCount === 1 ? 'reseña' : 'reseñas'}`}
+              </Text>
+            </View>
+            <View>
+              <Text style={styles.statValue}>{caregiver.completedBookingCount}</Text>
+              <Text variant="caption" color="inkMuted">
+                servicios en Pawie
               </Text>
             </View>
           </View>
@@ -114,7 +132,7 @@ export default function CaregiverProfileScreen() {
                   {overnight
                     ? `Noche del ${formatDay(slot.startsAt)}`
                     : formatDayTime(slot.startsAt)}
-                  {caregiver.instantBooking && ' · Acepta al instante'}
+                  {caregiver.instantBooking && '. Acepta al instante'}
                 </Text>
               </View>
             </View>
@@ -126,57 +144,23 @@ export default function CaregiverProfileScreen() {
             />
           )}
 
-          {caregiver.badges.length > 0 && (
-            <TagGroup label="Verificado por Pawie">
-              {caregiver.badges.map((badge) => (
-                <Tag
-                  key={badge}
-                  tone="success"
-                  label={BADGE_NAMES[badge]}
-                  icon={<Icon name="check" size={16} />}
-                />
-              ))}
-            </TagGroup>
-          )}
-          {caregiver.certifications.length > 0 && (
-            <TagGroup label="Certificaciones">
-              {caregiver.certifications.map(({ code, name: certification }) =>
-                code === 'SPECIAL_CARE' ? (
-                  <Tag key={code} tone="certified" label={`⭐ ${certification}`} />
-                ) : (
-                  <Tag key={code} tone="info" label={certification} />
-                ),
-              )}
-            </TagGroup>
-          )}
-          {caregiver.skills.length > 0 && (
-            <TagGroup label={`Habilidades que declara ${name}`}>
-              {caregiver.skills.map((skill) => (
-                <Tag key={skill} tone="neutral" label={SKILL_NAMES[skill]} />
-              ))}
-            </TagGroup>
-          )}
+          <Verified caregiver={caregiver} />
 
-          {caregiver.bio && (
-            <View style={styles.section}>
-              <Text variant="heading" accessibilityRole="header">
-                Sobre {name}
-              </Text>
-              <Text>{caregiver.bio}</Text>
-              <View style={styles.districts}>
-                <Icon name="map-pin" size={16} color="inkMuted" />
-                <Text variant="caption" color="inkMuted" style={styles.flex}>
-                  {joinNames(caregiver.districts.map((d) => d.name))}
+          {(caregiver.bio || caregiver.skills.length > 0) && (
+            <Section title={`Sobre ${name}`}>
+              {caregiver.bio && <Text>{caregiver.bio}</Text>}
+              {caregiver.skills.length > 0 && (
+                // RN-CUI-19: declared by the caregiver and not verified, so they aren't placas.
+                <Text color="inkMuted">
+                  Dice que tiene experiencia con{' '}
+                  {joinNames(caregiver.skills.map((skill) => SKILL_NAMES[skill].toLowerCase()))}.
                 </Text>
-              </View>
-            </View>
+              )}
+            </Section>
           )}
 
-          <View style={styles.section}>
-            <Text variant="heading" accessibilityRole="header">
-              Precios
-            </Text>
-            <Card style={styles.prices}>
+          <Section title="Sus precios">
+            <View>
               {(['HOME_VISIT', 'OVERNIGHT_STAY'] as const).map((code, index) => (
                 <PriceRow
                   key={code}
@@ -184,32 +168,25 @@ export default function CaregiverProfileScreen() {
                   prices={caregiver.prices}
                   detail={
                     code === 'HOME_VISIT'
-                      ? visitLength(catalog.data?.bookingRules.homeVisitMinutes ?? 60)
-                      : `De ${minuteLabel(catalog.data?.bookingRules.overnightStartMinute ?? 1140)} a ${minuteLabel(catalog.data?.bookingRules.overnightEndMinute ?? 480)}`
+                      ? visitLength(rules?.homeVisitMinutes ?? 60)
+                      : `De ${minuteLabel(rules?.overnightStartMinute ?? 1140)} a ${minuteLabel(rules?.overnightEndMinute ?? 480)}`
                   }
-                  last={index === 1}
+                  divider={index > 0}
                 />
               ))}
-            </Card>
+            </View>
             <Text variant="caption" color="inkMuted">
               El precio es el mismo para todas las mascotas, también las Especiales. Cada mascota
               adicional suma 50%.
             </Text>
-          </View>
+          </Section>
         </Animated.View>
       </ScrollView>
 
-      <IconButton
-        icon="chevron-left"
-        accessibilityLabel="Volver a los resultados"
-        onPress={() => router.back()}
-        style={[styles.back, { top: insets.top + space[2] }]}
-      />
-
       {search && price && (
         <BottomBar
-          caption={`Precio ${serviceUnit(search.serviceCode)}`}
           amount={formatMoney(price.priceCents, { short: true })}
+          caption={`Precio ${serviceUnit(search.serviceCode)}`}
         >
           <Button
             label={overnight ? 'Reservar pernocta' : 'Reservar visita'}
@@ -217,17 +194,43 @@ export default function CaregiverProfileScreen() {
           />
         </BottomBar>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
-function TagGroup({ label, children }: { label: string; children: ReactNode }) {
+/** RN-CUI-03, RN-CUI-05: badges and certifications as placas, two per row. */
+function Verified({ caregiver }: { caregiver: CaregiverProfileResponse }) {
+  if (caregiver.badges.length === 0 && caregiver.certifications.length === 0) return null;
+
+  return (
+    <Section title="Verificado por Pawie">
+      <View style={styles.grid}>
+        {caregiver.badges.map((badge) => (
+          <View key={badge} style={styles.cell}>
+            <Tag kind="badge" label={BADGE_NAMES[badge]} icon={BADGE_ICONS[badge]} wrap />
+          </View>
+        ))}
+        {caregiver.certifications.map(({ code, name }) => (
+          <View key={code} style={styles.cell}>
+            {code === 'SPECIAL_CARE' ? (
+              <Tag kind="star" label={name} wrap />
+            ) : (
+              <Tag kind="certification" label={name} wrap />
+            )}
+          </View>
+        ))}
+      </View>
+    </Section>
+  );
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <View style={styles.section}>
       <Text variant="heading" accessibilityRole="header">
-        {label}
+        {title}
       </Text>
-      <View style={styles.tags}>{children}</View>
+      {children}
     </View>
   );
 }
@@ -246,64 +249,51 @@ function PriceRow({
   code,
   prices,
   detail,
-  last,
+  divider,
 }: {
   code: ServiceCode;
   prices: CaregiverPrice[];
   detail: string;
-  last: boolean;
+  divider: boolean;
 }) {
   const price = prices.find((p) => p.serviceCode === code);
+  const { color, icon } = services[code];
 
   return (
-    <View style={[styles.priceRow, !last && styles.priceDivider]}>
+    <Row divider={divider}>
+      <View style={[styles.swatch, { backgroundColor: colors[color] }]}>
+        <Icon name={icon} />
+      </View>
       <View style={styles.flex}>
-        <Text variant="bodyStrong">{serviceName(code)}</Text>
+        <Text variant="subheading" style={styles.priceName}>
+          {serviceName(code)}
+        </Text>
         <Text variant="caption" color="inkMuted">
           {detail}
         </Text>
       </View>
-      <Text variant="bodyStrong" style={styles.priceCell}>
+      <Text variant="priceSmall">
         {price ? formatMoney(price.priceCents, { short: true }) : '—'}
       </Text>
-    </View>
+    </Row>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
+  screen: { flex: 1, backgroundColor: colors.bg },
   centered: { alignItems: 'center', justifyContent: 'center' },
-  error: { alignSelf: 'stretch', gap: space[4], padding: space[4] },
-  scroll: { paddingBottom: space[8] },
+  error: { alignSelf: 'stretch', gap: space[4], padding: gutter },
+  content: { paddingHorizontal: gutter, paddingTop: space[1], paddingBottom: space[8] },
   flex: { flex: 1 },
-  header: {
-    height: HEADER,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    backgroundColor: colors.grape,
-  },
-  initials: {
-    width: 128,
-    height: 128,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 64,
-    backgroundColor: colors.card,
-  },
-  back: { position: 'absolute', left: space[4] },
-  body: {
-    gap: space[6],
-    marginTop: -space[6],
-    paddingTop: space[6],
-    paddingHorizontal: space[4],
-    backgroundColor: colors.cream,
-    borderTopLeftRadius: radius.md,
-    borderTopRightRadius: radius.md,
-  },
-  section: { gap: space[2] },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  rating: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  hero: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginTop: space[2] },
+  collar: { flex: 1, marginTop: 18 },
+  body: { gap: space[6], marginTop: 18 },
+  identity: { gap: space[2] },
+  where: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  whereText: { fontSize: 15 },
+  stats: { flexDirection: 'row', gap: space[8] },
+  stat: { flexDirection: 'row', alignItems: 'center', gap: space[1] },
+  statValue: { ...typography.price, fontSize: 30, lineHeight: 34 },
   available: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -311,16 +301,17 @@ const styles = StyleSheet.create({
     paddingVertical: space[3],
     paddingHorizontal: space[4],
     borderRadius: radius.md,
-    backgroundColor: colors.sage,
+    backgroundColor: colors.tint,
   },
-  districts: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  prices: { paddingVertical: space[1] },
-  priceRow: {
-    flexDirection: 'row',
+  section: { gap: space[3] },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', margin: -space[1] },
+  cell: { width: '50%', padding: space[1] },
+  swatch: {
+    width: 44,
+    height: 44,
     alignItems: 'center',
-    gap: space[2],
-    paddingVertical: space[3],
+    justifyContent: 'center',
+    borderRadius: 14,
   },
-  priceDivider: { borderBottomWidth: 1, borderBottomColor: colors.line },
-  priceCell: { width: 72, textAlign: 'right' },
+  priceName: { fontSize: 17 },
 });

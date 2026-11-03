@@ -45,7 +45,7 @@ export default function AccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
+  screen: { flex: 1, backgroundColor: colors.bg },
   content: { gap: space[4], padding: space[4], paddingTop: space[6] },
   profile: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
   profileText: { flex: 1 },

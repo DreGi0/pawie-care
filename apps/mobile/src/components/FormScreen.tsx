@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, space } from '@/theme/tokens';
+import { colors, gutter, space } from '@/theme/tokens';
 
 import { Text } from './Text';
 
@@ -38,7 +38,7 @@ export function FormScreen({ title, subtitle, top, children }: FormScreenProps) 
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
-  content: { flexGrow: 1, gap: space[6], padding: space[4], paddingBottom: space[8] },
+  screen: { flex: 1, backgroundColor: colors.bg },
+  content: { flexGrow: 1, gap: space[6], padding: gutter, paddingBottom: space[8] },
   header: { gap: space[1] },
 });

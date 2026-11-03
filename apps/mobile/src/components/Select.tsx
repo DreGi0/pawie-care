@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { colors, radius, space } from '@/theme/tokens';
+import { borderWidth, colors, radius, space, touchTarget } from '@/theme/tokens';
 
 import { Icon } from './Icon';
 import { Sheet } from './Sheet';
@@ -48,7 +48,7 @@ export function Select<T extends string>({
         <Icon name="chevron-down" />
       </Touchable>
       {error && (
-        <Text variant="caption" color="roseDeep">
+        <Text variant="caption" color="danger">
           {error}
         </Text>
       )}
@@ -72,7 +72,7 @@ export function Select<T extends string>({
                 <Text variant={isSelected ? 'bodyStrong' : 'body'} style={styles.value}>
                   {option.label}
                 </Text>
-                {isSelected && <Icon name="check" color="grapeDeep" />}
+                {isSelected && <Icon name="check" color="primary" />}
               </Touchable>
             );
           })}
@@ -85,26 +85,26 @@ export function Select<T extends string>({
 const styles = StyleSheet.create({
   field: { gap: space[2] },
   box: {
-    minHeight: 52,
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space[2],
     paddingHorizontal: space[4],
-    backgroundColor: colors.card,
-    borderWidth: 1.5,
-    borderColor: colors.lineStrong,
-    borderRadius: radius.sm,
+    backgroundColor: colors.white,
+    borderWidth: borderWidth.hairline,
+    borderColor: colors.inkMuted,
+    borderRadius: radius.md,
   },
-  boxError: { borderColor: colors.roseDeep },
+  boxError: { borderWidth: borderWidth.strong, borderColor: colors.danger },
   value: { flex: 1 },
   options: { gap: space[1] },
   option: {
-    minHeight: 52,
+    minHeight: touchTarget,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space[2],
     paddingHorizontal: space[4],
     borderRadius: radius.sm,
   },
-  optionSelected: { backgroundColor: colors.grape },
+  optionSelected: { backgroundColor: colors.tint },
 });

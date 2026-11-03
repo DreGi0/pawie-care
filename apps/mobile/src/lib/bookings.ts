@@ -7,6 +7,11 @@ export function serviceName(code: ServiceCode): string {
   return code === 'OVERNIGHT_STAY' ? 'Pernocta' : 'Visita a domicilio';
 }
 
+/** "Visita" or "Pernocta", for placas and service blocks. */
+export function serviceShortName(code: ServiceCode): string {
+  return code === 'OVERNIGHT_STAY' ? 'Pernocta' : 'Visita';
+}
+
 /** "por visita" or "por noche". */
 export function serviceUnit(code: ServiceCode): string {
   return code === 'OVERNIGHT_STAY' ? 'por noche' : 'por visita';
@@ -42,14 +47,14 @@ export function statusTag(booking: BookingResponse, now = new Date()): StatusTag
       return {
         tone: 'info',
         label: booking.responseDueAt
-          ? `Esperando a ${name} · responde ${formatDeadline(booking.responseDueAt, now)}`
+          ? `${name} responde ${formatDeadline(booking.responseDueAt, now)}`
           : `Esperando a ${name}`,
       };
     case 'PENDING_PAYMENT':
       return {
         tone: 'warning',
         label: booking.paymentDueAt
-          ? `Falta pagar · ${formatDeadline(booking.paymentDueAt, now)}`
+          ? `Falta pagar ${formatDeadline(booking.paymentDueAt, now)}`
           : 'Falta pagar',
       };
     case 'CONFIRMED':
@@ -74,4 +79,11 @@ export function statusTag(booking: BookingResponse, now = new Date()): StatusTag
     case 'DISPUTED':
       return { tone: 'warning', label: 'En revisión' };
   }
+}
+
+/** "Visita a domicilio", "Visita especial", "Pernocta" or "Pernocta especial". */
+export function serviceKind(booking: BookingResponse): string {
+  const special = booking.careLevel === 'SPECIAL';
+  if (booking.serviceCode === 'OVERNIGHT_STAY') return special ? 'Pernocta especial' : 'Pernocta';
+  return special ? 'Visita especial' : 'Visita a domicilio';
 }

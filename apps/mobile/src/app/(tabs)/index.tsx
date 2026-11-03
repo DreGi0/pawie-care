@@ -12,27 +12,27 @@ import {
   type ServiceCode,
 } from '@pawie/api-client';
 import type { UseQueryResult } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Avatar } from '@/components/Avatar';
 import { Banner } from '@/components/Banner';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { CaregiverPhoto } from '@/components/CaregiverPhoto';
 import { Chip } from '@/components/Chip';
 import { Icon } from '@/components/Icon';
-import { IconButton } from '@/components/IconButton';
-import { Select } from '@/components/Select';
+import { Row } from '@/components/Row';
+import { ServiceBlock } from '@/components/ServiceBlock';
 import { Sheet } from '@/components/Sheet';
-import { Tag } from '@/components/Tag';
+import { StarMedal, Tag } from '@/components/Tag';
 import { Text } from '@/components/Text';
 import { Touchable } from '@/components/Touchable';
 import { errorMessage } from '@/lib/api';
-import { serviceName, serviceUnit } from '@/lib/bookings';
-import { CERTIFICATION_FILTERS, LEVEL_NAMES, levelLabel } from '@/lib/caregivers';
+import { joinNames, serviceUnit } from '@/lib/bookings';
+import { CERTIFICATION_FILTERS, LEVEL_NAMES } from '@/lib/caregivers';
 import {
   atLocalTime,
   dayLabel,
@@ -42,14 +42,20 @@ import {
   upcomingDays,
 } from '@/lib/format';
 import { setSearch, useSearch, useSearchResults, type Search } from '@/lib/search';
-import { colors, fontFamily, radius, space, type ColorName } from '@/theme/tokens';
+import { colors, fontFamily, gutter, radius, space } from '@/theme/tokens';
 
 // Visits start on the hour, from 7:00 to 19:00, when the overnight stay begins (RN-SER-02).
 const VISIT_HOURS = Array.from({ length: 13 }, (_, i) => (7 + i) * 60);
 const DAYS_AHEAD = 14;
-const PHOTO_COLORS: ColorName[] = ['grape', 'sky', 'sage'];
 const LEVELS: CaregiverLevel[] = ['TRUSTED', 'PRO', 'SUPER'];
 const RATINGS = [4, 4.5, 4.8];
+// The walk arrives in stage 8 with its own block.
+const SERVICES = [
+  { code: 'HOME_VISIT', detail: 'En tu casa' },
+  { code: 'OVERNIGHT_STAY', detail: 'Toda la noche' },
+] as const;
+
+type Picker = 'pets' | 'when' | 'district' | 'filters';
 
 export default function SearchScreen() {
   const me = useUsersMe();
@@ -57,8 +63,9 @@ export default function SearchScreen() {
   const addresses = useAddressesList();
   const catalog = useCatalogGet();
   const search = useSearch();
-  const [editing, setEditing] = useState(false);
-  const [filtering, setFiltering] = useState(false);
+  const [picker, setPicker] = useState<Picker | null>(null);
+  // A visit chosen from its block while the search's hour no longer works: When picks one first.
+  const [pendingVisit, setPendingVisit] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // The first search: the first pet, tomorrow at 9:00, in the district of its home.
@@ -87,6 +94,24 @@ export default function SearchScreen() {
     setRefreshing(false);
   };
 
+  const chooseService = (serviceCode: ServiceCode) => {
+    if (!search || !catalog.data || serviceCode === search.serviceCode) return;
+    if (
+      serviceCode === 'HOME_VISIT' &&
+      !visitHours(search.day, new Date(), catalog.data).includes(search.minute)
+    ) {
+      setPendingVisit(true);
+      setPicker('when');
+      return;
+    }
+    setSearch({ ...search, serviceCode });
+  };
+
+  const closePicker = () => {
+    setPicker(null);
+    setPendingVisit(false);
+  };
+
   const loading = pets.isPending || addresses.isPending || catalog.isPending;
   const failed = pets.isError || addresses.isError || catalog.isError;
 
@@ -98,16 +123,18 @@ export default function SearchScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refresh}
-            colors={[colors.grapeDeep]}
-            tintColor={colors.grapeDeep}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
       >
-        <View>
+        <View style={styles.hello}>
           <Text variant="title" accessibilityRole="header">
             {me.data ? `Hola, ${me.data.firstName}` : 'Hola'}
           </Text>
-          <Text color="inkMuted">¿A quién cuidamos esta vez?</Text>
+          <Text color="inkMuted" style={styles.subtitle}>
+            ¿A quién cuidamos esta vez?
+          </Text>
         </View>
 
         {me.data?.firstServiceFeeWaiverEndsAt && (
@@ -118,7 +145,7 @@ export default function SearchScreen() {
         )}
 
         {loading ? (
-          <ActivityIndicator color={colors.grapeDeep} style={styles.loading} />
+          <ActivityIndicator color={colors.primary} style={styles.loading} />
         ) : failed ? (
           <>
             <Banner
@@ -133,77 +160,59 @@ export default function SearchScreen() {
           search &&
           catalog.data && (
             <>
-              <Card style={styles.searchCard}>
-                <PetToggles
-                  pets={pets.data}
-                  selected={search.petIds}
-                  max={catalog.data.bookingRules.maxPetsPerBooking}
-                  onChange={(petIds) => setSearch({ ...search, petIds })}
-                />
-                {results.data?.careLevel === 'SPECIAL' && (
-                  <View style={styles.special}>
-                    <Text variant="caption">
-                      Una de tus mascotas necesita cuidado especial: te mostramos solo cuidadores ⭐
-                      Certificados.
-                    </Text>
-                  </View>
-                )}
-                <Touchable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Cambiar servicio, distrito y fecha. Ahora: ${describeSearch(search)}`}
-                  onPress={() => setEditing(true)}
-                  pressedScale={0.98}
-                  style={styles.when}
-                >
-                  <Icon name="calendar" />
-                  <View style={styles.whenText}>
-                    <Text variant="label">{describeSearch(search)}</Text>
-                    <Text variant="caption" color="inkMuted">
-                      {catalog.data.districts.find((d) => d.id === search.districtId)?.name}
-                    </Text>
-                  </View>
-                  <Text variant="label" color="grapeDeep">
-                    Cambiar
-                  </Text>
-                </Touchable>
-                <Button
-                  variant="secondary"
-                  label={filterCount(search) > 0 ? `Filtros (${filterCount(search)})` : 'Filtros'}
-                  icon={<Icon name="sliders-horizontal" />}
-                  onPress={() => setFiltering(true)}
-                />
-              </Card>
+              <View accessibilityRole="radiogroup" style={styles.services}>
+                {SERVICES.map(({ code, detail }) => (
+                  <ServiceBlock
+                    key={code}
+                    service={code}
+                    detail={detail}
+                    selected={search.serviceCode === code}
+                    onPress={() => chooseService(code)}
+                  />
+                ))}
+              </View>
 
-              <Results search={search} query={results} />
+              <Query search={search} pets={pets.data} catalog={catalog.data} onPick={setPicker} />
 
-              {filtering && <FiltersSheet onClose={() => setFiltering(false)} search={search} />}
-
-              {editing && (
-                <SearchSheet
-                  onClose={() => setEditing(false)}
-                  search={search}
-                  catalog={catalog.data}
+              {results.data?.careLevel === 'SPECIAL' && (
+                <Banner
+                  tone="info"
+                  icon="star"
+                  message="Una de tus mascotas necesita cuidado especial: te mostramos solo cuidadores ⭐ Certificados."
                 />
               )}
+
+              <Results search={search} query={results} onFilter={() => setPicker('filters')} />
             </>
           )
         )}
       </ScrollView>
+
+      {search && catalog.data && pets.data && (
+        <>
+          {picker === 'pets' && (
+            <PetsSheet
+              onClose={closePicker}
+              search={search}
+              pets={pets.data}
+              max={catalog.data.bookingRules.maxPetsPerBooking}
+            />
+          )}
+          {picker === 'when' && (
+            <WhenSheet
+              onClose={closePicker}
+              search={pendingVisit ? { ...search, serviceCode: 'HOME_VISIT' } : search}
+              catalog={catalog.data}
+            />
+          )}
+          {picker === 'district' && (
+            <DistrictSheet onClose={closePicker} search={search} catalog={catalog.data} />
+          )}
+          {picker === 'filters' && <FiltersSheet onClose={closePicker} search={search} />}
+        </>
+      )}
     </SafeAreaView>
   );
-}
-
-/** "Visita · Lun 19 oct, 9:00" or "Pernocta · Lun 19 oct". */
-function describeSearch({ serviceCode, day, minute }: Search): string {
-  const date = new Date(atLocalTime(day, minute));
-  return serviceCode === 'OVERNIGHT_STAY'
-    ? `Pernocta · ${formatDay(date)}`
-    : `Visita · ${formatDay(date)}, ${minute / 60}:00`;
-}
-
-/** How many filters are on. */
-function filterCount({ minLevel, certificationCodes, minRating }: Search): number {
-  return (minLevel ? 1 : 0) + certificationCodes.length + (minRating ? 1 : 0);
 }
 
 /** "Te quedan 12 días para reservarlo." */
@@ -212,165 +221,364 @@ function daysLeftText(days: number): string {
   return `Te quedan ${days} días para reservarlo.`;
 }
 
-function PetToggles({
+/** How many filters are on. */
+function filterCount({ minLevel, certificationCodes, minRating }: Search): number {
+  return (minLevel ? 1 : 0) + certificationCodes.length + (minRating ? 1 : 0);
+}
+
+/** RN-RES-05: a visit has to be requested this long in advance. */
+function visitHours(day: string, now: Date, catalog: CatalogResponse): number[] {
+  const earliest = now.getTime() + catalog.bookingRules.minLeadTimeMinutes * 60_000;
+  return VISIT_HOURS.filter((minute) => new Date(atLocalTime(day, minute)).getTime() >= earliest);
+}
+
+/** The search as a sentence: "Para [Toby] el [mar 20 oct, 9:00] en [San Salvador]". */
+function Query({
+  search,
   pets,
-  selected,
-  max,
-  onChange,
+  catalog,
+  onPick,
 }: {
+  search: Search;
   pets: PetResponse[];
-  selected: string[];
-  max: number;
-  onChange: (petIds: string[]) => void;
+  catalog: CatalogResponse;
+  onPick: (picker: Picker) => void;
 }) {
-  const toggle = (petId: string) => {
-    if (selected.includes(petId)) {
-      // The search needs at least one pet.
-      if (selected.length > 1) onChange(selected.filter((id) => id !== petId));
-    } else if (selected.length < max) {
-      onChange([...selected, petId]);
-    }
-  };
+  const selected = pets.filter((pet) => search.petIds.includes(pet.id));
+  const names = joinNames(selected.map((pet) => pet.name));
+  const date = new Date(atLocalTime(search.day, search.minute));
+  const day = formatDay(date).toLowerCase();
+  const overnight = search.serviceCode === 'OVERNIGHT_STAY';
+  const when = overnight ? day : `${day}, ${search.minute / 60}:00`;
+  const district = catalog.districts.find((d) => d.id === search.districtId)?.name ?? '';
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      accessibilityLabel="Mascotas"
-      contentContainerStyle={styles.pets}
-    >
-      {pets.map((pet) => {
-        const on = selected.includes(pet.id);
-        return (
-          <Touchable
-            key={pet.id}
-            accessibilityRole="button"
-            accessibilityState={{ selected: on }}
-            accessibilityLabel={pet.name}
-            onPress={() => toggle(pet.id)}
-            pressedScale={0.94}
-            style={styles.petTouch}
-          >
-            <View style={[styles.pet, on ? styles.petOn : styles.petOff]}>
-              <View style={styles.petInitial}>
-                <Text variant="caption" style={styles.bold}>
-                  {pet.name.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-              <Text variant="label">{pet.name}</Text>
-            </View>
-          </Touchable>
-        );
-      })}
-      <IconButton
-        icon="plus"
-        variant="plain"
-        color="grapeDeep"
-        accessibilityLabel="Agregar mascota"
-        onPress={() => router.push('/mascotas/nueva')}
+    <View style={styles.query}>
+      <Text style={styles.queryText}>Para</Text>
+      <Chip
+        label={names}
+        photo={
+          selected[0] && (
+            <Avatar name={selected[0].name} photoUrl={selected[0].photoUrl} size={36} />
+          )
+        }
+        accessibilityLabel={`Mascotas: ${names}. Cambiar`}
+        onPress={() => onPick('pets')}
       />
-    </ScrollView>
+      <Text style={styles.queryText}>{overnight ? 'la noche del' : 'el'}</Text>
+      <Chip
+        label={when}
+        icon={<Icon name="calendar" size={18} color="primary" />}
+        accessibilityLabel={`${overnight ? 'Noche' : 'Día y hora'}: ${when}. Cambiar`}
+        onPress={() => onPick('when')}
+      />
+      <Text style={styles.queryText}>en</Text>
+      <Chip
+        label={district}
+        icon={<Icon name="map-pin" size={18} color="primary" />}
+        accessibilityLabel={`Distrito: ${district}. Cambiar`}
+        onPress={() => onPick('district')}
+      />
+    </View>
   );
 }
 
 function Results({
   search,
   query,
+  onFilter,
 }: {
   search: Search;
   query: UseQueryResult<CaregiverSearchResponse, ApiError>;
+  onFilter: () => void;
 }) {
-  if (query.isPending) {
-    return <ActivityIndicator color={colors.grapeDeep} style={styles.loading} />;
-  }
-  if (query.isError) {
-    return <Banner tone="error" message={errorMessage(query.error)} />;
-  }
+  const filters = filterCount(search);
 
-  const { results } = query.data;
   return (
-    <View style={[styles.results, query.isPlaceholderData && styles.stale]}>
-      <View>
-        <Text variant="heading" accessibilityRole="header">
-          {results.length === 1
-            ? '1 cuidador disponible'
-            : `${results.length} cuidadores disponibles`}
-        </Text>
-        <Text variant="caption" color="inkMuted">
-          {results.length > 0
-            ? 'Ordenados por calificación'
-            : 'Prueba con otro día, otra hora, otro distrito o menos filtros.'}
-        </Text>
+    <View style={styles.results}>
+      <View style={styles.resultsHead}>
+        <View style={styles.flex}>
+          {query.data ? (
+            <>
+              <Text variant="heading" accessibilityRole="header">
+                {query.data.results.length === 1
+                  ? '1 cuidador disponible'
+                  : `${query.data.results.length} cuidadores disponibles`}
+              </Text>
+              <Text variant="caption" color="inkMuted">
+                {query.data.results.length > 0
+                  ? 'Ordenados por calificación'
+                  : 'Prueba con otro día, otra hora, otro distrito o menos filtros.'}
+              </Text>
+            </>
+          ) : (
+            <Text variant="heading" accessibilityRole="header">
+              Cuidadores
+            </Text>
+          )}
+        </View>
+        <Button
+          variant="secondary"
+          label={filters > 0 ? `Filtros (${filters})` : 'Filtros'}
+          icon={<Icon name="sliders-horizontal" />}
+          onPress={onFilter}
+        />
       </View>
-      {results.map((caregiver, index) => (
-        <Animated.View key={caregiver.id} entering={FadeInDown.delay(index * 60).duration(300)}>
-          <CaregiverCard
-            caregiver={caregiver}
-            serviceCode={search.serviceCode}
-            photoColor={PHOTO_COLORS[index % PHOTO_COLORS.length]}
-          />
-        </Animated.View>
-      ))}
+
+      {query.isPending ? (
+        <ActivityIndicator color={colors.primary} style={styles.loading} />
+      ) : query.isError ? (
+        <Banner tone="error" message={errorMessage(query.error)} />
+      ) : (
+        <View style={query.isPlaceholderData && styles.stale}>
+          {query.data.results.map((caregiver, index) => (
+            <Animated.View key={caregiver.id} entering={FadeInDown.delay(index * 60).duration(300)}>
+              <CaregiverRow
+                caregiver={caregiver}
+                serviceCode={search.serviceCode}
+                divider={index > 0}
+              />
+            </Animated.View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
 
-function CaregiverCard({
+function CaregiverRow({
   caregiver,
   serviceCode,
-  photoColor,
+  divider,
 }: {
   caregiver: CaregiverSearchResult;
   serviceCode: ServiceCode;
-  photoColor: ColorName;
+  divider: boolean;
 }) {
   const price = caregiver.prices.find((p) => p.serviceCode === serviceCode);
-  const initials = caregiver.displayName
-    .split(' ')
-    .map((word) => word.charAt(0))
-    .join('');
 
   return (
-    <Card
+    <Row
+      divider={divider}
       onPress={() => router.push(`/cuidadores/${caregiver.id}`)}
       accessibilityLabel={`${caregiver.displayName}, ver perfil`}
-      style={styles.caregiver}
     >
-      <View style={[styles.photo, { backgroundColor: colors[photoColor] }]}>
-        {caregiver.photoUrl ? (
-          <Image source={caregiver.photoUrl} contentFit="cover" style={StyleSheet.absoluteFill} />
-        ) : (
-          <Text variant="title">{initials}</Text>
-        )}
-      </View>
-      <View style={styles.caregiverText}>
-        <View style={styles.caregiverTop}>
-          <Text variant="bodyStrong" style={styles.flex} numberOfLines={1}>
-            {caregiver.displayName}
-          </Text>
-          {price && (
-            <Text variant="bodyStrong">{formatMoney(price.priceCents, { short: true })}</Text>
-          )}
-        </View>
+      <CaregiverPhoto name={caregiver.displayName} photoUrl={caregiver.photoUrl} />
+      <View style={styles.who}>
+        <Text variant="subheading" numberOfLines={1}>
+          {caregiver.displayName}
+        </Text>
+        <Rating rating={caregiver.rating} count={caregiver.ratingCount} />
         <View style={styles.tags}>
-          <Tag tone="level" label={levelLabel(caregiver.level)} />
-          {caregiver.hasSpecialCareCertification && (
-            <Tag tone="certified" label="⭐ Con certificación" />
-          )}
-          {caregiver.isVetStudent && <Tag tone="info" label="Estudiante de veterinaria" />}
-        </View>
-        <View style={styles.rating}>
-          <Icon name="star" size={14} />
-          <Text variant="caption">
-            {caregiver.rating?.toFixed(1) ?? 'Nuevo'}
-            <Text variant="caption" color="inkMuted">
-              {caregiver.rating !== null && ` (${caregiver.ratingCount})`} ·{' '}
-              {caregiver.completedBookingCount} servicios · {serviceUnit(serviceCode)}
-            </Text>
-          </Text>
+          <Tag kind="level" level={caregiver.level} size="sm" />
+          {caregiver.hasSpecialCareCertification && <StarMedal />}
         </View>
       </View>
-    </Card>
+      {price && (
+        <View style={styles.price}>
+          <Text variant="price">{formatMoney(price.priceCents, { short: true })}</Text>
+          <Text variant="footnote" color="inkMuted">
+            {serviceUnit(serviceCode)}
+          </Text>
+        </View>
+      )}
+    </Row>
+  );
+}
+
+/** "★ 4.8 de 46 reseñas", or "Nuevo" while nobody has rated it. The star is ink, never `star`. */
+function Rating({ rating, count }: { rating: number | null; count: number }) {
+  return (
+    <View style={styles.rating}>
+      <Icon name="star" size={15} filled />
+      {rating === null ? (
+        <Text variant="caption">Nuevo</Text>
+      ) : (
+        <Text variant="caption" color="inkMuted">
+          <Text variant="caption" color="ink" style={styles.bold}>
+            {rating.toFixed(1)}
+          </Text>{' '}
+          de {count} {count === 1 ? 'reseña' : 'reseñas'}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+/** Mounted only while open, so it always starts from the current search. */
+function PetsSheet({
+  onClose,
+  search,
+  pets,
+  max,
+}: {
+  onClose: () => void;
+  search: Search;
+  pets: PetResponse[];
+  max: number;
+}) {
+  const [petIds, setPetIds] = useState(search.petIds);
+  const toggle = (petId: string) => {
+    if (petIds.includes(petId)) {
+      // The search needs at least one pet.
+      if (petIds.length > 1) setPetIds(petIds.filter((id) => id !== petId));
+    } else if (petIds.length < max) {
+      setPetIds([...petIds, petId]);
+    }
+  };
+
+  return (
+    <Sheet
+      visible
+      onClose={onClose}
+      title="¿Para quién?"
+      footer={
+        <Button
+          label="Ver cuidadores"
+          onPress={() => {
+            setSearch({ ...search, petIds });
+            onClose();
+          }}
+        />
+      }
+    >
+      <SheetSection label={max === 1 ? 'Una mascota por reserva' : `Hasta ${max} por reserva`}>
+        <View style={styles.wrap}>
+          {pets.map((pet) => (
+            <Chip
+              key={pet.id}
+              label={pet.name}
+              icon={<Avatar name={pet.name} photoUrl={pet.photoUrl} size={28} />}
+              selected={petIds.includes(pet.id)}
+              onPress={() => toggle(pet.id)}
+            />
+          ))}
+        </View>
+      </SheetSection>
+      <Button
+        variant="ghost"
+        label="Agregar mascota"
+        icon={<Icon name="plus" color="primary" />}
+        onPress={() => {
+          onClose();
+          router.push('/mascotas/nueva');
+        }}
+        style={styles.start}
+      />
+    </Sheet>
+  );
+}
+
+/** Mounted only while open, so it always starts from the current search and time. */
+function WhenSheet({
+  onClose,
+  search,
+  catalog,
+}: {
+  onClose: () => void;
+  search: Search;
+  catalog: CatalogResponse;
+}) {
+  const [draft, setDraft] = useState(search);
+  const [now] = useState(() => new Date());
+  const days = upcomingDays(DAYS_AHEAD, now);
+  const hours = visitHours(draft.day, now, catalog);
+  const overnight = draft.serviceCode === 'OVERNIGHT_STAY';
+  const hourIsValid = overnight || hours.includes(draft.minute);
+
+  return (
+    <Sheet
+      visible
+      onClose={onClose}
+      title={overnight ? '¿Qué noche?' : '¿Cuándo?'}
+      footer={
+        <Button
+          label="Ver cuidadores"
+          disabled={!hourIsValid}
+          onPress={() => {
+            setSearch(draft);
+            onClose();
+          }}
+        />
+      }
+    >
+      <SheetSection label={overnight ? 'Noche del' : 'Día'}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.days}
+        >
+          {days.map((day) => (
+            <Chip
+              key={day}
+              label={dayLabel(day, now)}
+              selected={draft.day === day}
+              onPress={() => setDraft({ ...draft, day })}
+            />
+          ))}
+        </ScrollView>
+      </SheetSection>
+
+      {!overnight && (
+        <SheetSection label="Hora">
+          {hours.length > 0 ? (
+            <View style={styles.wrap}>
+              {hours.map((minute) => (
+                <View key={minute} style={styles.hour}>
+                  <Chip
+                    label={`${minute / 60}:00`}
+                    selected={draft.minute === minute}
+                    onPress={() => setDraft({ ...draft, minute })}
+                  />
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text color="inkMuted">
+              Ya no quedan horas para hoy: las visitas se piden con 2 horas de anticipación.
+            </Text>
+          )}
+        </SheetSection>
+      )}
+    </Sheet>
+  );
+}
+
+function DistrictSheet({
+  onClose,
+  search,
+  catalog,
+}: {
+  onClose: () => void;
+  search: Search;
+  catalog: CatalogResponse;
+}) {
+  return (
+    <Sheet visible onClose={onClose} title="¿En qué distrito?">
+      <View>
+        {catalog.districts.map((district) => {
+          const selected = district.id === search.districtId;
+          return (
+            <Touchable
+              key={district.id}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              onPress={() => {
+                setSearch({ ...search, districtId: district.id });
+                onClose();
+              }}
+              pressedScale={0.98}
+              style={[styles.option, selected && styles.optionSelected]}
+            >
+              <Text variant={selected ? 'bodyStrong' : 'body'} style={styles.flex}>
+                {district.name}
+              </Text>
+              {selected && <Icon name="check" color="primary" />}
+            </Touchable>
+          );
+        })}
+      </View>
+    </Sheet>
   );
 }
 
@@ -415,7 +623,7 @@ function FiltersSheet({ onClose, search }: { onClose: () => void; search: Search
       }
     >
       <SheetSection label="Nivel mínimo">
-        <View style={styles.hours}>
+        <View style={styles.wrap}>
           <View style={styles.filter}>
             <Chip
               label="Todos"
@@ -436,7 +644,7 @@ function FiltersSheet({ onClose, search }: { onClose: () => void; search: Search
       </SheetSection>
 
       <SheetSection label="Certificaciones">
-        <View style={styles.hours}>
+        <View style={styles.wrap}>
           {CERTIFICATION_FILTERS.map(({ code, label }) => (
             <View key={code} style={styles.filter}>
               <Chip
@@ -450,7 +658,7 @@ function FiltersSheet({ onClose, search }: { onClose: () => void; search: Search
       </SheetSection>
 
       <SheetSection label="Calificación mínima">
-        <View style={styles.hours}>
+        <View style={styles.wrap}>
           <View style={styles.filter}>
             <Chip
               label="Todas"
@@ -462,7 +670,7 @@ function FiltersSheet({ onClose, search }: { onClose: () => void; search: Search
             <View key={rating} style={styles.filter}>
               <Chip
                 label={`${rating.toFixed(1)}+`}
-                icon={<Icon name="star" size={14} />}
+                icon={<Icon name="star" size={14} filled />}
                 selected={draft.minRating === rating}
                 onPress={() => setDraft({ ...draft, minRating: rating })}
               />
@@ -470,105 +678,6 @@ function FiltersSheet({ onClose, search }: { onClose: () => void; search: Search
           ))}
         </View>
       </SheetSection>
-    </Sheet>
-  );
-}
-
-/** Mounted only while open, so it always starts from the current search and time. */
-function SearchSheet({
-  onClose,
-  search,
-  catalog,
-}: {
-  onClose: () => void;
-  search: Search;
-  catalog: CatalogResponse;
-}) {
-  const [draft, setDraft] = useState(search);
-  const [now] = useState(() => new Date());
-  const days = upcomingDays(DAYS_AHEAD, now);
-  // RN-RES-05: a visit has to be requested this long in advance.
-  const earliest = now.getTime() + catalog.bookingRules.minLeadTimeMinutes * 60_000;
-  const hours = VISIT_HOURS.filter(
-    (minute) => new Date(atLocalTime(draft.day, minute)).getTime() >= earliest,
-  );
-  const hourIsValid = draft.serviceCode === 'OVERNIGHT_STAY' || hours.includes(draft.minute);
-
-  return (
-    <Sheet
-      visible
-      onClose={onClose}
-      title="Cambiar búsqueda"
-      footer={
-        <Button
-          label="Ver cuidadores"
-          disabled={!hourIsValid}
-          onPress={() => {
-            setSearch(draft);
-            onClose();
-          }}
-        />
-      }
-    >
-      <SheetSection label="Servicio">
-        <View style={styles.row}>
-          {(['HOME_VISIT', 'OVERNIGHT_STAY'] as const).map((code) => (
-            <View key={code} style={styles.flex}>
-              <Chip
-                label={serviceName(code)}
-                selected={draft.serviceCode === code}
-                onPress={() => setDraft({ ...draft, serviceCode: code })}
-              />
-            </View>
-          ))}
-        </View>
-      </SheetSection>
-
-      <SheetSection label={draft.serviceCode === 'OVERNIGHT_STAY' ? 'Noche del' : 'Día'}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.days}
-        >
-          {days.map((day) => (
-            <Chip
-              key={day}
-              label={dayLabel(day, now)}
-              selected={draft.day === day}
-              onPress={() => setDraft({ ...draft, day })}
-            />
-          ))}
-        </ScrollView>
-      </SheetSection>
-
-      {draft.serviceCode === 'HOME_VISIT' && (
-        <SheetSection label="Hora">
-          {hours.length > 0 ? (
-            <View style={styles.hours}>
-              {hours.map((minute) => (
-                <View key={minute} style={styles.hour}>
-                  <Chip
-                    label={`${minute / 60}:00`}
-                    selected={draft.minute === minute}
-                    onPress={() => setDraft({ ...draft, minute })}
-                  />
-                </View>
-              ))}
-            </View>
-          ) : (
-            <Text color="inkMuted">
-              Ya no quedan horas para hoy: las visitas se piden con 2 horas de anticipación.
-            </Text>
-          )}
-        </SheetSection>
-      )}
-
-      <Select
-        label="Distrito"
-        value={draft.districtId}
-        options={catalog.districts.map((d) => ({ value: d.id, label: d.name }))}
-        onChange={(districtId) => setDraft({ ...draft, districtId })}
-      />
     </Sheet>
   );
 }
@@ -601,77 +710,51 @@ function NoPets() {
   );
 }
 
-const PHOTO = 80;
-
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.cream },
-  content: { flexGrow: 1, gap: space[4], padding: space[4], paddingTop: space[6] },
+  screen: { flex: 1, backgroundColor: colors.bg },
+  content: {
+    flexGrow: 1,
+    gap: 18,
+    paddingHorizontal: gutter,
+    paddingTop: space[2],
+    paddingBottom: space[6],
+  },
+  hello: { gap: space[1] },
+  subtitle: { fontSize: 17 },
   loading: { marginTop: space[8] },
   flex: { flex: 1 },
-  bold: { fontFamily: fontFamily.extraBold },
+  bold: { fontFamily: fontFamily.textBold },
   centered: { textAlign: 'center' },
-  searchCard: { gap: space[3] },
-  pets: { alignItems: 'center', gap: space[2] },
-  petTouch: { height: 48, justifyContent: 'center' },
-  pet: {
-    height: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space[2],
-    paddingLeft: 6,
-    paddingRight: space[4],
-    borderRadius: 20,
-  },
-  petOn: { backgroundColor: colors.grape, boxShadow: `inset 0 0 0 2px ${colors.grapeDeep}` },
-  petOff: { backgroundColor: colors.cream, boxShadow: `inset 0 0 0 1.5px ${colors.lineStrong}` },
-  petInitial: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    backgroundColor: colors.card,
-  },
-  special: {
-    paddingVertical: space[2],
-    paddingHorizontal: space[3],
-    borderRadius: radius.sm,
-    backgroundColor: colors.grape,
-  },
-  when: {
-    minHeight: 56,
+  start: { alignSelf: 'flex-start' },
+  services: { flexDirection: 'row', gap: 10 },
+  query: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 7, rowGap: 8 },
+  queryText: { fontSize: 17 },
+  results: { marginTop: space[2] },
+  resultsHead: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space[3],
-    paddingVertical: space[2],
-    paddingHorizontal: space[3],
-    backgroundColor: colors.cream,
-    borderWidth: 1.5,
-    borderColor: colors.lineStrong,
-    borderRadius: radius.sm,
+    paddingBottom: space[1],
   },
-  whenText: { flex: 1 },
-  results: { gap: space[3] },
   stale: { opacity: 0.5 },
-  caregiver: { flexDirection: 'row', gap: space[3] },
-  photo: {
-    width: PHOTO,
-    height: PHOTO,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    borderRadius: radius.sm,
-  },
-  caregiverText: { flex: 1, gap: 6 },
-  caregiverTop: { flexDirection: 'row', gap: space[2] },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  who: { flex: 1, gap: 2 },
+  tags: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   rating: { flexDirection: 'row', alignItems: 'center', gap: space[1] },
-  section: { gap: space[2] },
-  row: { flexDirection: 'row', gap: space[2] },
-  days: { gap: space[2], paddingRight: space[4] },
-  hours: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  price: { alignItems: 'flex-end' },
+  section: { gap: space[3] },
+  days: { gap: space[2], paddingRight: gutter },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   hour: { width: '23%' },
   filter: { minWidth: '45%', flexGrow: 1 },
+  option: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space[2],
+    paddingHorizontal: space[4],
+    borderRadius: radius.sm,
+  },
+  optionSelected: { backgroundColor: colors.tint },
   empty: { flexGrow: 1, justifyContent: 'center', gap: space[4] },
   emptyArt: {
     alignSelf: 'center',
@@ -680,7 +763,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 80,
-    backgroundColor: colors.sky,
+    backgroundColor: colors.tint,
   },
   emptyText: { gap: space[1] },
 });

@@ -46,7 +46,7 @@ export function StepBar(props: StepBarProps) {
             <View
               style={[
                 styles.segment,
-                { backgroundColor: n <= current ? colors.grapeDeep : colors.line },
+                { backgroundColor: n <= current ? colors.primary : colors.line },
               ]}
             />
             <Text
@@ -66,9 +66,9 @@ export function StepBar(props: StepBarProps) {
 const styles = StyleSheet.create({
   bar: { gap: space[2] },
   track: { height: 8, borderRadius: radius.pill, backgroundColor: colors.line, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: radius.pill, backgroundColor: colors.grapeDeep },
+  fill: { height: '100%', borderRadius: radius.pill, backgroundColor: colors.primary },
   segments: { flexDirection: 'row', gap: space[2] },
   step: { flex: 1, gap: space[1] },
   segment: { height: 6, borderRadius: radius.pill },
-  currentLabel: { fontFamily: fontFamily.extraBold },
+  currentLabel: { fontFamily: fontFamily.textBold },
 });
