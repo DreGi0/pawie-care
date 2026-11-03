@@ -58,6 +58,14 @@ export const AuthRegisterResponse = zod.object({
           .describe('RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez.'),
       )
       .describe('RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez.'),
+    mode: zod
+      .enum(['OWNER', 'CAREGIVER'])
+      .describe(
+        'RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.',
+      )
+      .describe(
+        'RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.',
+      ),
   }),
 });
 
@@ -95,6 +103,14 @@ export const AuthLoginResponse = zod.object({
           .describe('RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez.'),
       )
       .describe('RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez.'),
+    mode: zod
+      .enum(['OWNER', 'CAREGIVER'])
+      .describe(
+        'RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.',
+      )
+      .describe(
+        'RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.',
+      ),
   }),
 });
 
@@ -135,6 +151,14 @@ export const AuthRefreshResponse = zod.object({
           .describe('RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez.'),
       )
       .describe('RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez.'),
+    mode: zod
+      .enum(['OWNER', 'CAREGIVER'])
+      .describe(
+        'RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.',
+      )
+      .describe(
+        'RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.',
+      ),
   }),
 });
 

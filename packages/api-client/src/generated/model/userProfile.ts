@@ -5,6 +5,7 @@
  * API REST de Pawie Care. Las reglas de negocio están en docs/reglas-de-negocio.md y el diseño en docs/arquitectura.md. Los errores siempre tienen la forma de `ErrorResponse`.
  * OpenAPI spec version: 1
  */
+import type { AppMode } from './appMode';
 import type { Role } from './role';
 
 export interface UserProfile {
@@ -17,4 +18,6 @@ export interface UserProfile {
   phone: string | null;
   /** RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez. */
   roles: Role[];
+  /** RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER. */
+  mode: AppMode;
 }

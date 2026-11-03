@@ -8,6 +8,511 @@
 import * as zod from 'zod';
 
 /**
+ * RN-CTA-06. Crea el perfil de cuidador en `PENDING_APPROVAL`, con todos los servicios al precio sugerido (RN-CUI-17), y la cuenta queda en modo cuidador.
+ * @summary Activar el modo cuidador
+ */
+export const caregiverMeCreateResponseAvailabilityItemWeekdayMax = 7;
+
+export const caregiverMeCreateResponseAvailabilityItemStartMinuteMin = 0;
+export const caregiverMeCreateResponseAvailabilityItemStartMinuteMax = 1439;
+
+export const caregiverMeCreateResponseAvailabilityItemEndMinuteMax = 2879;
+
+export const CaregiverMeCreateResponse = zod.object({
+  status: zod
+    .enum(['PENDING_APPROVAL', 'APPROVED', 'REJECTED'])
+    .describe('RN-CUI-03.')
+    .describe('RN-CUI-03.'),
+  isPaused: zod.boolean().describe('RN-CUI-20.'),
+  instantBooking: zod.boolean().describe('RN-CUI-16.'),
+  bio: zod.string().nullable(),
+  photoUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
+  skills: zod.array(
+    zod.enum(['LARGE_DOGS', 'CATS', 'PUPPIES', 'SENIOR_PETS', 'DIFFICULT_BEHAVIOR']),
+  ),
+  districts: zod
+    .array(
+      zod.object({
+        id: zod.uuid(),
+        slug: zod.string(),
+        name: zod.string(),
+      }),
+    )
+    .describe('Ordenados por nombre.'),
+  availability: zod
+    .array(
+      zod.object({
+        weekday: zod
+          .int()
+          .min(1)
+          .max(caregiverMeCreateResponseAvailabilityItemWeekdayMax)
+          .describe('ISO: 1 es lunes.'),
+        startMinute: zod
+          .int()
+          .min(caregiverMeCreateResponseAvailabilityItemStartMinuteMin)
+          .max(caregiverMeCreateResponseAvailabilityItemStartMinuteMax),
+        endMinute: zod
+          .int()
+          .min(1)
+          .max(caregiverMeCreateResponseAvailabilityItemEndMinuteMax)
+          .describe('Mayor que startMinute y a lo sumo 24 h después.'),
+      }),
+    )
+    .describe('Ordenadas por día y hora.'),
+  documents: zod
+    .array(
+      zod.object({
+        kind: zod.enum(['ID_DOCUMENT_FRONT', 'ID_DOCUMENT_BACK', 'SELFIE', 'BACKGROUND_CHECK']),
+        file: zod.object({
+          id: zod.uuid(),
+          purpose: zod.enum([
+            'PET_PHOTO',
+            'CAREGIVER_PHOTO',
+            'VET_INSTRUCTION',
+            'VACCINATION_RECORD',
+            'ID_DOCUMENT',
+            'SELFIE',
+            'BACKGROUND_CHECK',
+          ]),
+          contentType: zod.string(),
+          sizeBytes: zod.int().nullable().describe('Null hasta que se sube.'),
+          uploadedAt: zod.iso.datetime({ offset: true }).nullable(),
+          url: zod
+            .string()
+            .nullable()
+            .describe(
+              'URL firmada para descargarlo, que vence en 10 minutos. Null hasta que se sube.',
+            ),
+        }),
+      }),
+    )
+    .describe('RN-CUI-01: los que ya subió. Solo los ve el cuidador.'),
+  welcomeCoursePassedAt: zod.iso
+    .datetime({ offset: true })
+    .nullable()
+    .describe('RN-CUI-02: cuándo aprobó el curso de bienvenida.'),
+  level: zod.enum(['NEW', 'TRUSTED', 'PRO', 'SUPER']),
+  badges: zod.array(zod.enum(['IDENTITY_VERIFIED', 'BACKGROUND_CHECKED', 'VET_STUDENT'])),
+  pendingSteps: zod
+    .array(
+      zod
+        .enum(['DOCUMENTS', 'WELCOME_COURSE', 'APPROVAL', 'DISTRICTS', 'AVAILABILITY', 'SERVICES'])
+        .describe(
+          'Lo que le falta para aparecer en búsquedas, en orden (RN-CUI-01 a RN-CUI-04, RN-CUI-17).',
+        ),
+    )
+    .describe(
+      'Lo que le falta para aparecer en búsquedas, en orden (RN-CUI-01 a RN-CUI-04, RN-CUI-17).',
+    ),
+  visibleInSearch: zod
+    .boolean()
+    .describe(
+      'Aparece en búsquedas: no le falta ningún paso, no está pausado ni suspendido (RN-CUI-03, RN-CUI-20).',
+    ),
+});
+
+/**
+ * Con los documentos, el curso de bienvenida y lo que le falta para aparecer en búsquedas.
+ * @summary Mi perfil de cuidador
+ */
+export const caregiverMeGetResponseAvailabilityItemWeekdayMax = 7;
+
+export const caregiverMeGetResponseAvailabilityItemStartMinuteMin = 0;
+export const caregiverMeGetResponseAvailabilityItemStartMinuteMax = 1439;
+
+export const caregiverMeGetResponseAvailabilityItemEndMinuteMax = 2879;
+
+export const CaregiverMeGetResponse = zod.object({
+  status: zod
+    .enum(['PENDING_APPROVAL', 'APPROVED', 'REJECTED'])
+    .describe('RN-CUI-03.')
+    .describe('RN-CUI-03.'),
+  isPaused: zod.boolean().describe('RN-CUI-20.'),
+  instantBooking: zod.boolean().describe('RN-CUI-16.'),
+  bio: zod.string().nullable(),
+  photoUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
+  skills: zod.array(
+    zod.enum(['LARGE_DOGS', 'CATS', 'PUPPIES', 'SENIOR_PETS', 'DIFFICULT_BEHAVIOR']),
+  ),
+  districts: zod
+    .array(
+      zod.object({
+        id: zod.uuid(),
+        slug: zod.string(),
+        name: zod.string(),
+      }),
+    )
+    .describe('Ordenados por nombre.'),
+  availability: zod
+    .array(
+      zod.object({
+        weekday: zod
+          .int()
+          .min(1)
+          .max(caregiverMeGetResponseAvailabilityItemWeekdayMax)
+          .describe('ISO: 1 es lunes.'),
+        startMinute: zod
+          .int()
+          .min(caregiverMeGetResponseAvailabilityItemStartMinuteMin)
+          .max(caregiverMeGetResponseAvailabilityItemStartMinuteMax),
+        endMinute: zod
+          .int()
+          .min(1)
+          .max(caregiverMeGetResponseAvailabilityItemEndMinuteMax)
+          .describe('Mayor que startMinute y a lo sumo 24 h después.'),
+      }),
+    )
+    .describe('Ordenadas por día y hora.'),
+  documents: zod
+    .array(
+      zod.object({
+        kind: zod.enum(['ID_DOCUMENT_FRONT', 'ID_DOCUMENT_BACK', 'SELFIE', 'BACKGROUND_CHECK']),
+        file: zod.object({
+          id: zod.uuid(),
+          purpose: zod.enum([
+            'PET_PHOTO',
+            'CAREGIVER_PHOTO',
+            'VET_INSTRUCTION',
+            'VACCINATION_RECORD',
+            'ID_DOCUMENT',
+            'SELFIE',
+            'BACKGROUND_CHECK',
+          ]),
+          contentType: zod.string(),
+          sizeBytes: zod.int().nullable().describe('Null hasta que se sube.'),
+          uploadedAt: zod.iso.datetime({ offset: true }).nullable(),
+          url: zod
+            .string()
+            .nullable()
+            .describe(
+              'URL firmada para descargarlo, que vence en 10 minutos. Null hasta que se sube.',
+            ),
+        }),
+      }),
+    )
+    .describe('RN-CUI-01: los que ya subió. Solo los ve el cuidador.'),
+  welcomeCoursePassedAt: zod.iso
+    .datetime({ offset: true })
+    .nullable()
+    .describe('RN-CUI-02: cuándo aprobó el curso de bienvenida.'),
+  level: zod.enum(['NEW', 'TRUSTED', 'PRO', 'SUPER']),
+  badges: zod.array(zod.enum(['IDENTITY_VERIFIED', 'BACKGROUND_CHECKED', 'VET_STUDENT'])),
+  pendingSteps: zod
+    .array(
+      zod
+        .enum(['DOCUMENTS', 'WELCOME_COURSE', 'APPROVAL', 'DISTRICTS', 'AVAILABILITY', 'SERVICES'])
+        .describe(
+          'Lo que le falta para aparecer en búsquedas, en orden (RN-CUI-01 a RN-CUI-04, RN-CUI-17).',
+        ),
+    )
+    .describe(
+      'Lo que le falta para aparecer en búsquedas, en orden (RN-CUI-01 a RN-CUI-04, RN-CUI-17).',
+    ),
+  visibleInSearch: zod
+    .boolean()
+    .describe(
+      'Aparece en búsquedas: no le falta ningún paso, no está pausado ni suspendido (RN-CUI-03, RN-CUI-20).',
+    ),
+});
+
+/**
+ * RN-CUI-18. Foto, descripción, habilidades, distritos, horario semanal, precios, Reserva inmediata, pausa (RN-CUI-20) y documentos (RN-CUI-01). Cada campo enviado reemplaza al anterior.
+ * @summary Editar mi perfil de cuidador
+ */
+export const caregiverMeUpdateBodyBioMax = 1000;
+
+export const caregiverMeUpdateBodyDistrictIdsMax = 30;
+
+export const caregiverMeUpdateBodyAvailabilityItemWeekdayMax = 7;
+
+export const caregiverMeUpdateBodyAvailabilityItemStartMinuteMin = 0;
+export const caregiverMeUpdateBodyAvailabilityItemStartMinuteMax = 1439;
+
+export const caregiverMeUpdateBodyAvailabilityItemEndMinuteMax = 2879;
+
+export const caregiverMeUpdateBodyAvailabilityMax = 50;
+
+export const CaregiverMeUpdateBody = zod.object({
+  bio: zod.string().max(caregiverMeUpdateBodyBioMax).nullish().describe('Descripción del perfil.'),
+  photoFileId: zod
+    .uuid()
+    .nullish()
+    .describe('Un archivo CAREGIVER_PHOTO ya subido. Null quita la foto.'),
+  skills: zod
+    .array(zod.enum(['LARGE_DOGS', 'CATS', 'PUPPIES', 'SENIOR_PETS', 'DIFFICULT_BEHAVIOR']))
+    .optional()
+    .describe('Reemplaza las habilidades declaradas (RN-CUI-19).'),
+  districtIds: zod
+    .array(zod.uuid())
+    .max(caregiverMeUpdateBodyDistrictIdsMax)
+    .optional()
+    .describe('Reemplaza los distritos que cubre (RN-CUI-04), de GET /v1/catalog.'),
+  availability: zod
+    .array(
+      zod.object({
+        weekday: zod
+          .int()
+          .min(1)
+          .max(caregiverMeUpdateBodyAvailabilityItemWeekdayMax)
+          .describe('ISO: 1 es lunes.'),
+        startMinute: zod
+          .int()
+          .min(caregiverMeUpdateBodyAvailabilityItemStartMinuteMin)
+          .max(caregiverMeUpdateBodyAvailabilityItemStartMinuteMax),
+        endMinute: zod
+          .int()
+          .min(1)
+          .max(caregiverMeUpdateBodyAvailabilityItemEndMinuteMax)
+          .describe('Mayor que startMinute y a lo sumo 24 h después.'),
+      }),
+    )
+    .max(caregiverMeUpdateBodyAvailabilityMax)
+    .optional()
+    .describe(
+      'Reemplaza el horario semanal (RN-CUI-04). Las ventanas de un mismo día no se pueden cruzar.',
+    ),
+  prices: zod
+    .array(
+      zod.object({
+        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+        priceCents: zod
+          .int()
+          .nullable()
+          .describe(
+            'Precio por una mascota, en centavos, dentro del rango de su nivel. Null usa el sugerido (RN-CUI-17).',
+          ),
+      }),
+    )
+    .optional()
+    .describe(
+      'Reemplaza los servicios que ofrece y su precio (RN-CUI-17). Un servicio que no está en la lista deja de ofrecerse.',
+    ),
+  instantBooking: zod
+    .boolean()
+    .optional()
+    .describe('RN-CUI-16: las solicitudes se confirman sin esperarlo.'),
+  isPaused: zod
+    .boolean()
+    .optional()
+    .describe('RN-CUI-20: pausado no aparece en búsquedas, pero conserva sus reservas.'),
+  documents: zod
+    .array(
+      zod.object({
+        kind: zod.enum(['ID_DOCUMENT_FRONT', 'ID_DOCUMENT_BACK', 'SELFIE', 'BACKGROUND_CHECK']),
+        fileId: zod
+          .uuid()
+          .describe(
+            'Un archivo ya subido: ID_DOCUMENT para el DUI, SELFIE para la selfie y BACKGROUND_CHECK para los antecedentes.',
+          ),
+      }),
+    )
+    .optional()
+    .describe(
+      'RN-CUI-01: reemplaza los documentos de esos tipos. Solo mientras el alta no está aprobada.',
+    ),
+});
+
+export const caregiverMeUpdateResponseAvailabilityItemWeekdayMax = 7;
+
+export const caregiverMeUpdateResponseAvailabilityItemStartMinuteMin = 0;
+export const caregiverMeUpdateResponseAvailabilityItemStartMinuteMax = 1439;
+
+export const caregiverMeUpdateResponseAvailabilityItemEndMinuteMax = 2879;
+
+export const CaregiverMeUpdateResponse = zod.object({
+  status: zod
+    .enum(['PENDING_APPROVAL', 'APPROVED', 'REJECTED'])
+    .describe('RN-CUI-03.')
+    .describe('RN-CUI-03.'),
+  isPaused: zod.boolean().describe('RN-CUI-20.'),
+  instantBooking: zod.boolean().describe('RN-CUI-16.'),
+  bio: zod.string().nullable(),
+  photoUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
+  skills: zod.array(
+    zod.enum(['LARGE_DOGS', 'CATS', 'PUPPIES', 'SENIOR_PETS', 'DIFFICULT_BEHAVIOR']),
+  ),
+  districts: zod
+    .array(
+      zod.object({
+        id: zod.uuid(),
+        slug: zod.string(),
+        name: zod.string(),
+      }),
+    )
+    .describe('Ordenados por nombre.'),
+  availability: zod
+    .array(
+      zod.object({
+        weekday: zod
+          .int()
+          .min(1)
+          .max(caregiverMeUpdateResponseAvailabilityItemWeekdayMax)
+          .describe('ISO: 1 es lunes.'),
+        startMinute: zod
+          .int()
+          .min(caregiverMeUpdateResponseAvailabilityItemStartMinuteMin)
+          .max(caregiverMeUpdateResponseAvailabilityItemStartMinuteMax),
+        endMinute: zod
+          .int()
+          .min(1)
+          .max(caregiverMeUpdateResponseAvailabilityItemEndMinuteMax)
+          .describe('Mayor que startMinute y a lo sumo 24 h después.'),
+      }),
+    )
+    .describe('Ordenadas por día y hora.'),
+  documents: zod
+    .array(
+      zod.object({
+        kind: zod.enum(['ID_DOCUMENT_FRONT', 'ID_DOCUMENT_BACK', 'SELFIE', 'BACKGROUND_CHECK']),
+        file: zod.object({
+          id: zod.uuid(),
+          purpose: zod.enum([
+            'PET_PHOTO',
+            'CAREGIVER_PHOTO',
+            'VET_INSTRUCTION',
+            'VACCINATION_RECORD',
+            'ID_DOCUMENT',
+            'SELFIE',
+            'BACKGROUND_CHECK',
+          ]),
+          contentType: zod.string(),
+          sizeBytes: zod.int().nullable().describe('Null hasta que se sube.'),
+          uploadedAt: zod.iso.datetime({ offset: true }).nullable(),
+          url: zod
+            .string()
+            .nullable()
+            .describe(
+              'URL firmada para descargarlo, que vence en 10 minutos. Null hasta que se sube.',
+            ),
+        }),
+      }),
+    )
+    .describe('RN-CUI-01: los que ya subió. Solo los ve el cuidador.'),
+  welcomeCoursePassedAt: zod.iso
+    .datetime({ offset: true })
+    .nullable()
+    .describe('RN-CUI-02: cuándo aprobó el curso de bienvenida.'),
+  level: zod.enum(['NEW', 'TRUSTED', 'PRO', 'SUPER']),
+  badges: zod.array(zod.enum(['IDENTITY_VERIFIED', 'BACKGROUND_CHECKED', 'VET_STUDENT'])),
+  pendingSteps: zod
+    .array(
+      zod
+        .enum(['DOCUMENTS', 'WELCOME_COURSE', 'APPROVAL', 'DISTRICTS', 'AVAILABILITY', 'SERVICES'])
+        .describe(
+          'Lo que le falta para aparecer en búsquedas, en orden (RN-CUI-01 a RN-CUI-04, RN-CUI-17).',
+        ),
+    )
+    .describe(
+      'Lo que le falta para aparecer en búsquedas, en orden (RN-CUI-01 a RN-CUI-04, RN-CUI-17).',
+    ),
+  visibleInSearch: zod
+    .boolean()
+    .describe(
+      'Aparece en búsquedas: no le falta ningún paso, no está pausado ni suspendido (RN-CUI-03, RN-CUI-20).',
+    ),
+});
+
+/**
+ * RN-NIV-05: el nivel actual y cada requisito del siguiente, cumplido o no.
+ * @summary Mi nivel
+ */
+export const CaregiverMeLevelResponse = zod.object({
+  level: zod.enum(['NEW', 'TRUSTED', 'PRO', 'SUPER']).describe('RN-NIV-01.'),
+  next: zod
+    .object({
+      level: zod.enum(['NEW', 'TRUSTED', 'PRO', 'SUPER']),
+      requirements: zod
+        .array(
+          zod.object({
+            kind: zod.enum([
+              'REVIEWS',
+              'AVERAGE_RATING',
+              'COMPLETED_BOOKINGS',
+              'CERTIFICATIONS',
+              'CERTIFICATION',
+            ]),
+            current: zod
+              .number()
+              .describe(
+                'La cifra del cuidador. El promedio va con un decimal, redondeado hacia abajo. En CERTIFICATION es 1 si la tiene y 0 si no.',
+              ),
+            required: zod.number(),
+            met: zod.boolean(),
+            certification: zod
+              .object({
+                code: zod.string(),
+                name: zod.string(),
+              })
+              .nullable()
+              .describe('La certificación que pide el nivel, solo en CERTIFICATION.'),
+          }),
+        )
+        .describe('Cumplidos o no.'),
+    })
+    .nullable()
+    .describe('RN-NIV-05. Null para un Súper Cuidador.'),
+});
+
+/**
+ * RN-CUI-17, RN-PRE-01, RN-PRE-04. Por servicio: su precio, lo que recibe con él, el rango y el sugerido de su nivel, y el sugerido del siguiente nivel.
+ * @summary Mis precios
+ */
+export const CaregiverMePricesResponse = zod.object({
+  level: zod.enum(['NEW', 'TRUSTED', 'PRO', 'SUPER']),
+  prices: zod
+    .array(
+      zod.object({
+        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+        offered: zod.boolean().describe('Lo ofrece: aparece en las búsquedas de ese servicio.'),
+        caregiverPriceCents: zod
+          .int()
+          .nullable()
+          .describe('El precio que fijó. Null si usa el sugerido.'),
+        priceCents: zod
+          .int()
+          .describe(
+            'El precio que se cobra por una mascota: el suyo o el sugerido, dentro del rango vigente.',
+          ),
+        payoutCents: zod
+          .int()
+          .describe('Lo que recibe con ese precio, ya descontada la comisión vigente (RN-PRE-04).'),
+        range: zod
+          .object({
+            minCents: zod.int(),
+            suggestedCents: zod.int(),
+            maxCents: zod.int(),
+          })
+          .describe('El rango y el sugerido de su nivel (RN-PRE-01).'),
+        nextLevel: zod
+          .object({
+            level: zod.enum(['NEW', 'TRUSTED', 'PRO', 'SUPER']),
+            suggestedCents: zod.int(),
+          })
+          .nullable()
+          .describe('El sugerido del siguiente nivel. Null para un Súper Cuidador.'),
+      }),
+    )
+    .describe('Todos los servicios.'),
+});
+
+/**
+ * RN-CUI-17, RN-PRE-04. Para la calculadora de precios, mientras el cuidador lo cambia. No guarda nada.
+ * @summary Cuánto recibiría con un precio
+ */
+export const CaregiverMeQuoteBody = zod.object({
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+  priceCents: zod.int().describe('Precio por una mascota.'),
+});
+
+export const CaregiverMeQuoteResponse = zod.object({
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+  priceCents: zod.int(),
+  payoutCents: zod
+    .int()
+    .describe('Lo que recibiría, ya descontada la comisión vigente (RN-PRE-04).'),
+});
+
+/**
  * RN-RES-01. Va por POST porque lleva las mascotas y los horarios; no cambia nada. Acepta los filtros `minLevel`, `certificationCodes` y `minRating`. Devuelve el nivel de la reserva, los tramos y los cuidadores disponibles, con su nivel, insignias, certificaciones y habilidades.
  * @summary Buscar cuidadores
  */
@@ -43,7 +548,6 @@ export const CaregiversSearchBody = zod.object({
   districtId: zod.uuid().describe('Uno de los distritos de GET /v1/catalog.'),
   minLevel: zod
     .enum(['NEW', 'TRUSTED', 'PRO', 'SUPER'])
-    .describe('Solo cuidadores de este nivel o uno más alto.')
     .optional()
     .describe('Solo cuidadores de este nivel o uno más alto.'),
   certificationCodes: zod
@@ -85,14 +589,9 @@ export const CaregiversSearchResponse = zod.object({
         photoUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
         level: zod
           .enum(['NEW', 'TRUSTED', 'PRO', 'SUPER'])
-          .describe('Solo cuidadores de este nivel o uno más alto.')
           .describe('RN-NIV-01: lo calcula el sistema.'),
         badges: zod
-          .array(
-            zod
-              .enum(['IDENTITY_VERIFIED', 'BACKGROUND_CHECKED', 'VET_STUDENT'])
-              .describe('Insignias de verificación (RN-CUI-03, RN-CUI-05).'),
-          )
+          .array(zod.enum(['IDENTITY_VERIFIED', 'BACKGROUND_CHECKED', 'VET_STUDENT']))
           .describe('Insignias de verificación (RN-CUI-03, RN-CUI-05).'),
         certifications: zod
           .array(
@@ -104,11 +603,7 @@ export const CaregiversSearchResponse = zod.object({
           )
           .describe('Certificaciones vigentes, la ⭐ incluida (RN-CUI-07).'),
         skills: zod
-          .array(
-            zod
-              .enum(['LARGE_DOGS', 'CATS', 'PUPPIES', 'SENIOR_PETS', 'DIFFICULT_BEHAVIOR'])
-              .describe('Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19).'),
-          )
+          .array(zod.enum(['LARGE_DOGS', 'CATS', 'PUPPIES', 'SENIOR_PETS', 'DIFFICULT_BEHAVIOR']))
           .describe('Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19).'),
         hasSpecialCareCertification: zod
           .boolean()
@@ -154,16 +649,9 @@ export const CaregiversProfileResponse = zod.object({
   id: zod.uuid(),
   displayName: zod.string().describe('Nombre e inicial del apellido.'),
   photoUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
-  level: zod
-    .enum(['NEW', 'TRUSTED', 'PRO', 'SUPER'])
-    .describe('Solo cuidadores de este nivel o uno más alto.')
-    .describe('RN-NIV-01: lo calcula el sistema.'),
+  level: zod.enum(['NEW', 'TRUSTED', 'PRO', 'SUPER']).describe('RN-NIV-01: lo calcula el sistema.'),
   badges: zod
-    .array(
-      zod
-        .enum(['IDENTITY_VERIFIED', 'BACKGROUND_CHECKED', 'VET_STUDENT'])
-        .describe('Insignias de verificación (RN-CUI-03, RN-CUI-05).'),
-    )
+    .array(zod.enum(['IDENTITY_VERIFIED', 'BACKGROUND_CHECKED', 'VET_STUDENT']))
     .describe('Insignias de verificación (RN-CUI-03, RN-CUI-05).'),
   certifications: zod
     .array(
@@ -175,11 +663,7 @@ export const CaregiversProfileResponse = zod.object({
     )
     .describe('Certificaciones vigentes, la ⭐ incluida (RN-CUI-07).'),
   skills: zod
-    .array(
-      zod
-        .enum(['LARGE_DOGS', 'CATS', 'PUPPIES', 'SENIOR_PETS', 'DIFFICULT_BEHAVIOR'])
-        .describe('Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19).'),
-    )
+    .array(zod.enum(['LARGE_DOGS', 'CATS', 'PUPPIES', 'SENIOR_PETS', 'DIFFICULT_BEHAVIOR']))
     .describe('Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19).'),
   hasSpecialCareCertification: zod
     .boolean()

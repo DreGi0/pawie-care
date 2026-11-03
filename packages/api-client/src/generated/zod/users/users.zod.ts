@@ -25,6 +25,58 @@ export const UsersMeResponse = zod.object({
         .describe('RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez.'),
     )
     .describe('RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez.'),
+  mode: zod
+    .enum(['OWNER', 'CAREGIVER'])
+    .describe(
+      'RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.',
+    )
+    .describe(
+      'RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.',
+    ),
+  firstServiceFeeWaiverEndsAt: zod.iso
+    .datetime({ offset: true })
+    .nullable()
+    .describe(
+      'RN-PRE-09: hasta cuándo el dueño puede crear su primer servicio sin tarifa. Null si ya no aplica: venció el plazo, ya pagó una reserva o una reserva activa tiene el beneficio.',
+    ),
+});
+
+/**
+ * RN-CTA-06: el modo en que abre la app, que la cuenta recuerda.
+ * @summary Cambiar mi cuenta
+ */
+export const UsersUpdateBody = zod.object({
+  mode: zod
+    .enum(['OWNER', 'CAREGIVER'])
+    .describe(
+      'RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.',
+    )
+    .optional()
+    .describe('CAREGIVER necesita el perfil de cuidador (POST /v1/caregivers/me).'),
+});
+
+export const UsersUpdateResponse = zod.object({
+  id: zod.uuid(),
+  email: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  birthDate: zod.iso.date(),
+  phone: zod.string().nullable(),
+  roles: zod
+    .array(
+      zod
+        .enum(['OWNER', 'CAREGIVER', 'ADMIN'])
+        .describe('RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez.'),
+    )
+    .describe('RN-CTA-01: una cuenta puede ser dueño y cuidador a la vez.'),
+  mode: zod
+    .enum(['OWNER', 'CAREGIVER'])
+    .describe(
+      'RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.',
+    )
+    .describe(
+      'RN-CTA-06: el modo en que la app abre, el último que usó. CAREGIVER solo con el rol CAREGIVER.',
+    ),
   firstServiceFeeWaiverEndsAt: zod.iso
     .datetime({ offset: true })
     .nullable()

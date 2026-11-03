@@ -6,9 +6,6 @@
  * OpenAPI spec version: 1
  */
 
-/**
- * Insignias de verificación (RN-CUI-03, RN-CUI-05).
- */
 export type CaregiverBadge = (typeof CaregiverBadge)[keyof typeof CaregiverBadge];
 
 export const CaregiverBadge = {

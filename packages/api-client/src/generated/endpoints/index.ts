@@ -3,6 +3,7 @@ export * from './auth/auth';
 export * from './bookings/bookings';
 export * from './caregivers/caregivers';
 export * from './catalog/catalog';
+export * from './courses/courses';
 export * from './files/files';
 export * from './health/health';
 export * from './payments/payments';
