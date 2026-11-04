@@ -47,7 +47,12 @@ class PermissionDenied extends Error {}
 /** A photo or a PDF from the phone, or null if the person cancelled. */
 async function pick(source: Source, kind: CaregiverDocumentKind) {
   if (source === 'pdf') {
-    const result = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'] });
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ['application/pdf', 'image/*'],
+      // Its copy in the cache lands outside what expo-file-system may read in Expo Go; the
+      // content:// URI of the original reads fine.
+      copyToCacheDirectory: false,
+    });
     const asset = result.assets?.[0];
     return result.canceled || !asset
       ? null
