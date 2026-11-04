@@ -17,21 +17,21 @@ Este plan lleva el código a las [reglas v0.6](reglas-de-negocio.md). Cada etapa
 
 ## 1. Brecha entre el código y la v0.6
 
-Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las certificaciones ya siguen las reglas (etapa 6), el cuidador se da de alta desde la app (etapa 9a) y el reporte del piloto sale con un script (métricas).
+Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las certificaciones ya siguen las reglas (etapa 6), el cuidador se da de alta desde la app (etapa 9a), el reporte del piloto sale con un script (métricas) y la ficha de la mascota está completa (etapa 7).
 
-| Área                     | Hoy en el código                                                           | Falta para la v0.6                                                                       | Etapa            |
-| ------------------------ | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------- |
-| Design system            | Placas (etapa D, hecha)                                                    | Nada                                                                                     | D                |
-| Alta del cuidador        | Modo cuidador, documentos, curso, aprobación, perfil y precios (9a, hecha) | Nada                                                                                     | 9a               |
-| Métricas del piloto      | Script `metrics:report` (métricas, hecha)                                  | Crecimiento (RN-MET-06), que necesita los referidos                                      | Eventos de la 11 |
-| Ficha                    | Datos, salud, vacunas, indicaciones y tareas de cuidado                    | Alimento, horarios de comida y medicinas, premios, rutina y celo; pantalla de la mascota | 7                |
-| Servicios                | Visita y pernocta                                                          | Paseo                                                                                    | 8                |
-| Solicitudes del cuidador | La máquina de estados permite aceptar y rechazar, pero no hay endpoints    | Solicitudes, aceptar o rechazar, agenda y ganancias                                      | 9b               |
-| Ejecución                | Estados `IN_PROGRESS` a `CLOSED` sin transiciones                          | Check-in, tareas, fotos, ruta, check-out, cierre a las 48 h, pago simulado y reseñas     | 10               |
-| Avisos e integraciones   | Nada                                                                       | Push (base y eventos), agregar al calendario y compartir el perfil                       | 11               |
-| Referidos                | Nada                                                                       | Código de cada cuidador, campo en el registro y quién refirió a cada dueño               | Eventos de la 11 |
-| Soporte                  | Nada                                                                       | Asistente, centro de ayuda, casos y WhatsApp                                             | 12a              |
-| Garantía                 | Nada                                                                       | Reclamo, estado `DISPUTED` y resolución                                                  | 12b              |
+| Área                     | Hoy en el código                                                           | Falta para la v0.6                                                                   | Etapa            |
+| ------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------- |
+| Design system            | Placas (etapa D, hecha)                                                    | Nada                                                                                 | D                |
+| Alta del cuidador        | Modo cuidador, documentos, curso, aprobación, perfil y precios (9a, hecha) | Nada                                                                                 | 9a               |
+| Métricas del piloto      | Script `metrics:report` (métricas, hecha)                                  | Crecimiento (RN-MET-06), que necesita los referidos                                  | Eventos de la 11 |
+| Ficha                    | Ficha completa y MascotaPerfil (7, hecha)                                  | Nada                                                                                 | 7                |
+| Servicios                | Visita y pernocta                                                          | Paseo                                                                                | 8                |
+| Solicitudes del cuidador | La máquina de estados permite aceptar y rechazar, pero no hay endpoints    | Solicitudes, aceptar o rechazar, agenda y ganancias                                  | 9b               |
+| Ejecución                | Estados `IN_PROGRESS` a `CLOSED` sin transiciones                          | Check-in, tareas, fotos, ruta, check-out, cierre a las 48 h, pago simulado y reseñas | 10               |
+| Avisos e integraciones   | Nada                                                                       | Push (base y eventos), agregar al calendario y compartir el perfil                   | 11               |
+| Referidos                | Nada                                                                       | Código de cada cuidador, campo en el registro y quién refirió a cada dueño           | Eventos de la 11 |
+| Soporte                  | Nada                                                                       | Asistente, centro de ayuda, casos y WhatsApp                                         | 12a              |
+| Garantía                 | Nada                                                                       | Reclamo, estado `DISPUTED` y resolución                                              | 12b              |
 
 ## 2. IDs de reglas que cambiaron
 
@@ -221,6 +221,17 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 - `PetScheduleItem` con `petId`, `kind` (`MEAL` o `MEDICATION`), `minuteOfDay`, `label` y `dose?`. Sirve para la ficha y para las tareas del tramo de la etapa 10.
 
 **App:** pantalla **Perfil de la mascota**, que ya estaba pendiente en `docs/design/README.md`. Muestra y edita la ficha: rutina, horarios, salud, tareas de cuidado e indicaciones, y el celo.
+
+**App (hecha):**
+
+- **MascotaPerfil** (`mascotas/[id]`) se abre desde Mis mascotas. Muestra la ficha por partes, cada una con su pantalla de edición: datos, rutina, horario, salud, vacuna, tarea y celo. Sus reglas están en `docs/design/README.md`.
+- Cada pantalla de texto arma el `PetRequest` completo (`petRequest` en `src/lib/pets.ts`), porque el `PUT` reemplaza toda la ficha.
+- Una dosis se elige de una tarea de Medicación. Sin una, la app lleva a crearla, con las indicaciones subidas en foto o PDF, y al volver la deja elegida.
+- La hora se escribe como `HH:MM` con máscara, sin módulos nativos nuevos.
+- "Medicamentos que toma" lleva la ayuda "Si el cuidador tiene que dárselos, agrégalos como tarea de cuidado."
+- `PetForm` edita los datos con peso y esterilización, y conserva el resto de la ficha.
+
+**La etapa 7 está hecha.**
 
 **Terminado cuando:**
 

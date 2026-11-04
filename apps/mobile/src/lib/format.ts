@@ -139,3 +139,67 @@ export function parsePhone(text: string): string | null {
   const digits = text.replace(/\D/g, '');
   return /^[267]\d{7}$/.test(digits) ? `+503${digits}` : null;
 }
+
+/** A day without a time, as the API sends birth dates: "2026-11-03" is "3 nov 2026". */
+export function formatDate(iso: string): string {
+  const [yyyy, mm, dd] = iso.split('-').map(Number);
+  return `${dd} ${MONTHS[mm - 1]} ${yyyy}`;
+}
+
+/**
+ * Two days, both included: "del 3 al 12 nov 2026", "del 28 oct al 3 nov 2026". Without an end,
+ * "desde el 3 nov 2026".
+ */
+export function formatDateSpan(from: string, to: string | null): string {
+  if (to === null) return `desde el ${formatDate(from)}`;
+  const [fromYear, fromMonth, fromDay] = from.split('-');
+  const [toYear, toMonth] = to.split('-');
+  const start =
+    fromYear !== toYear
+      ? formatDate(from)
+      : fromMonth !== toMonth
+        ? `${Number(fromDay)} ${MONTHS[Number(fromMonth) - 1]}`
+        : String(Number(fromDay));
+  return `del ${start} al ${formatDate(to)}`;
+}
+
+/** "2023-03-12" is "12/03/2023", as the date fields show it. The inverse of parseDate. */
+export function toDateInput(iso: string): string {
+  const [yyyy, mm, dd] = iso.split('-');
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+/** Minutes since midnight as a time of day: 420 is "7:00". */
+export function formatMinute(minute: number): string {
+  return `${Math.floor(minute / 60)}:${String(minute % 60).padStart(2, '0')}`;
+}
+
+/** Turns what the person types into HH:MM, adding the colon. */
+export function maskTime(text: string): string {
+  const digits = text.replace(/\D/g, '').slice(0, 4);
+  return digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits;
+}
+
+/** "07:30" or "7:30" is 450 minutes since midnight. Null if it isn't a time of day. */
+export function parseTime(text: string): number | null {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(text);
+  if (!match) return null;
+  const [hours, minutes] = [Number(match[1]), Number(match[2])];
+  return hours < 24 && minutes < 60 ? hours * 60 + minutes : null;
+}
+
+/** 450 is "07:30", as the time fields show it. The inverse of parseTime. */
+export function toTimeInput(minute: number): string {
+  return formatMinute(minute).padStart(5, '0');
+}
+
+/** "del 3 al 12 nov" is "Del 3 al 12 nov", to start a line. */
+export function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** "+50322220000" is "+503 2222 0000". Any other number stays as it is. */
+export function formatPhone(phone: string): string {
+  const match = /^\+503(\d{8})$/.exec(phone.replace(/\s/g, ''));
+  return match ? `+503 ${maskPhone(match[1])}` : phone;
+}

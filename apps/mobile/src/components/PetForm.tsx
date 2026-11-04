@@ -4,6 +4,7 @@ import {
   useCatalogGet,
   usePetsCreate,
   usePetsReplace,
+  type PetDetail,
   type PetResponse,
 } from '@pawie/api-client';
 import { PetsCreateBody } from '@pawie/api-client/zod';
@@ -11,13 +12,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useState, type ReactNode } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { z } from 'zod';
 
 import { errorMessage } from '@/lib/api';
 import { uploadFile } from '@/lib/files';
-import { localDate, maskDate, parseDate } from '@/lib/format';
+import { localDate, maskDate, parseDate, toDateInput } from '@/lib/format';
+import { formatKilos, petChanged, petRequest } from '@/lib/pets';
 import { colors, space } from '@/theme/tokens';
 
 import { Banner } from './Banner';
@@ -41,6 +43,15 @@ const PetFields = z.object({
     }),
   birthDateIsApproximate: z.boolean(),
   breed: z.string().trim().max(80),
+  /** In kilos, with a dot or a comma: "12,5". Only when editing a pet. */
+  weight: z.string().refine(
+    (text) => {
+      const kilos = parseKilos(text);
+      return text.trim() === '' || (kilos !== null && kilos > 0 && kilos <= 150);
+    },
+    { message: 'Escribe el peso en kilos, como 12.5.' },
+  ),
+  sterilized: z.enum(['YES', 'NO', 'UNKNOWN']),
 });
 
 type PetValues = z.infer<typeof PetFields>;
@@ -50,24 +61,43 @@ const sexes = [
   { value: 'MALE', label: 'Macho' },
 ] as const;
 
+const sterilizedOptions = [
+  { value: 'YES', label: 'Sí' },
+  { value: 'NO', label: 'No' },
+  { value: 'UNKNOWN', label: 'No sé' },
+] as const;
+
+/** "12,5" or "12.5" is 12.5. Null if it isn't a number. */
+function parseKilos(text: string): number | null {
+  const kilos = Number(text.trim().replace(',', '.'));
+  return text.trim() !== '' && Number.isFinite(kilos) ? kilos : null;
+}
+
 export type PetFormProps = {
   submitLabel: string;
   onSaved: (pet: PetResponse) => void;
   /** Saves over this pet instead of creating another, like when onboarding comes back to step 1. */
   petId?: string;
+  /**
+   * Edits this pet from MascotaPerfil: starts with its data, adds its weight and whether it's
+   * sterilized, and keeps the rest of its profile as it is.
+   */
+  pet?: PetDetail;
 };
 
 /**
  * The basic profile of a pet, as in onboarding and "Agregar mascota": photo, name, species,
- * sex, birth date and breed. The rest of the profile (RN-MAS-02) comes with the pet's screen.
+ * sex, birth date and breed. The rest of the profile (RN-MAS-02) is edited in MascotaPerfil.
  */
-export function PetForm({ submitLabel, onSaved, petId }: PetFormProps) {
+export function PetForm({ submitLabel, onSaved, petId, pet }: PetFormProps) {
   const queryClient = useQueryClient();
   const catalog = useCatalogGet();
   const create = usePetsCreate();
   const replace = usePetsReplace();
-  const save = petId ? replace : create;
-  const [photo, setPhoto] = useState<{ uri: string; fileId: string | null } | null>(null);
+  const save = petId || pet ? replace : create;
+  const [photo, setPhoto] = useState<{ uri: string; fileId: string | null } | null>(
+    pet?.photoUrl && pet.photoFileId ? { uri: pet.photoUrl, fileId: pet.photoFileId } : null,
+  );
   const [photoError, setPhotoError] = useState(false);
   const {
     control,
@@ -76,13 +106,18 @@ export function PetForm({ submitLabel, onSaved, petId }: PetFormProps) {
   } = useForm<PetValues>({
     resolver: zodResolver(PetFields),
     defaultValues: {
-      name: '',
-      speciesId: '',
-      birthDate: '',
-      birthDateIsApproximate: false,
-      breed: '',
+      name: pet?.name ?? '',
+      speciesId: pet?.species.id ?? '',
+      sex: pet?.sex,
+      birthDate: pet ? toDateInput(pet.birthDate) : '',
+      birthDateIsApproximate: pet?.birthDateIsApproximate ?? false,
+      breed: pet?.breed ?? '',
+      weight: pet?.weightGrams ? formatKilos(pet.weightGrams) : '',
+      sterilized: pet?.isSterilized == null ? 'UNKNOWN' : pet.isSterilized ? 'YES' : 'NO',
     },
   });
+
+  const sex = useWatch({ control, name: 'sex' });
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -107,16 +142,36 @@ export function PetForm({ submitLabel, onSaved, petId }: PetFormProps) {
 
   const uploading = photo !== null && photo.fileId === null;
 
-  const submit = handleSubmit(({ birthDate, breed, ...form }) => {
+  const submit = handleSubmit(({ birthDate, breed, weight, sterilized, ...form }) => {
     const data = {
       ...form,
       birthDate: parseDate(birthDate)!,
       breed: breed || undefined,
       photoFileId: photo?.fileId ?? undefined,
     };
-    const onSuccess = (pet: PetResponse) => {
+    if (pet) {
+      const kilos = parseKilos(weight);
+      replace.mutate(
+        {
+          petId: pet.id,
+          data: petRequest(pet, {
+            ...data,
+            weightGrams: kilos === null ? undefined : Math.round(kilos * 1000),
+            isSterilized: sterilized === 'UNKNOWN' ? undefined : sterilized === 'YES',
+          }),
+        },
+        {
+          onSuccess: (saved) => {
+            petChanged(pet.id, saved);
+            onSaved(saved);
+          },
+        },
+      );
+      return;
+    }
+    const onSuccess = (saved: PetResponse) => {
       void queryClient.invalidateQueries({ queryKey: getPetsListQueryKey() });
-      onSaved(pet);
+      onSaved(saved);
     };
     if (petId) replace.mutate({ petId, data }, { onSuccess });
     else create.mutate({ data }, { onSuccess });
@@ -253,10 +308,48 @@ export function PetForm({ submitLabel, onSaved, petId }: PetFormProps) {
         )}
       />
 
-      <Banner
-        tone="info"
-        message="¿Toma medicina o se recupera de una operación? Agrégalo luego en su perfil y te mostramos cuidadores ⭐."
-      />
+      {pet ? (
+        <>
+          <Controller
+            control={control}
+            name="weight"
+            render={({ field }) => (
+              <Input
+                label="Peso en kilos"
+                optional
+                placeholder="Ej.: 12.5"
+                keyboardType="decimal-pad"
+                value={field.value}
+                onChangeText={field.onChange}
+                onBlur={field.onBlur}
+                error={errors.weight?.message}
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="sterilized"
+            render={({ field }) => (
+              <ChoiceField label={sex === 'MALE' ? '¿Está esterilizado?' : '¿Está esterilizada?'}>
+                {sterilizedOptions.map((option) => (
+                  <View key={option.value} style={styles.choice}>
+                    <Chip
+                      label={option.label}
+                      selected={field.value === option.value}
+                      onPress={() => field.onChange(option.value)}
+                    />
+                  </View>
+                ))}
+              </ChoiceField>
+            )}
+          />
+        </>
+      ) : (
+        <Banner
+          tone="info"
+          message="¿Toma medicina o se recupera de una operación? Agrégalo luego en su perfil y te mostramos cuidadores ⭐."
+        />
+      )}
 
       {save.isError && <Banner tone="error" message={errorMessage(save.error)} />}
 

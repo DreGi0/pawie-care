@@ -73,7 +73,11 @@ export default function PetsScreen() {
 
 function PetRow({ pet, divider }: { pet: PetResponse; divider: boolean }) {
   return (
-    <Row divider={divider}>
+    <Row
+      divider={divider}
+      onPress={() => router.push({ pathname: '/mascotas/[id]', params: { id: pet.id } })}
+      accessibilityLabel={`${pet.name}, ${describePet(pet)}. Ver su ficha.`}
+    >
       <Avatar name={pet.name} photoUrl={pet.photoUrl} />
       <View style={styles.petText}>
         <Text variant="subheading">{pet.name}</Text>
@@ -81,6 +85,7 @@ function PetRow({ pet, divider }: { pet: PetResponse; divider: boolean }) {
           {describePet(pet)}
         </Text>
       </View>
+      <Icon name="chevron-right" color="inkMuted" />
     </Row>
   );
 }
