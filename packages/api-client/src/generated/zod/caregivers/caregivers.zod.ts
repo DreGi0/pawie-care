@@ -274,7 +274,7 @@ export const CaregiverMeUpdateBody = zod.object({
   prices: zod
     .array(
       zod.object({
-        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
         priceCents: zod
           .int()
           .nullable()
@@ -462,7 +462,7 @@ export const CaregiverMePricesResponse = zod.object({
   prices: zod
     .array(
       zod.object({
-        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
         offered: zod.boolean().describe('Lo ofrece: aparece en las búsquedas de ese servicio.'),
         caregiverPriceCents: zod
           .int()
@@ -500,12 +500,12 @@ export const CaregiverMePricesResponse = zod.object({
  * @summary Cuánto recibiría con un precio
  */
 export const CaregiverMeQuoteBody = zod.object({
-  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
   priceCents: zod.int().describe('Precio por una mascota.'),
 });
 
 export const CaregiverMeQuoteResponse = zod.object({
-  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
   priceCents: zod.int(),
   payoutCents: zod
     .int()
@@ -520,6 +520,8 @@ export const caregiversSearchBodyNightsMax = 31;
 
 export const caregiversSearchBodyVisitsMax = 62;
 
+export const caregiversSearchBodyWalksMax = 62;
+
 export const caregiversSearchBodyPetIdsMax = 10;
 
 export const caregiversSearchBodyCertificationCodesMax = 10;
@@ -527,7 +529,7 @@ export const caregiversSearchBodyCertificationCodesMax = 10;
 export const caregiversSearchBodyMinRatingMax = 5;
 
 export const CaregiversSearchBody = zod.object({
-  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
   nights: zod
     .array(zod.iso.date())
     .max(caregiversSearchBodyNightsMax)
@@ -540,6 +542,11 @@ export const CaregiversSearchBody = zod.object({
     .describe(
       'Cuándo empieza cada visita. En una pernocta son las visitas de día durante la estadía (RN-SER-03).',
     ),
+  walks: zod
+    .array(zod.iso.datetime({ offset: true }))
+    .max(caregiversSearchBodyWalksMax)
+    .optional()
+    .describe('Solo en paseo: cuándo empieza cada paseo (RN-SER-05).'),
   petIds: zod
     .array(zod.uuid())
     .min(1)
@@ -575,7 +582,7 @@ export const CaregiversSearchResponse = zod.object({
   slots: zod
     .array(
       zod.object({
-        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
         startsAt: zod.iso.datetime({ offset: true }),
         endsAt: zod.iso.datetime({ offset: true }),
       }),
@@ -623,7 +630,7 @@ export const CaregiversSearchResponse = zod.object({
         prices: zod
           .array(
             zod.object({
-              serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+              serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
               priceCents: zod
                 .int()
                 .describe(
@@ -689,7 +696,7 @@ export const CaregiversProfileResponse = zod.object({
   prices: zod
     .array(
       zod.object({
-        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
         priceCents: zod
           .int()
           .describe(

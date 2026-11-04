@@ -37,6 +37,7 @@ const QUOTE_DEBOUNCE_MS = 400;
 const SUGGESTED: Record<ServiceCode, string> = {
   HOME_VISIT: 'tu visita sugerida',
   OVERNIGHT_STAY: 'tu pernocta sugerida',
+  WALK: 'tu paseo sugerido',
 };
 
 /** Whether the caregiver offers the service, and their price. Null is the suggested one. */

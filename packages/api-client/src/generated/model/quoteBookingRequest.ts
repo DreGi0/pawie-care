@@ -19,6 +19,11 @@ export interface QuoteBookingRequest {
    * @maxItems 62
    */
   visits?: string[];
+  /**
+   * Solo en paseo: cuándo empieza cada paseo (RN-SER-05).
+   * @maxItems 62
+   */
+  walks?: string[];
   /** Un cuidador de los resultados de la búsqueda. */
   caregiverId: string;
   /**
