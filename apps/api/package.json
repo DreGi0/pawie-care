@@ -26,7 +26,8 @@
     "openapi:generate": "nest build && node dist/openapi/export-openapi.js",
     "settings:set": "nest build && node dist/settings/set-setting.js",
     "caregivers:recalculate-levels": "nest build && node dist/caregivers/recalculate-levels.js",
-    "caregivers:approve": "nest build && node dist/caregivers/approve-caregiver.js"
+    "caregivers:approve": "nest build && node dist/caregivers/approve-caregiver.js",
+    "metrics:report": "nest build && node dist/metrics/metrics-report.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1152.0",

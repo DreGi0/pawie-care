@@ -73,8 +73,11 @@ export function blocksCalendar(status: BookingStatus): boolean {
   return !NON_BLOCKING_STATUSES.includes(status);
 }
 
-/** Statuses of a booking that was confirmed and wasn't cancelled. */
-const CONFIRMED_STATUSES: readonly BookingStatus[] = [
+/**
+ * Statuses of a booking that was confirmed and wasn't cancelled. For the pilot report,
+ * a booking in one of them is paid (RN-MET-01).
+ */
+export const CONFIRMED_STATUSES: readonly BookingStatus[] = [
   CONFIRMED,
   BookingStatus.IN_PROGRESS,
   BookingStatus.COMPLETED,
