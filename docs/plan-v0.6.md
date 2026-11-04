@@ -197,11 +197,25 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 
 **La etapa de métricas está hecha.**
 
-### Etapa 7: ficha ampliada y certificaciones
+### Etapa 7: ficha ampliada
 
-**Reglas:** RN-MAS-02, RN-MAS-11.
+**Reglas:** RN-MAS-02, RN-MAS-11, RN-MAS-12 (para el diseño de los horarios).
 
-**API:**
+**Avance:** se hace en dos PR, API y app. **API (hecha):**
+
+- `Pet` suma la rutina y el celo, en el mismo `PUT` que reemplaza toda la ficha.
+- El celo lleva las dos fechas o ninguna, y es **solo para hembras** (RN-MAS-11): un macho responde 422 `HEAT_ONLY_FOR_FEMALES`. Una hembra esterilizada sí lo admite, porque el dato puede faltar o estar mal. No toca el nivel de cuidado: hay un test de búsqueda.
+- `PetScheduleItem` lleva además `careNeedId`, y se maneja con `POST`, `PUT` y `DELETE /v1/pets/:petId/schedule-items`. `PetDetail.scheduleItems` viene ordenado por hora.
+  - `minuteOfDay` es la hora de El Salvador, como en el horario del cuidador.
+  - Una **dosis** cuelga de una tarea `MEDICATION` de la misma mascota (RN-CUI-12): de ella salen sus fechas y sus indicaciones del veterinario, y con ella la mascota es Especial. Sin la tarea responde 422 `MEDICATION_TASK_REQUIRED`. Borrar la tarea borra sus dosis, y cambiarla a otra tarea mientras tiene dosis responde 409 `CARE_NEED_HAS_DOSES`.
+  - Una **comida** es de todos los días y no lleva tarea.
+  - El `PUT` conserva el id, para que la etapa 10 arme con él la clave de cada tarea.
+- El texto libre `medications` queda, pero solo informa: en la app es "Medicamentos que toma", y ninguna pantalla del cuidador lo muestra como instrucción (RN-MAS-02).
+- `GET /v1/catalog` suma `careTasks`, con el nombre, el grupo y si puede quedar sin fecha de fin. Así la app no copia los grupos.
+- La migración tiene los `CHECK` del celo y de los horarios, y la llave compuesta que ata la dosis a una tarea de la misma mascota.
+- Toby y Nala, en el seed, tienen alimento, rutina y comidas.
+
+**Diseño original:**
 
 - `Pet` agrega `foodDescription`, `foodPortion`, `allowedTreats`, `dailyRoutine`, `heatStartsOn` y `heatEndsOn` (`date`).
 - `PetScheduleItem` con `petId`, `kind` (`MEAL` o `MEDICATION`), `minuteOfDay`, `label` y `dose?`. Sirve para la ficha y para las tareas del tramo de la etapa 10.
@@ -245,6 +259,7 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
   - `GET /v1/caregivers/me/bookings?status=` lista las reservas del cuidador.
   - `POST /v1/bookings/:id/accept` y `POST /v1/bookings/:id/reject` usan las transiciones que ya existen en `booking-status.ts`.
   - La respuesta trae lo que va a ganar el cuidador, calculado en la API (RN-RES-11, RN-PRE-04), y la dirección exacta solo si la reserva está `CONFIRMED` o en un estado posterior (RN-CTA-04).
+  - La ficha muestra el celo. Los "medicamentos que toma" van solo como dato, nunca como instrucción (RN-MAS-02).
   - Los eventos push de esta etapa se conectan en "eventos de la 11".
 - **Ganancias:** `GET /v1/caregivers/me/earnings` devuelve lo que tiene por cobrar, lo pagado y el total del mes. Hasta la etapa 10 no existe `Payout`, así que "pagado" es 0 y "por cobrar" sale de las reservas `CONFIRMED`; la etapa 10 completa el resto.
 
@@ -286,6 +301,8 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
   - El check-out exige las fotos mínimas. El del último tramo incrementa `completedBookingCount` del cuidador y recalcula su nivel.
 - **Fotos:** `FilePurpose.CARE_LOG_PHOTO`, en `POST /v1/bookings/:id/slots/:slotId/photos`.
 - **Tareas del tramo:** `GET /v1/bookings/:id/slots/:slotId/tasks` arma la lista con `PetScheduleItem` y las tareas de cuidado activas. `POST …/tasks/:taskKey/done` marca una tarea como hecha.
+  - Las comidas entran todos los días. Las dosis entran solo los días en que su tarea `MEDICATION` está activa.
+  - El texto libre `medications` nunca es una tarea (RN-MAS-02).
 - **Ruta:** `POST /v1/bookings/:id/slots/:slotId/route` recibe lotes de puntos `{ lat, lng, recordedAt }`, y `GET …/route` los devuelve. Cada punto se guarda como una fila de `RoutePoint`.
 - **Colas:**
   - Una tarea diferida avisa si no hay check-in a los [30 min] (RN-EJE-02), por push al dueño (base de la 11) y por correo al equipo.
