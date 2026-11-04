@@ -25,7 +25,7 @@ import { errorMessage, queryClient } from '@/lib/api';
 import { serviceName, serviceUnit } from '@/lib/bookings';
 import { LEVEL_NAMES } from '@/lib/caregivers';
 import { formatMoney } from '@/lib/format';
-import { services } from '@/theme/services';
+import { byServiceOrder, services } from '@/theme/services';
 import { colors, gutter, radius, space } from '@/theme/tokens';
 
 /** What −/+ moves the price by. */
@@ -38,6 +38,13 @@ const SUGGESTED: Record<ServiceCode, string> = {
   HOME_VISIT: 'tu visita sugerida',
   OVERNIGHT_STAY: 'tu pernocta sugerida',
   WALK: 'tu paseo sugerido',
+};
+
+/** "Ofrezco paseos" and "No apareces en las búsquedas de paseo". */
+const OFFER: Record<ServiceCode, { plural: string; search: string }> = {
+  WALK: { plural: 'paseos', search: 'paseo' },
+  HOME_VISIT: { plural: 'visitas', search: 'visita' },
+  OVERNIGHT_STAY: { plural: 'pernoctas', search: 'pernocta' },
 };
 
 /** Whether the caregiver offers the service, and their price. Null is the suggested one. */
@@ -115,7 +122,7 @@ function PricesForm({ prices }: { prices: CaregiverPricesResponse }) {
         </Text>
       </View>
 
-      {prices.prices.map((price) => (
+      {byServiceOrder(prices.prices).map((price) => (
         <ServicePrice
           key={price.serviceCode}
           price={price}
@@ -161,7 +168,7 @@ function ServicePrice({
         </Text>
       </View>
       <Checkbox
-        label={`Ofrezco ${serviceCode === 'OVERNIGHT_STAY' ? 'pernoctas' : 'visitas'}`}
+        label={`Ofrezco ${OFFER[serviceCode].plural}`}
         checked={value.offered}
         onChange={(offered) => onChange({ ...value, offered })}
       />
@@ -228,8 +235,7 @@ function ServicePrice({
         </>
       ) : (
         <Text variant="caption" color="inkMuted">
-          No apareces en las búsquedas de {serviceCode === 'OVERNIGHT_STAY' ? 'pernocta' : 'visita'}
-          .
+          No apareces en las búsquedas de {OFFER[serviceCode].search}.
         </Text>
       )}
     </Card>

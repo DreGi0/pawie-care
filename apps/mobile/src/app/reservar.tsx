@@ -11,6 +11,7 @@ import {
   type BookingEmergency,
   type CaregiverProfileResponse,
   type PetResponse,
+  type ServiceCode,
 } from '@pawie/api-client';
 import { BookingsCreateBody } from '@pawie/api-client/zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -47,12 +48,18 @@ import { StarMedal, Tag } from '@/components/Tag';
 import { Text } from '@/components/Text';
 import { Touchable } from '@/components/Touchable';
 import { errorMessage } from '@/lib/api';
-import { firstName, joinNames } from '@/lib/bookings';
+import { firstName, joinNames, serviceShortName } from '@/lib/bookings';
 import { formatDay, formatMoney, formatRange, maskPhone, parsePhone } from '@/lib/format';
 import { toSearchRequest, useSearch, useSearchResults, type Search } from '@/lib/search';
 import { borderWidth, colors, gutter, radius, space } from '@/theme/tokens';
 
 const AMOUNTS = [50, 100, 200];
+
+const TITLES: Record<ServiceCode, string> = {
+  WALK: 'Solicitar paseo',
+  HOME_VISIT: 'Solicitar visita',
+  OVERNIGHT_STAY: 'Solicitar pernocta',
+};
 
 const optionalPhone = z.string().refine((text) => text === '' || parsePhone(text) !== null, {
   message: 'Escribe un teléfono de 8 dígitos, como 7000 0000.',
@@ -158,6 +165,7 @@ function BookingForm({
   const name = firstName(caregiver.displayName);
   const petNames = joinNames(pets.map((pet) => pet.name));
   const overnight = search.serviceCode === 'OVERNIGHT_STAY';
+  const walk = search.serviceCode === 'WALK';
   const address = addresses.find((a) => a.id === addressId);
 
   const {
@@ -182,9 +190,9 @@ function BookingForm({
   const requestQuote = quote.mutate;
   const askQuote = useCallback(() => {
     if (!addressId) return;
-    const { serviceCode, petIds, visits, nights } = toSearchRequest(search);
+    const { serviceCode, petIds, visits, nights, walks } = toSearchRequest(search);
     requestQuote({
-      data: { serviceCode, petIds, visits, nights, caregiverId: caregiver.id, addressId },
+      data: { serviceCode, petIds, visits, nights, walks, caregiverId: caregiver.id, addressId },
     });
   }, [search, caregiver.id, addressId, requestQuote]);
   useEffect(askQuote, [askQuote]);
@@ -196,7 +204,7 @@ function BookingForm({
         return;
       }
       // The booking takes the district from the address.
-      const { serviceCode, petIds, visits, nights } = toSearchRequest(search);
+      const { serviceCode, petIds, visits, nights, walks } = toSearchRequest(search);
       create.mutate(
         {
           data: {
@@ -204,6 +212,7 @@ function BookingForm({
             petIds,
             visits,
             nights,
+            walks,
             caregiverId: caregiver.id,
             addressId,
             instructions: form.instructions || undefined,
@@ -250,7 +259,7 @@ function BookingForm({
                 onPress={() => router.back()}
               />
               <Text variant="title" accessibilityRole="header" style={styles.flex}>
-                {overnight ? 'Solicitar pernocta' : 'Solicitar visita'}
+                {TITLES[search.serviceCode]}
               </Text>
             </View>
             <StepBar current={1} steps={steps} />
@@ -302,7 +311,11 @@ function BookingForm({
                 label={`Instrucciones para ${name}`}
                 optional
                 multiline
-                placeholder={`Ej.: ${pets[0]?.name ?? 'Luna'} come a las 9:00 y le dan miedo los cohetes.`}
+                placeholder={
+                  walk
+                    ? `Ej.: ${pets[0]?.name ?? 'Toby'} jala la correa y le dan miedo las motos.`
+                    : `Ej.: ${pets[0]?.name ?? 'Luna'} come a las 9:00 y le dan miedo los cohetes.`
+                }
                 value={field.value}
                 onChangeText={field.onChange}
                 onBlur={field.onBlur}
@@ -320,7 +333,7 @@ function BookingForm({
                 <Text variant="caption" color="inkMuted">
                   {editingEmergency
                     ? `Solo se usan si ${petNames} necesita atención urgente.`
-                    : 'Los mismos de tu última visita.'}
+                    : 'Los mismos de tu última reserva.'}
                 </Text>
               </View>
               {!editingEmergency && (
@@ -412,7 +425,7 @@ function BookingForm({
                           ))}
                         </View>
                         <Text variant="caption" color="inkMuted">
-                          No te cobramos nada ahora. Lo guardamos para tus próximas visitas.
+                          No te cobramos nada ahora. Lo guardamos para tus próximas reservas.
                         </Text>
                       </View>
                     )}
@@ -455,7 +468,7 @@ function BookingForm({
                 price={quote.data}
                 lines={[
                   {
-                    label: `${overnight ? 'Pernocta' : 'Visita'}${pets.length > 1 ? ` para ${pets.length} mascotas` : ''}`,
+                    label: `${serviceShortName(search.serviceCode)}${pets.length > 1 ? ` para ${pets.length} ${walk ? 'perros' : 'mascotas'}` : ''}`,
                     amountCents: quote.data.subtotalCents,
                   },
                 ]}
@@ -506,7 +519,9 @@ function BookingForm({
         }
       >
         {addresses.length === 0 && (
-          <Text color="inkMuted">Agrega la dirección donde tu cuidador hará la visita.</Text>
+          <Text color="inkMuted">
+            Agrega la dirección de tu casa: ahí empieza y termina el servicio.
+          </Text>
         )}
         <View>
           {addresses.map((option) => (

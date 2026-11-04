@@ -24,11 +24,11 @@ import { Row } from '@/components/Row';
 import { Tag } from '@/components/Tag';
 import { Text } from '@/components/Text';
 import { errorMessage } from '@/lib/api';
-import { firstName, joinNames, serviceName, serviceUnit } from '@/lib/bookings';
+import { firstName, joinNames, serviceName, serviceShortName, serviceUnit } from '@/lib/bookings';
 import { BADGE_NAMES, SKILL_NAMES } from '@/lib/caregivers';
 import { formatDay, formatDayTime, formatMoney } from '@/lib/format';
 import { useSearch, useSearchResults } from '@/lib/search';
-import { services } from '@/theme/services';
+import { SERVICE_ORDER, services } from '@/theme/services';
 import { colors, gutter, radius, space, typography } from '@/theme/tokens';
 
 const BADGE_ICONS: Record<CaregiverBadge, IconName> = {
@@ -161,15 +161,17 @@ export default function CaregiverProfileScreen() {
 
           <Section title="Sus precios">
             <View>
-              {(['HOME_VISIT', 'OVERNIGHT_STAY'] as const).map((code, index) => (
+              {SERVICE_ORDER.map((code, index) => (
                 <PriceRow
                   key={code}
                   code={code}
                   prices={caregiver.prices}
                   detail={
-                    code === 'HOME_VISIT'
-                      ? visitLength(rules?.homeVisitMinutes ?? 60)
-                      : `De ${minuteLabel(rules?.overnightStartMinute ?? 1140)} a ${minuteLabel(rules?.overnightEndMinute ?? 480)}`
+                    {
+                      WALK: `${rules?.walkMinutes ?? 45} min, solo perros`,
+                      HOME_VISIT: visitLength(rules?.homeVisitMinutes ?? 60),
+                      OVERNIGHT_STAY: `De ${minuteLabel(rules?.overnightStartMinute ?? 1140)} a ${minuteLabel(rules?.overnightEndMinute ?? 480)}`,
+                    }[code]
                   }
                   divider={index > 0}
                 />
@@ -189,7 +191,7 @@ export default function CaregiverProfileScreen() {
           caption={`Precio ${serviceUnit(search.serviceCode)}`}
         >
           <Button
-            label={overnight ? 'Reservar pernocta' : 'Reservar visita'}
+            label={`Reservar ${serviceShortName(search.serviceCode).toLowerCase()}`}
             onPress={() => router.push({ pathname: '/reservar', params: { caregiverId: id } })}
           />
         </BottomBar>

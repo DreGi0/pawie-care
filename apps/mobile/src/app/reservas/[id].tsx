@@ -26,7 +26,7 @@ import { StepBar } from '@/components/StepBar';
 import { Status } from '@/components/Status';
 import { Text } from '@/components/Text';
 import { errorMessage } from '@/lib/api';
-import { firstName, joinNames, serviceKind, statusTag } from '@/lib/bookings';
+import { firstName, joinNames, serviceKind, serviceShortName, statusTag } from '@/lib/bookings';
 import {
   formatDay,
   formatDeadline,
@@ -171,7 +171,6 @@ function Pay({ booking, onPaid }: { booking: BookingResponse; onPaid: () => void
   const pay = usePaymentsStart();
   const cancel = useCancel(booking.id);
   const [returned, setReturned] = useState(false);
-  const overnight = booking.serviceCode === 'OVERNIGHT_STAY';
   const confirming = returned && booking.payment?.status === 'PENDING';
 
   const startPayment = () =>
@@ -197,7 +196,7 @@ function Pay({ booking, onPaid }: { booking: BookingResponse; onPaid: () => void
           onPress={goToVisits}
         />
         <Text variant="title" accessibilityRole="header">
-          {overnight ? 'Paga tu pernocta' : 'Paga tu visita'}
+          Paga tu {serviceShortName(booking.serviceCode).toLowerCase()}
         </Text>
       </View>
       <StepBar current={bookingSteps(booking).length} steps={bookingSteps(booking)} />
@@ -229,7 +228,7 @@ function Pay({ booking, onPaid }: { booking: BookingResponse; onPaid: () => void
         <PriceCard
           price={booking.price}
           lines={booking.slots.map((slot) => ({
-            label: `${overnight && slot.serviceCode === 'OVERNIGHT_STAY' ? 'Pernocta' : 'Visita'} para ${petNames(booking)}`,
+            label: `${serviceShortName(slot.serviceCode)} para ${petNames(booking)}`,
             amountCents: slot.subtotalCents,
           }))}
         />
@@ -287,9 +286,13 @@ function Confirmed({ booking }: { booking: BookingResponse }) {
             {pets} {booking.pets.length > 1 ? 'están' : 'está'} en buenas manos
           </Text>
           <Text style={styles.centered}>
-            {booking.serviceCode === 'OVERNIGHT_STAY'
-              ? `${name} cuidará a ${pets} la noche del ${formatDay(booking.startsAt)}.`
-              : `${name} visitará a ${pets} ${formatLongDayTime(booking.startsAt)}.`}
+            {
+              {
+                OVERNIGHT_STAY: `${name} cuidará a ${pets} la noche del ${formatDay(booking.startsAt)}.`,
+                HOME_VISIT: `${name} visitará a ${pets} ${formatLongDayTime(booking.startsAt)}.`,
+                WALK: `${name} sacará a pasear a ${pets} ${formatLongDayTime(booking.startsAt)}.`,
+              }[booking.serviceCode]
+            }
           </Text>
         </View>
       </Animated.View>

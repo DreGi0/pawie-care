@@ -27,7 +27,7 @@ import { errorMessage, queryClient } from '@/lib/api';
 import { serviceShortName } from '@/lib/bookings';
 import { LEVEL_NAMES, requirementText, SETUP_ORDER, SETUP_STEPS } from '@/lib/caregivers';
 import { formatLongDay, formatMoney } from '@/lib/format';
-import { services } from '@/theme/services';
+import { byServiceOrder, services } from '@/theme/services';
 import { colors, gutter, radius, space } from '@/theme/tokens';
 
 // CuiInicio, after docs/design/directions/placas/cui-inicio.html. Before the caregiver shows up
@@ -236,7 +236,7 @@ function NextLevelPrices({
   nextLevel: CaregiverLevelResponse['level'];
   prices: CaregiverPricesResponse;
 }) {
-  const rising = prices.prices.filter((price) => price.nextLevel !== null);
+  const rising = byServiceOrder(prices.prices.filter((price) => price.nextLevel !== null));
   if (rising.length === 0) return null;
 
   return (

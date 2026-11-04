@@ -36,7 +36,14 @@ export function ServiceBlock({ service, detail, selected, onPress }: ServiceBloc
         </View>
       )}
       <View>
-        <Text variant="subheading" style={styles.name}>
+        {/* Three blocks share the row: "Pernocta" shrinks a little before it breaks. */}
+        <Text
+          variant="subheading"
+          style={styles.name}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
           {serviceShortName(service)}
         </Text>
         <Text variant="footnote" color="inkMuted">
