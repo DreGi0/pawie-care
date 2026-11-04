@@ -492,13 +492,27 @@ model Pet {
   isSterilized           Boolean?  @map("is_sterilized")
   temperament            String?
   handlingNotes          String?   @map("handling_notes")
+  /// RN-MAS-02, routine: brand or type of food, such as "Croquetas para adulto".
+  foodDescription        String?   @map("food_description")
+  /// Such as "1 taza por comida". A meal in PetScheduleItem can give its own.
+  foodPortion            String?   @map("food_portion")
+  allowedTreats          String?   @map("allowed_treats")
+  dailyRoutine           String?   @map("daily_routine")
   /// The pet's regular vet.
   vetName                String?   @map("vet_name")
   vetClinic              String?   @map("vet_clinic")
   vetPhone               String?   @map("vet_phone")
   /// Free text for the profile. What the caregiver has to do goes in PetCareNeed.
   healthConditions       String?   @map("health_conditions")
+  /// Free text that only informs: it's never an instruction for the caregiver. A
+  /// medication the caregiver has to give is a MEDICATION care need with its doses in
+  /// PetScheduleItem (RN-CUI-12).
   medications            String?
+  /// RN-MAS-11: in heat between these days, both inclusive. It doesn't change the care
+  /// level or the price. CHECK: both or neither, the end not before the start, and only
+  /// for females.
+  heatStartsOn           DateTime? @map("heat_starts_on") @db.Date
+  heatEndsOn             DateTime? @map("heat_ends_on") @db.Date
   photoFileId            String?   @map("photo_file_id") @db.Uuid
   /// Archived pets keep their bookings but can't be booked again.
   archivedAt             DateTime? @map("archived_at") @db.Timestamptz(3)
@@ -511,10 +525,48 @@ model Pet {
   vaccinations    PetVaccination[]
   vetInstructions VetInstruction[]
   careNeeds       PetCareNeed[]
+  scheduleItems   PetScheduleItem[]
   bookings        BookingPet[]
 
   @@index([ownerId])
   @@map("pets")
+}
+
+enum PetScheduleKind {
+  MEAL
+  MEDICATION
+
+  @@map("pet_schedule_kind")
+}
+
+/// RN-MAS-02: a meal or a medication dose at a time of day. They're the tasks of a slot
+/// that fall within its hours (RN-MAS-12, RN-EJE-04). Editing keeps the id.
+/// - A meal is every day and has no care need.
+/// - A dose belongs to a MEDICATION care need of the same pet, which gives its dates
+///   and its vet instructions, and makes the pet Special (RN-CUI-12, RN-MAS-08).
+///   Deleting the need deletes its doses.
+/// CHECK: minuteOfDay 0–1439, and careNeedId exactly for MEDICATION.
+model PetScheduleItem {
+  id          String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  petId       String          @map("pet_id") @db.Uuid
+  kind        PetScheduleKind
+  /// Minutes since midnight, America/El_Salvador.
+  minuteOfDay Int             @map("minute_of_day") @db.SmallInt
+  /// Such as "Desayuno" or the medicine's name.
+  label       String
+  /// Such as "1 taza" or "Media pastilla". A meal without one uses Pet.foodPortion.
+  dose        String?
+  careNeedId  String?         @map("care_need_id") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  pet      Pet          @relation(fields: [petId], references: [id], onDelete: Cascade)
+  /// Composite key: the care need must belong to the same pet.
+  careNeed PetCareNeed? @relation(fields: [careNeedId, petId], references: [id, petId], onDelete: Cascade)
+
+  @@index([petId])
+  @@index([careNeedId])
+  @@map("pet_schedule_items")
 }
 
 /// RN-MAS-02
@@ -607,10 +659,14 @@ model PetCareNeed {
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  pet            Pet             @relation(fields: [petId], references: [id], onDelete: Cascade)
+  pet            Pet               @relation(fields: [petId], references: [id], onDelete: Cascade)
   /// Composite key: the instructions must belong to the same pet.
-  vetInstruction VetInstruction? @relation(fields: [vetInstructionId, petId], references: [id, petId], onDelete: Restrict)
+  vetInstruction VetInstruction?   @relation(fields: [vetInstructionId, petId], references: [id, petId], onDelete: Restrict)
+  /// The doses of a MEDICATION need.
+  scheduleItems  PetScheduleItem[]
 
+  // Target of the composite foreign key of pet_schedule_items.
+  @@unique([id, petId])
   @@index([petId])
   @@map("pet_care_needs")
 }

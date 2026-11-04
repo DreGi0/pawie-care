@@ -57,3 +57,22 @@ export const CARE_TASK_LABELS: Readonly<Record<CareTask, string>> = {
   [CareTask.DOSE_CHANGE]: 'cambiarle la dosis de un medicamento',
   [CareTask.DIAGNOSIS_OR_PRESCRIPTION]: 'diagnosticarla o recetarle',
 };
+
+/** The name of each task, as the owner picks it in the app (RN-CUI-12, RN-CUI-13). */
+export const CARE_TASK_NAMES: Readonly<Record<CareTask, string>> = {
+  [CareTask.MEDICATION]: 'Medicación',
+  [CareTask.WOUND_CARE]: 'Curación de heridas y suturas',
+  [CareTask.POST_OPERATIVE_RECOVERY]: 'Recuperación post-operatoria',
+  [CareTask.SYRINGE_FEEDING]: 'Alimentación con jeringa',
+  [CareTask.PRESCRIBED_REST]: 'Reposo indicado',
+  [CareTask.CHRONIC_CONDITION_MONITORING]: 'Vigilancia de una condición crónica',
+  [CareTask.MOBILITY_ASSISTANCE]: 'Ayuda para moverse',
+  [CareTask.INCONTINENCE_HYGIENE]: 'Higiene por incontinencia',
+  [CareTask.INJECTION]: 'Inyecciones, insulina incluida',
+  [CareTask.IV_FLUIDS]: 'Sueros',
+  [CareTask.STITCH_OR_DRAIN_REMOVAL]: 'Quitar puntos o drenajes',
+  [CareTask.TUBE_PLACEMENT]: 'Poner sondas',
+  [CareTask.SEDATION]: 'Sedación',
+  [CareTask.DOSE_CHANGE]: 'Cambiar la dosis de un medicamento',
+  [CareTask.DIAGNOSIS_OR_PRESCRIPTION]: 'Diagnóstico o receta',
+};

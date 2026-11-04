@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ServiceCode } from '../generated/prisma/enums.js';
+import { CareTask, ServiceCode } from '../generated/prisma/enums.js';
+import type { CareTaskGroup } from '../pets/care-tasks.js';
 
 export class DistrictOption {
   @ApiProperty({ format: 'uuid' })
@@ -74,6 +75,29 @@ export class BookingRules {
   overnightEndMinute: number;
 }
 
+/**
+ * A care task the owner can add to a pet (RN-MAS-06, RN-MAS-08, RN-MAS-09), with what
+ * it asks for. The app shows the right fields with it; the API still checks them.
+ */
+export class CareTaskOption {
+  @ApiProperty({ enum: CareTask, enumName: 'CareTask' })
+  code: CareTask;
+
+  @ApiProperty({ example: 'Medicación' })
+  name: string;
+
+  @ApiProperty({
+    enum: ['CLINICAL', 'ASSISTANCE', 'PROHIBITED'],
+    enumName: 'CareTaskGroup',
+    description:
+      'CLINICAL pide las indicaciones del veterinario y ASSISTANCE las del dueño; las dos hacen Especial a la mascota. Con una PROHIBITED activa no se puede reservar.',
+  })
+  group: CareTaskGroup;
+
+  @ApiProperty({ description: 'RN-MAS-08: si puede quedar sin fecha de fin.' })
+  canBeOpenEnded: boolean;
+}
+
 export class CatalogResponse {
   @ApiProperty({ type: [DistrictOption], description: 'Ordenados por nombre.' })
   districts: DistrictOption[];
@@ -86,4 +110,10 @@ export class CatalogResponse {
 
   @ApiProperty({ type: BookingRules })
   bookingRules: BookingRules;
+
+  @ApiProperty({
+    type: [CareTaskOption],
+    description: 'Las clínicas, las de asistencia y las prohibidas, en ese orden.',
+  })
+  careTasks: CareTaskOption[];
 }

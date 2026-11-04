@@ -105,6 +105,29 @@ describe('pets', () => {
       });
     });
 
+    it('keeps the routine: food, portion, treats and daily routine (RN-MAS-02)', async () => {
+      const token = await owner();
+      const routine = {
+        foodDescription: 'Croquetas para perro adulto',
+        foodPortion: '1 taza',
+        allowedTreats: 'Galletas de pollo, hasta 3 al día',
+        dailyRoutine: 'Sale al patio al despertar.',
+        medications: 'Gotas para los ojos',
+      };
+
+      const created = await as(token).post('/v1/pets', luna(routine)).expect(201);
+      const cleared = await as(token).put(`/v1/pets/${created.body.id}`, luna()).expect(200);
+
+      expect(created.body).toMatchObject(routine);
+      expect(cleared.body).toMatchObject({
+        foodDescription: null,
+        foodPortion: null,
+        allowedTreats: null,
+        dailyRoutine: null,
+        medications: null,
+      });
+    });
+
     it('does not let anyone else see or change a pet', async () => {
       const pet = await createPet(await owner());
       const stranger = await owner();
@@ -197,24 +220,24 @@ describe('pets', () => {
     });
   });
 
+  async function petWithInstructions(token: string) {
+    const pet = await createPet(token);
+    const fileId = await uploadFile(api, token, 'VET_INSTRUCTION');
+    const { body } = await as(token)
+      .post(`/v1/pets/${pet.id}/vet-instructions`, {
+        fileId,
+        issuedOn: '2026-10-01',
+        vetName: 'Dra. Rivas',
+      })
+      .expect(201);
+    return { pet, instruction: body as { id: string; fileUrl: string } };
+  }
+
+  const careNeed = (token: string, petId: string, body: Record<string, unknown>) =>
+    as(token).post(`/v1/pets/${petId}/care-needs`, { startsOn: '2026-11-01', ...body });
+
   // RN-MAS-06, RN-MAS-08, RN-MAS-09
   describe('vet instructions and care needs', () => {
-    async function petWithInstructions(token: string) {
-      const pet = await createPet(token);
-      const fileId = await uploadFile(api, token, 'VET_INSTRUCTION');
-      const { body } = await as(token)
-        .post(`/v1/pets/${pet.id}/vet-instructions`, {
-          fileId,
-          issuedOn: '2026-10-01',
-          vetName: 'Dra. Rivas',
-        })
-        .expect(201);
-      return { pet, instruction: body as { id: string; fileUrl: string } };
-    }
-
-    const careNeed = (token: string, petId: string, body: Record<string, unknown>) =>
-      as(token).post(`/v1/pets/${petId}/care-needs`, { startsOn: '2026-11-01', ...body });
-
     it('keeps the vet instructions with a link to the document', async () => {
       const token = await owner();
       const { pet, instruction } = await petWithInstructions(token);
@@ -336,6 +359,233 @@ describe('pets', () => {
         .expect(409);
 
       expect(response.body.errorCode).toBe('VET_INSTRUCTION_IN_USE');
+    });
+  });
+
+  describe('heat (RN-MAS-11)', () => {
+    it('marks a female in heat between two days, and clears it on edit', async () => {
+      const token = await owner();
+      const heat = { heatStartsOn: '2026-11-03', heatEndsOn: '2026-11-12' };
+
+      const created = await as(token).post('/v1/pets', luna(heat)).expect(201);
+      const listed = await as(token).get('/v1/pets').expect(200);
+      const cleared = await as(token).put(`/v1/pets/${created.body.id}`, luna()).expect(200);
+
+      expect(created.body).toMatchObject(heat);
+      expect(listed.body[0]).toMatchObject(heat);
+      expect(cleared.body).toMatchObject({ heatStartsOn: null, heatEndsOn: null });
+    });
+
+    it('takes heat only for a female, with both days in order', async () => {
+      const token = await owner();
+      const post = (overrides: Record<string, unknown>) =>
+        as(token).post('/v1/pets', luna(overrides)).expect(422);
+
+      const male = await post({
+        sex: 'MALE',
+        heatStartsOn: '2026-11-03',
+        heatEndsOn: '2026-11-12',
+      });
+      const oneDay = await post({ heatStartsOn: '2026-11-03' });
+      const backwards = await post({ heatStartsOn: '2026-11-12', heatEndsOn: '2026-11-03' });
+
+      expect(male.body).toEqual({
+        statusCode: 422,
+        errorCode: 'HEAT_ONLY_FOR_FEMALES',
+        message: 'Solo una hembra puede estar en celo.',
+      });
+      expect(oneDay.body.errorCode).toBe('INVALID_DATES');
+      expect(backwards.body.errorCode).toBe('INVALID_DATES');
+    });
+
+    it('takes heat for a sterilized female, because the owner may not know', async () => {
+      const token = await owner();
+
+      await as(token)
+        .post(
+          '/v1/pets',
+          luna({ isSterilized: true, heatStartsOn: '2026-11-03', heatEndsOn: '2026-11-03' }),
+        )
+        .expect(201);
+    });
+  });
+
+  // RN-MAS-02, RN-MAS-12, RN-CUI-12
+  describe('schedule', () => {
+    const scheduleItem = (token: string, petId: string, body: Record<string, unknown>) =>
+      as(token).post(`/v1/pets/${petId}/schedule-items`, body);
+
+    async function medicationNeed(token: string) {
+      const { pet, instruction } = await petWithInstructions(token);
+      const { body } = await careNeed(token, pet.id, {
+        task: 'MEDICATION',
+        endsOn: '2026-11-10',
+        vetInstructionId: instruction.id,
+      }).expect(201);
+      return { pet, need: body as { id: string }, instruction };
+    }
+
+    it('shows a meal at 7:00 in the profile, in order of time', async () => {
+      const token = await owner();
+      const pet = await createPet(token);
+      await scheduleItem(token, pet.id, { kind: 'MEAL', minuteOfDay: 1080, label: 'Cena' }).expect(
+        201,
+      );
+      await scheduleItem(token, pet.id, {
+        kind: 'MEAL',
+        minuteOfDay: 420,
+        label: 'Desayuno',
+        dose: '1 taza',
+      }).expect(201);
+
+      const { body } = await as(token).get(`/v1/pets/${pet.id}`).expect(200);
+
+      expect(body.scheduleItems).toEqual([
+        {
+          id: expect.any(String),
+          kind: 'MEAL',
+          minuteOfDay: 420,
+          label: 'Desayuno',
+          dose: '1 taza',
+          careNeedId: null,
+        },
+        {
+          id: expect.any(String),
+          kind: 'MEAL',
+          minuteOfDay: 1080,
+          label: 'Cena',
+          dose: null,
+          careNeedId: null,
+        },
+      ]);
+    });
+
+    it('edits an item in place, keeping its id, and deletes it', async () => {
+      const token = await owner();
+      const pet = await createPet(token);
+      const created = await scheduleItem(token, pet.id, {
+        kind: 'MEAL',
+        minuteOfDay: 420,
+        label: 'Desayuno',
+      }).expect(201);
+      const path = `/v1/pets/${pet.id}/schedule-items/${created.body.id}`;
+
+      const edited = await as(token)
+        .put(path, { kind: 'MEAL', minuteOfDay: 450, label: 'Desayuno', dose: '1 taza' })
+        .expect(200);
+
+      expect(edited.body).toMatchObject({ id: created.body.id, minuteOfDay: 450, dose: '1 taza' });
+      await as(token).delete(path).expect(204);
+      const missing = await as(token).delete(path).expect(404);
+      expect(missing.body.errorCode).toBe('SCHEDULE_ITEM_NOT_FOUND');
+    });
+
+    it('hangs a medication dose from a Medicación task of the same pet', async () => {
+      const token = await owner();
+      const { pet, need } = await medicationNeed(token);
+      const mobility = await careNeed(token, pet.id, {
+        task: 'MOBILITY_ASSISTANCE',
+        ownerInstructions: 'Levantarla con el arnés.',
+      }).expect(201);
+      const other = await medicationNeed(token);
+      const dose = { kind: 'MEDICATION', minuteOfDay: 480, label: 'Amoxicilina' };
+
+      const loose = await scheduleItem(token, pet.id, dose).expect(422);
+      const notMedication = await scheduleItem(token, pet.id, {
+        ...dose,
+        careNeedId: mobility.body.id,
+      }).expect(422);
+      const otherPet = await scheduleItem(token, pet.id, {
+        ...dose,
+        careNeedId: other.need.id,
+      }).expect(404);
+      const { body } = await scheduleItem(token, pet.id, {
+        ...dose,
+        dose: 'Media pastilla',
+        careNeedId: need.id,
+      }).expect(201);
+
+      expect(loose.body).toEqual({
+        statusCode: 422,
+        errorCode: 'MEDICATION_TASK_REQUIRED',
+        message:
+          'Para que el cuidador le dé una medicina, agrégala primero como tarea de cuidado Medicación, con las indicaciones del veterinario.',
+      });
+      expect(notMedication.body.errorCode).toBe('MEDICATION_TASK_REQUIRED');
+      expect(otherPet.body.errorCode).toBe('CARE_NEED_NOT_FOUND');
+      expect(body).toMatchObject({ kind: 'MEDICATION', careNeedId: need.id });
+    });
+
+    it('takes no care need for a meal', async () => {
+      const token = await owner();
+      const { pet, need } = await medicationNeed(token);
+
+      const response = await scheduleItem(token, pet.id, {
+        kind: 'MEAL',
+        minuteOfDay: 420,
+        label: 'Desayuno',
+        careNeedId: need.id,
+      }).expect(422);
+
+      expect(response.body.errorCode).toBe('CARE_NEED_NOT_ALLOWED');
+    });
+
+    it('deletes the doses with their task, and keeps the task a medication while it has doses', async () => {
+      const token = await owner();
+      const { pet, need, instruction } = await medicationNeed(token);
+      await scheduleItem(token, pet.id, {
+        kind: 'MEDICATION',
+        minuteOfDay: 480,
+        label: 'Amoxicilina',
+        careNeedId: need.id,
+      }).expect(201);
+      const path = `/v1/pets/${pet.id}/care-needs/${need.id}`;
+
+      const changed = await as(token)
+        .put(path, {
+          task: 'WOUND_CARE',
+          startsOn: '2026-11-01',
+          endsOn: '2026-11-10',
+          vetInstructionId: instruction.id,
+        })
+        .expect(409);
+      await as(token).delete(path).expect(204);
+      const { body } = await as(token).get(`/v1/pets/${pet.id}`).expect(200);
+
+      expect(changed.body.errorCode).toBe('CARE_NEED_HAS_DOSES');
+      expect(body.scheduleItems).toEqual([]);
+    });
+
+    it('rejects a time outside the day and an empty label', async () => {
+      const token = await owner();
+      const pet = await createPet(token);
+
+      const response = await scheduleItem(token, pet.id, {
+        kind: 'MEAL',
+        minuteOfDay: 1440,
+        label: ' ',
+      }).expect(400);
+
+      expect(response.body.details).toEqual({
+        minuteOfDay: ['Elige una hora.'],
+        label: ['Escribe qué es.'],
+      });
+    });
+
+    it("does not let anyone else touch a pet's schedule", async () => {
+      const token = await owner();
+      const pet = await createPet(token);
+      const item = await scheduleItem(token, pet.id, {
+        kind: 'MEAL',
+        minuteOfDay: 420,
+        label: 'Desayuno',
+      }).expect(201);
+      const stranger = await owner();
+      const meal = { kind: 'MEAL', minuteOfDay: 420, label: 'Desayuno' };
+
+      await scheduleItem(stranger, pet.id, meal).expect(404);
+      await as(stranger).put(`/v1/pets/${pet.id}/schedule-items/${item.body.id}`, meal).expect(404);
+      await as(stranger).delete(`/v1/pets/${pet.id}/schedule-items/${item.body.id}`).expect(404);
     });
   });
 });

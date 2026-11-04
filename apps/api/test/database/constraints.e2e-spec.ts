@@ -156,6 +156,102 @@ describe('database constraints', () => {
     });
   });
 
+  // Stage 7: prisma/migrations/20261104120000_pet_profile
+  describe('pet heat (RN-MAS-11)', () => {
+    const inHeat = (pet: Pet, data: { heatStartsOn?: Date | null; heatEndsOn?: Date | null }) =>
+      prisma.pet.update({ where: { id: pet.id }, data });
+
+    it('requires both days, in order', async () => {
+      const pet = await createPet(prisma, catalog);
+
+      await expect(inHeat(pet, { heatStartsOn: new Date('2026-11-03') })).rejects.toThrow(
+        /pets_heat_check/,
+      );
+      await expect(
+        inHeat(pet, { heatStartsOn: new Date('2026-11-12'), heatEndsOn: new Date('2026-11-03') }),
+      ).rejects.toThrow(/pets_heat_check/);
+      await expect(
+        inHeat(pet, { heatStartsOn: new Date('2026-11-03'), heatEndsOn: new Date('2026-11-03') }),
+      ).resolves.toBeDefined();
+    });
+
+    it('takes it only for a female', async () => {
+      const pet = await createPet(prisma, catalog);
+      await inHeat(pet, {
+        heatStartsOn: new Date('2026-11-03'),
+        heatEndsOn: new Date('2026-11-12'),
+      });
+
+      await expect(
+        prisma.pet.update({ where: { id: pet.id }, data: { sex: 'MALE' } }),
+      ).rejects.toThrow(/pets_heat_sex_check/);
+    });
+  });
+
+  // RN-MAS-02, RN-CUI-12
+  describe('pet schedule items', () => {
+    let pet: Pet;
+    let medication: { id: string };
+
+    beforeAll(async () => {
+      pet = await createPet(prisma, catalog);
+      const instruction = await createVetInstruction(prisma, pet);
+      medication = await prisma.petCareNeed.create({
+        data: {
+          petId: pet.id,
+          task: CareTask.MEDICATION,
+          startsOn: new Date('2026-11-01'),
+          endsOn: new Date('2026-11-10'),
+          vetInstructionId: instruction.id,
+        },
+      });
+    });
+
+    function createItem(data: {
+      kind: 'MEAL' | 'MEDICATION';
+      minuteOfDay?: number;
+      careNeedId?: string;
+      petId?: string;
+    }) {
+      return prisma.petScheduleItem.create({
+        data: { petId: pet.id, minuteOfDay: 420, label: 'Desayuno', ...data },
+      });
+    }
+
+    it('keeps the time within the day', async () => {
+      await expect(createItem({ kind: 'MEAL', minuteOfDay: 1440 })).rejects.toThrow(
+        /pet_schedule_items_minute_check/,
+      );
+      await expect(createItem({ kind: 'MEAL', minuteOfDay: -1 })).rejects.toThrow(
+        /pet_schedule_items_minute_check/,
+      );
+      await expect(createItem({ kind: 'MEAL', minuteOfDay: 1439 })).resolves.toBeDefined();
+    });
+
+    it('requires a care need exactly for a dose', async () => {
+      await expect(createItem({ kind: 'MEDICATION' })).rejects.toThrow(
+        /pet_schedule_items_care_need_check/,
+      );
+      await expect(createItem({ kind: 'MEAL', careNeedId: medication.id })).rejects.toThrow(
+        /pet_schedule_items_care_need_check/,
+      );
+      await expect(
+        createItem({ kind: 'MEDICATION', careNeedId: medication.id }),
+      ).resolves.toBeDefined();
+    });
+
+    it("rejects another pet's care need, and goes away with its care need", async () => {
+      const otherPet = await createPet(prisma, catalog);
+      const dose = await createItem({ kind: 'MEDICATION', careNeedId: medication.id });
+
+      await expect(
+        createItem({ kind: 'MEDICATION', careNeedId: medication.id, petId: otherPet.id }),
+      ).rejects.toThrow(/pet_schedule_items_care_need_id_pet_id_fkey/);
+      await prisma.petCareNeed.delete({ where: { id: medication.id } });
+      expect(await prisma.petScheduleItem.findUnique({ where: { id: dose.id } })).toBeNull();
+    });
+  });
+
   // RN-CUI-11
   describe('caregiver certifications', () => {
     async function certify(caregiverId: string, status: CertificationStatus) {

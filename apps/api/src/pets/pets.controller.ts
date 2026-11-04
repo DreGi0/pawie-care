@@ -30,6 +30,8 @@ import {
   PetDetail,
   PetRequest,
   PetResponse,
+  ScheduleItemRequest,
+  ScheduleItemResponse,
   VaccinationRequest,
   VaccinationResponse,
   VetInstructionRequest,
@@ -43,12 +45,13 @@ const petId = () => Param('petId', ParseUUIDPipe);
 @ApiBearerAuth()
 @ApiNotFoundResponse({
   type: ErrorResponse,
-  description: '`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.',
+  description:
+    '`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.',
 })
 @ApiUnprocessableEntityResponse({
   type: ErrorResponse,
   description:
-    '`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).',
+    '`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).',
 })
 @Controller('pets')
 export class PetsController {
@@ -71,7 +74,8 @@ export class PetsController {
   @Get(':petId')
   @ApiOperation({
     summary: 'Ver una mascota',
-    description: 'Con sus vacunas, indicaciones del veterinario y tareas de cuidado.',
+    description:
+      'La ficha completa (RN-MAS-02): sus vacunas, indicaciones del veterinario, tareas de cuidado y horarios.',
   })
   @ApiOkResponse({ type: PetDetail })
   get(@CurrentUser() user: AuthenticatedUser, @petId() id: string): Promise<PetDetail> {
@@ -177,6 +181,10 @@ export class PetsController {
     description: 'También sirve para cerrarla, poniéndole fecha de fin.',
   })
   @ApiOkResponse({ type: CareNeedResponse })
+  @ApiConflictResponse({
+    type: ErrorResponse,
+    description: '`CARE_NEED_HAS_DOSES`: deja de ser Medicación, pero tiene horarios de medicina.',
+  })
   replaceCareNeed(
     @CurrentUser() user: AuthenticatedUser,
     @petId() id: string,
@@ -188,7 +196,10 @@ export class PetsController {
 
   @Delete(':petId/care-needs/:careNeedId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Borrar una tarea de cuidado' })
+  @ApiOperation({
+    summary: 'Borrar una tarea de cuidado',
+    description: 'Borrar una Medicación también borra sus horarios.',
+  })
   @ApiNoContentResponse()
   removeCareNeed(
     @CurrentUser() user: AuthenticatedUser,
@@ -196,5 +207,44 @@ export class PetsController {
     @Param('careNeedId', ParseUUIDPipe) careNeedId: string,
   ): Promise<void> {
     return this.pets.removeCareNeed(user.id, id, careNeedId);
+  }
+
+  @Post(':petId/schedule-items')
+  @ApiOperation({
+    summary: 'Agregar un horario de comida o de medicina',
+    description:
+      'RN-MAS-02 y RN-CUI-12. Una medicina va con su tarea de cuidado Medicación (`MEDICATION_TASK_REQUIRED`); una comida, sin ninguna (`CARE_NEED_NOT_ALLOWED`).',
+  })
+  @ApiCreatedResponse({ type: ScheduleItemResponse })
+  addScheduleItem(
+    @CurrentUser() user: AuthenticatedUser,
+    @petId() id: string,
+    @Body() body: ScheduleItemRequest,
+  ): Promise<ScheduleItemResponse> {
+    return this.pets.addScheduleItem(user.id, id, body);
+  }
+
+  @Put(':petId/schedule-items/:scheduleItemId')
+  @ApiOperation({ summary: 'Editar un horario', description: 'Conserva su id.' })
+  @ApiOkResponse({ type: ScheduleItemResponse })
+  replaceScheduleItem(
+    @CurrentUser() user: AuthenticatedUser,
+    @petId() id: string,
+    @Param('scheduleItemId', ParseUUIDPipe) scheduleItemId: string,
+    @Body() body: ScheduleItemRequest,
+  ): Promise<ScheduleItemResponse> {
+    return this.pets.replaceScheduleItem(user.id, id, scheduleItemId, body);
+  }
+
+  @Delete(':petId/schedule-items/:scheduleItemId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Borrar un horario' })
+  @ApiNoContentResponse()
+  removeScheduleItem(
+    @CurrentUser() user: AuthenticatedUser,
+    @petId() id: string,
+    @Param('scheduleItemId', ParseUUIDPipe) scheduleItemId: string,
+  ): Promise<void> {
+    return this.pets.removeScheduleItem(user.id, id, scheduleItemId);
   }
 }

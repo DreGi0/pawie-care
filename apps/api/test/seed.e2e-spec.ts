@@ -85,6 +85,7 @@ describe('seed', () => {
         select: { id: true, name: true, photoFileId: true },
       }),
       db.prisma.petCareNeed.count(),
+      db.prisma.petScheduleItem.count(),
       db.prisma.file.findMany({
         orderBy: { storageKey: 'asc' },
         select: { id: true, storageKey: true },
@@ -199,6 +200,19 @@ describe('seed', () => {
       ['Toby', 'DOG', 'STANDARD', []],
     ]);
     expect(formatDateOnly(pets[0].careNeeds[0].startsOn)).toBe('2026-04-17');
+  });
+
+  it("fills the demo pets' routine and meals (RN-MAS-02)", async () => {
+    const toby = await db.prisma.pet.findFirstOrThrow({
+      where: { name: 'Toby', owner: { email: 'demo@example.com' } },
+      include: { scheduleItems: { orderBy: { minuteOfDay: 'asc' } } },
+    });
+
+    expect(toby.foodDescription).toBeTruthy();
+    expect(toby.scheduleItems.map(({ kind, minuteOfDay }) => [kind, minuteOfDay])).toEqual([
+      ['MEAL', 420],
+      ['MEAL', 1080],
+    ]);
   });
 
   it('keeps the settings that were changed after the first run', async () => {
