@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1
  */
 import type { BookingRules } from './bookingRules';
+import type { CareTaskOption } from './careTaskOption';
 import type { DistrictOption } from './districtOption';
 import type { ServiceOption } from './serviceOption';
 import type { SpeciesOption } from './speciesOption';
@@ -16,4 +17,6 @@ export interface CatalogResponse {
   species: SpeciesOption[];
   services: ServiceOption[];
   bookingRules: BookingRules;
+  /** Las clínicas, las de asistencia y las prohibidas, en ese orden. */
+  careTasks: CareTaskOption[];
 }

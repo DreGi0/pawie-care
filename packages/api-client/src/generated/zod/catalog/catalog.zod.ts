@@ -49,4 +49,37 @@ export const CatalogGetResponse = zod.object({
       .describe('RN-SER-02: inicio de la pernocta, en minutos desde la medianoche.'),
     overnightEndMinute: zod.int().describe('RN-SER-02: fin de la pernocta, al día siguiente.'),
   }),
+  careTasks: zod
+    .array(
+      zod.object({
+        code: zod.enum([
+          'MEDICATION',
+          'WOUND_CARE',
+          'POST_OPERATIVE_RECOVERY',
+          'SYRINGE_FEEDING',
+          'PRESCRIBED_REST',
+          'CHRONIC_CONDITION_MONITORING',
+          'MOBILITY_ASSISTANCE',
+          'INCONTINENCE_HYGIENE',
+          'INJECTION',
+          'IV_FLUIDS',
+          'STITCH_OR_DRAIN_REMOVAL',
+          'TUBE_PLACEMENT',
+          'SEDATION',
+          'DOSE_CHANGE',
+          'DIAGNOSIS_OR_PRESCRIPTION',
+        ]),
+        name: zod.string(),
+        group: zod
+          .enum(['CLINICAL', 'ASSISTANCE', 'PROHIBITED'])
+          .describe(
+            'CLINICAL pide las indicaciones del veterinario y ASSISTANCE las del dueño; las dos hacen Especial a la mascota. Con una PROHIBITED activa no se puede reservar.',
+          )
+          .describe(
+            'CLINICAL pide las indicaciones del veterinario y ASSISTANCE las del dueño; las dos hacen Especial a la mascota. Con una PROHIBITED activa no se puede reservar.',
+          ),
+        canBeOpenEnded: zod.boolean().describe('RN-MAS-08: si puede quedar sin fecha de fin.'),
+      }),
+    )
+    .describe('Las clínicas, las de asistencia y las prohibidas, en ese orden.'),
 });

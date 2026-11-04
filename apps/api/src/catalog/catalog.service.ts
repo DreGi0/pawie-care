@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { CareTask } from '../generated/prisma/enums.js';
+import { CARE_TASK_GROUPS, CARE_TASK_NAMES, canBeOpenEnded } from '../pets/care-tasks.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SettingsService } from '../settings/settings.service.js';
-import type { BookingRules, CatalogResponse } from './catalog.dto.js';
+import type { BookingRules, CareTaskOption, CatalogResponse } from './catalog.dto.js';
 
 /** Sorts names as Spanish speakers expect: "Ñ" after "N", accents ignored. */
 const spanish = new Intl.Collator('es', { sensitivity: 'base' });
@@ -31,6 +33,7 @@ export class CatalogService {
       species,
       services,
       bookingRules,
+      careTasks: Object.values(CareTask).map(careTaskOption),
     };
   }
 
@@ -49,4 +52,14 @@ export class CatalogService {
       overnightEndMinute: settings['services.overnightHours'].endMinute,
     };
   }
+}
+
+/** In the enum's order: clinical, assistance and prohibited tasks. */
+function careTaskOption(code: CareTask): CareTaskOption {
+  return {
+    code,
+    name: CARE_TASK_NAMES[code],
+    group: CARE_TASK_GROUPS[code],
+    canBeOpenEnded: canBeOpenEnded(code),
+  };
 }

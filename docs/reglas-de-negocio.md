@@ -208,8 +208,9 @@ La demo es una **app móvil** (iOS y Android) con dos modos en la misma app: **d
   - **Datos:** nombre, especie, raza, fecha de nacimiento (puede ser aproximada), sexo, peso, si está esterilizada y foto.
   - **Rutina:** alimento (marca o tipo y porción), horarios de comida, premios permitidos, rutina diaria y temperamento y notas de manejo.
   - **Salud:** vacunas, veterinario de cabecera, condiciones de salud, medicación con sus horarios y tareas de cuidado (§5.1).
+  - Una medicina que el cuidador tiene que dar es una tarea de cuidado de **Medicación** (RN-CUI-12), con las indicaciones del veterinario, y sus horarios cuelgan de esa tarea. Los "medicamentos que toma", en texto libre, solo informan: nunca se le muestran al cuidador como instrucción ni como tarea del tramo.
 - **RN-MAS-03** Un dueño puede registrar varias mascotas.
-- **RN-MAS-11** El dueño puede marcar que su mascota está **en celo**, con fecha de inicio y de fin. No la hace Especial ni cambia el precio; el cuidador lo ve en la solicitud y en la ficha antes de aceptar, y el curso de bienvenida explica cómo atenderla sin aislarla.
+- **RN-MAS-11** El dueño puede marcar que su mascota está **en celo**, con fecha de inicio y de fin. Solo para hembras. No la hace Especial ni cambia el precio; el cuidador lo ve en la solicitud y en la ficha antes de aceptar, y el curso de bienvenida explica cómo atenderla sin aislarla.
 - **RN-MAS-12** Durante el servicio, el cuidador ve la ficha completa y las **tareas del tramo**: las comidas y medicinas cuyo horario cae dentro del tramo (RN-EJE-04).
 
 ### 5.1 Nivel de cuidado

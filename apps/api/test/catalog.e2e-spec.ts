@@ -48,6 +48,31 @@ describe('GET /v1/catalog', () => {
     });
   });
 
+  it('lists the care tasks with what each one asks for (RN-MAS-06, RN-MAS-08, RN-MAS-09)', async () => {
+    const token = await api.tokenFor(await createUser(db.prisma));
+
+    const { body } = await api
+      .http()
+      .get('/v1/catalog')
+      .auth(token, { type: 'bearer' })
+      .expect(200);
+
+    expect(body.careTasks).toHaveLength(15);
+    expect(body.careTasks[0]).toEqual({
+      code: 'MEDICATION',
+      name: 'Medicación',
+      group: 'CLINICAL',
+      canBeOpenEnded: false,
+    });
+    expect(body.careTasks).toContainEqual({
+      code: 'MOBILITY_ASSISTANCE',
+      name: 'Ayuda para moverse',
+      group: 'ASSISTANCE',
+      canBeOpenEnded: true,
+    });
+    expect(body.careTasks.at(-1)).toMatchObject({ group: 'PROHIBITED', canBeOpenEnded: true });
+  });
+
   it('needs a signed-in user, like the rest of the app', async () => {
     await api.http().get('/v1/catalog').expect(401);
   });

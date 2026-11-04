@@ -7,10 +7,14 @@ import {
 import { dateInElSalvador, formatDateOnly, parseDateOnly } from '../common/time/calendar.js';
 import { FilesService } from '../files/files.service.js';
 import {
+  CareTask,
   FilePurpose,
   type File,
   type Pet,
   type PetCareNeed,
+  PetScheduleKind,
+  type PetScheduleItem,
+  PetSex,
   Prisma,
   type Species,
 } from '../generated/prisma/client.js';
@@ -22,6 +26,8 @@ import type {
   PetDetail,
   PetRequest,
   PetResponse,
+  ScheduleItemRequest,
+  ScheduleItemResponse,
   VaccinationRequest,
   VaccinationResponse,
   VetInstructionRequest,
@@ -34,6 +40,8 @@ const DETAIL_INCLUDE = {
   vaccinations: { include: { file: true }, orderBy: { administeredOn: 'desc' } },
   vetInstructions: { include: { file: true }, orderBy: { issuedOn: 'desc' } },
   careNeeds: { orderBy: { startsOn: 'asc' } },
+  // uuidv7 ids keep the order in which they were added.
+  scheduleItems: { orderBy: [{ minuteOfDay: 'asc' }, { id: 'asc' }] },
 } satisfies Prisma.PetInclude;
 
 type PetWithPhoto = Pet & { species: Species; photoFile: File | null };
@@ -185,7 +193,16 @@ export class PetsService {
     body: CareNeedRequest,
   ): Promise<CareNeedResponse> {
     await this.findOwnPet(ownerId, petId);
-    await this.findOwnCareNeed(petId, careNeedId);
+    const current = await this.findOwnCareNeed(petId, careNeedId);
+    if (current.task === CareTask.MEDICATION && body.task !== CareTask.MEDICATION) {
+      const doses = await this.prisma.petScheduleItem.count({ where: { careNeedId } });
+      if (doses > 0) {
+        throw new ConflictException({
+          errorCode: 'CARE_NEED_HAS_DOSES',
+          message: 'Esta medicación tiene horarios. Bórralos antes de cambiar la tarea.',
+        });
+      }
+    }
     const need = await this.prisma.petCareNeed.update({
       where: { id: careNeedId },
       data: await this.careNeedData(petId, body),
@@ -193,10 +210,46 @@ export class PetsService {
     return toCareNeed(need);
   }
 
+  /** Deleting a MEDICATION need also deletes its doses. */
   async removeCareNeed(ownerId: string, petId: string, careNeedId: string): Promise<void> {
     await this.findOwnPet(ownerId, petId);
     await this.findOwnCareNeed(petId, careNeedId);
     await this.prisma.petCareNeed.delete({ where: { id: careNeedId } });
+  }
+
+  /** RN-MAS-02: a meal or a medication dose. */
+  async addScheduleItem(
+    ownerId: string,
+    petId: string,
+    body: ScheduleItemRequest,
+  ): Promise<ScheduleItemResponse> {
+    await this.findOwnPet(ownerId, petId);
+    const item = await this.prisma.petScheduleItem.create({
+      data: { petId, ...(await this.scheduleItemData(petId, body)) },
+    });
+    return toScheduleItem(item);
+  }
+
+  /** Changes the item in place, so it keeps its id. */
+  async replaceScheduleItem(
+    ownerId: string,
+    petId: string,
+    itemId: string,
+    body: ScheduleItemRequest,
+  ): Promise<ScheduleItemResponse> {
+    await this.findOwnPet(ownerId, petId);
+    await this.findOwnScheduleItem(petId, itemId);
+    const item = await this.prisma.petScheduleItem.update({
+      where: { id: itemId },
+      data: await this.scheduleItemData(petId, body),
+    });
+    return toScheduleItem(item);
+  }
+
+  async removeScheduleItem(ownerId: string, petId: string, itemId: string): Promise<void> {
+    await this.findOwnPet(ownerId, petId);
+    await this.findOwnScheduleItem(petId, itemId);
+    await this.prisma.petScheduleItem.delete({ where: { id: itemId } });
   }
 
   /**
@@ -247,7 +300,41 @@ export class PetsService {
       vetPhone: body.vetPhone ?? null,
       healthConditions: body.healthConditions ?? null,
       medications: body.medications ?? null,
+      foodDescription: body.foodDescription ?? null,
+      foodPortion: body.foodPortion ?? null,
+      allowedTreats: body.allowedTreats ?? null,
+      dailyRoutine: body.dailyRoutine ?? null,
+      ...heatData(body),
       photoFileId: photo?.id ?? null,
+    };
+  }
+
+  /**
+   * RN-CUI-12: a dose needs a MEDICATION care need of the pet, which gives its dates and
+   * its vet instructions. A meal is every day and has none.
+   */
+  private async scheduleItemData(petId: string, body: ScheduleItemRequest) {
+    if (body.kind === PetScheduleKind.MEAL && body.careNeedId !== undefined) {
+      throw new UnprocessableEntityException({
+        errorCode: 'CARE_NEED_NOT_ALLOWED',
+        message: 'Una comida no va con una tarea de cuidado.',
+      });
+    }
+    if (body.kind === PetScheduleKind.MEDICATION) {
+      if (body.careNeedId === undefined) {
+        throw medicationTaskRequired();
+      }
+      const need = await this.findOwnCareNeed(petId, body.careNeedId);
+      if (need.task !== CareTask.MEDICATION) {
+        throw medicationTaskRequired();
+      }
+    }
+    return {
+      kind: body.kind,
+      minuteOfDay: body.minuteOfDay,
+      label: body.label,
+      dose: body.dose || null,
+      careNeedId: body.careNeedId ?? null,
     };
   }
 
@@ -318,6 +405,14 @@ export class PetsService {
     return need;
   }
 
+  private async findOwnScheduleItem(petId: string, itemId: string): Promise<PetScheduleItem> {
+    const item = await this.prisma.petScheduleItem.findFirst({ where: { id: itemId, petId } });
+    if (!item) {
+      throw notFound('SCHEDULE_ITEM_NOT_FOUND', 'No encontramos ese horario.');
+    }
+    return item;
+  }
+
   private async detail(petId: string): Promise<PetDetail> {
     const pet: PetWithDetail = await this.prisma.pet.findUniqueOrThrow({
       where: { id: petId },
@@ -329,6 +424,7 @@ export class PetsService {
         pet.vetInstructions.map((item) => this.toVetInstruction(item)),
       ),
       careNeeds: pet.careNeeds.map(toCareNeed),
+      scheduleItems: pet.scheduleItems.map(toScheduleItem),
     });
   }
 
@@ -345,11 +441,17 @@ export class PetsService {
       isSterilized: pet.isSterilized,
       temperament: pet.temperament,
       handlingNotes: pet.handlingNotes,
+      foodDescription: pet.foodDescription,
+      foodPortion: pet.foodPortion,
+      allowedTreats: pet.allowedTreats,
+      dailyRoutine: pet.dailyRoutine,
       vetName: pet.vetName,
       vetClinic: pet.vetClinic,
       vetPhone: pet.vetPhone,
       healthConditions: pet.healthConditions,
       medications: pet.medications,
+      heatStartsOn: pet.heatStartsOn ? formatDateOnly(pet.heatStartsOn) : null,
+      heatEndsOn: pet.heatEndsOn ? formatDateOnly(pet.heatEndsOn) : null,
       photoFileId: pet.photoFileId,
       photoUrl: await this.files.downloadUrl(pet.photoFile),
     };
@@ -393,6 +495,50 @@ function toCareNeed(need: PetCareNeed): CareNeedResponse {
     vetInstructionId: need.vetInstructionId,
     ownerInstructions: need.ownerInstructions,
   };
+}
+
+function toScheduleItem(item: PetScheduleItem): ScheduleItemResponse {
+  return {
+    id: item.id,
+    kind: item.kind,
+    minuteOfDay: item.minuteOfDay,
+    label: item.label,
+    dose: item.dose,
+    careNeedId: item.careNeedId,
+  };
+}
+
+/**
+ * RN-MAS-11: heat has a first and a last day, and only a female can be in heat. It
+ * doesn't touch the care level, because care-level.ts only looks at the care needs.
+ */
+function heatData({ sex, heatStartsOn, heatEndsOn }: PetRequest) {
+  if (heatStartsOn === undefined && heatEndsOn === undefined) {
+    return { heatStartsOn: null, heatEndsOn: null };
+  }
+  if (heatStartsOn === undefined || heatEndsOn === undefined) {
+    throw invalidDates('Indica el primer y el último día del celo.');
+  }
+  if (sex !== PetSex.FEMALE) {
+    throw new UnprocessableEntityException({
+      errorCode: 'HEAT_ONLY_FOR_FEMALES',
+      message: 'Solo una hembra puede estar en celo.',
+    });
+  }
+  const starts = parseDateOnly(heatStartsOn);
+  const ends = parseDateOnly(heatEndsOn);
+  if (ends < starts) {
+    throw invalidDates('El celo no puede terminar antes de empezar.');
+  }
+  return { heatStartsOn: starts, heatEndsOn: ends };
+}
+
+function medicationTaskRequired(): UnprocessableEntityException {
+  return new UnprocessableEntityException({
+    errorCode: 'MEDICATION_TASK_REQUIRED',
+    message:
+      'Para que el cuidador le dé una medicina, agrégala primero como tarea de cuidado Medicación, con las indicaciones del veterinario.',
+  });
 }
 
 function today(): Date {

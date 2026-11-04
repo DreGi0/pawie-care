@@ -16,7 +16,7 @@ import {
 import { SpeciesOption } from '../catalog/catalog.dto.js';
 import { IsDateOnly } from '../common/validation/is-date-only.js';
 import { trimmed } from '../common/validation/trimmed.js';
-import { CareTask, PetSex } from '../generated/prisma/enums.js';
+import { CareTask, PetScheduleKind, PetSex } from '../generated/prisma/enums.js';
 import type { CareTaskGroup } from './care-tasks.js';
 
 /** RN-MAS-02. Creating and editing take the whole pet: an optional field left out is cleared. */
@@ -78,6 +78,40 @@ export class PetRequest {
   @MaxLength(1000)
   handlingNotes?: string;
 
+  @ApiPropertyOptional({
+    example: 'Croquetas para perro adulto, de cordero',
+    description: 'RN-MAS-02: marca o tipo de alimento.',
+  })
+  @Transform(trimmed)
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  foodDescription?: string;
+
+  @ApiPropertyOptional({
+    example: '1 taza por comida',
+    description: 'La porción de siempre. Una comida del horario puede tener la suya.',
+  })
+  @Transform(trimmed)
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  foodPortion?: string;
+
+  @ApiPropertyOptional({ example: 'Galletas de pollo, hasta 3 al día' })
+  @Transform(trimmed)
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  allowedTreats?: string;
+
+  @ApiPropertyOptional({ example: 'Sale al patio al despertar. Duerme en su cama de la sala.' })
+  @Transform(trimmed)
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  dailyRoutine?: string;
+
   @ApiPropertyOptional({ description: 'Veterinario de cabecera.' })
   @Transform(trimmed)
   @IsOptional()
@@ -108,12 +142,29 @@ export class PetRequest {
   @MaxLength(1000)
   healthConditions?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    description:
+      'Los medicamentos que toma, solo para informar: nunca es una instrucción para el cuidador. Si el cuidador tiene que dárselos, van como tarea MEDICATION con sus horarios (RN-CUI-12).',
+  })
   @Transform(trimmed)
   @IsOptional()
   @IsString()
   @MaxLength(1000)
   medications?: string;
+
+  @ApiPropertyOptional({
+    format: 'date',
+    description:
+      'RN-MAS-11: primer día del celo. Solo para hembras, y junto con heatEndsOn. No la hace Especial ni cambia el precio.',
+  })
+  @IsOptional()
+  @IsDateOnly()
+  heatStartsOn?: string;
+
+  @ApiPropertyOptional({ format: 'date', description: 'Último día del celo, incluido.' })
+  @IsOptional()
+  @IsDateOnly()
+  heatEndsOn?: string;
 
   @ApiPropertyOptional({
     format: 'uuid',
@@ -159,6 +210,18 @@ export class PetResponse {
   handlingNotes: string | null;
 
   @ApiProperty({ type: String, nullable: true })
+  foodDescription: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  foodPortion: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  allowedTreats: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  dailyRoutine: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
   vetName: string | null;
 
   @ApiProperty({ type: String, nullable: true })
@@ -170,8 +233,18 @@ export class PetResponse {
   @ApiProperty({ type: String, nullable: true })
   healthConditions: string | null;
 
-  @ApiProperty({ type: String, nullable: true })
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Solo informa: nunca se muestra como instrucción ni como tarea del cuidador.',
+  })
   medications: string | null;
+
+  @ApiProperty({ type: String, format: 'date', nullable: true, description: 'RN-MAS-11' })
+  heatStartsOn: string | null;
+
+  @ApiProperty({ type: String, format: 'date', nullable: true })
+  heatEndsOn: string | null;
 
   @ApiProperty({ type: String, format: 'uuid', nullable: true })
   photoFileId: string | null;
@@ -341,6 +414,75 @@ export class CareNeedResponse {
   ownerInstructions: string | null;
 }
 
+/**
+ * RN-MAS-02: a meal or a medication dose at a time of day, in El Salvador. A dose goes
+ * with a MEDICATION care need of the same pet, which gives its dates and its vet
+ * instructions (RN-CUI-12); a meal goes without one.
+ */
+export class ScheduleItemRequest {
+  @ApiProperty({ enum: PetScheduleKind, enumName: 'PetScheduleKind' })
+  @IsEnum(PetScheduleKind, { message: 'Elige si es una comida o una medicina.' })
+  kind: PetScheduleKind;
+
+  @ApiProperty({
+    type: 'integer',
+    minimum: 0,
+    maximum: 1439,
+    example: 420,
+    description: 'Minutos desde la medianoche, hora de El Salvador: 420 son las 7:00.',
+  })
+  @IsInt({ message: 'Elige una hora.' })
+  @Min(0, { message: 'Elige una hora.' })
+  @Max(1439, { message: 'Elige una hora.' })
+  minuteOfDay: number;
+
+  @ApiProperty({ example: 'Desayuno', description: 'La comida o el nombre de la medicina.' })
+  @Transform(trimmed)
+  @IsString({ message: 'Escribe qué es.' })
+  @IsNotEmpty({ message: 'Escribe qué es.' })
+  @MaxLength(80, { message: 'Puede tener hasta 80 caracteres.' })
+  label: string;
+
+  @ApiPropertyOptional({
+    example: '1 taza',
+    description: 'Cuánto. En una comida sin porción se usa foodPortion.',
+  })
+  @Transform(trimmed)
+  @IsOptional()
+  @IsString()
+  @MaxLength(80, { message: 'Puede tener hasta 80 caracteres.' })
+  dose?: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description:
+      'Obligatorio en una medicina: su tarea de cuidado MEDICATION. Una comida no lleva.',
+  })
+  @IsOptional()
+  @IsUUID()
+  careNeedId?: string;
+}
+
+export class ScheduleItemResponse {
+  @ApiProperty({ format: 'uuid', description: 'Editar el horario conserva el id.' })
+  id: string;
+
+  @ApiProperty({ enum: PetScheduleKind, enumName: 'PetScheduleKind' })
+  kind: PetScheduleKind;
+
+  @ApiProperty({ type: 'integer', example: 420, description: 'Minutos desde la medianoche.' })
+  minuteOfDay: number;
+
+  @ApiProperty({ example: 'Desayuno' })
+  label: string;
+
+  @ApiProperty({ type: String, nullable: true })
+  dose: string | null;
+
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
+  careNeedId: string | null;
+}
+
 export class PetDetail extends PetResponse {
   @ApiProperty({ type: [VaccinationResponse] })
   vaccinations: VaccinationResponse[];
@@ -350,4 +492,10 @@ export class PetDetail extends PetResponse {
 
   @ApiProperty({ type: [CareNeedResponse] })
   careNeeds: CareNeedResponse[];
+
+  @ApiProperty({
+    type: [ScheduleItemResponse],
+    description: 'Comidas y medicinas, ordenadas por hora.',
+  })
+  scheduleItems: ScheduleItemResponse[];
 }

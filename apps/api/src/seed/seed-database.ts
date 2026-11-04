@@ -5,6 +5,7 @@ import {
   CaregiverStatus,
   CertificationStatus,
   FilePurpose,
+  PetScheduleKind,
   type PrismaClient,
   Role,
   type ServiceCode,
@@ -170,9 +171,9 @@ async function seedDemoOwner(
       ? tx.address.update({ where: { id: current.id }, data: home })
       : tx.address.create({ data: { userId: user.id, ...home } }));
 
-    // Pets are matched by name, and their care needs are replaced.
+    // Pets are matched by name, and their care needs and meals are replaced.
     const ids = new Map<string, string>();
-    for (const { careNeeds, species, ...pet } of pets) {
+    for (const { careNeeds, meals, species, ...pet } of pets) {
       const data = {
         name: pet.name,
         speciesId: required(speciesIds.get(species), species),
@@ -186,12 +187,20 @@ async function seedDemoOwner(
         handlingNotes: pet.handlingNotes ?? null,
         healthConditions: pet.healthConditions ?? null,
         medications: pet.medications ?? null,
+        foodDescription: pet.foodDescription ?? null,
+        foodPortion: pet.foodPortion ?? null,
+        allowedTreats: pet.allowedTreats ?? null,
+        dailyRoutine: pet.dailyRoutine ?? null,
         archivedAt: null,
       };
       const existingPet = await tx.pet.findFirst({ where: { ownerId: user.id, name: pet.name } });
       const saved = existingPet
         ? await tx.pet.update({ where: { id: existingPet.id }, data })
         : await tx.pet.create({ data: { ownerId: user.id, ...data } });
+      await tx.petScheduleItem.deleteMany({ where: { petId: saved.id } });
+      await tx.petScheduleItem.createMany({
+        data: meals.map((meal) => ({ petId: saved.id, kind: PetScheduleKind.MEAL, ...meal })),
+      });
       await tx.petCareNeed.deleteMany({ where: { petId: saved.id } });
       await tx.petCareNeed.createMany({
         data: careNeeds.map((need) => ({

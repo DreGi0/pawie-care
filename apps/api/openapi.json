@@ -582,7 +582,7 @@
             }
           },
           "404": {
-            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -592,7 +592,7 @@
             }
           },
           "422": {
-            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -637,7 +637,7 @@
             }
           },
           "404": {
-            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -647,7 +647,7 @@
             }
           },
           "422": {
-            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -670,7 +670,7 @@
     },
     "/v1/pets/{petId}": {
       "get": {
-        "description": "Con sus vacunas, indicaciones del veterinario y tareas de cuidado.",
+        "description": "La ficha completa (RN-MAS-02): sus vacunas, indicaciones del veterinario, tareas de cuidado y horarios.",
         "operationId": "Pets_get",
         "parameters": [
           {
@@ -694,7 +694,7 @@
             }
           },
           "404": {
-            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -704,7 +704,7 @@
             }
           },
           "422": {
-            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -759,7 +759,7 @@
             }
           },
           "404": {
-            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -769,7 +769,7 @@
             }
           },
           "422": {
-            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -807,7 +807,7 @@
             "description": ""
           },
           "404": {
-            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -817,7 +817,7 @@
             }
           },
           "422": {
-            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -873,7 +873,7 @@
             }
           },
           "404": {
-            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -883,7 +883,7 @@
             }
           },
           "422": {
-            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -930,7 +930,7 @@
             "description": ""
           },
           "404": {
-            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -940,7 +940,7 @@
             }
           },
           "422": {
-            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -997,7 +997,7 @@
             }
           },
           "404": {
-            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1007,7 +1007,7 @@
             }
           },
           "422": {
-            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1054,7 +1054,7 @@
             "description": ""
           },
           "404": {
-            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1074,7 +1074,7 @@
             }
           },
           "422": {
-            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1131,7 +1131,7 @@
             }
           },
           "404": {
-            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1141,7 +1141,7 @@
             }
           },
           "422": {
-            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1206,7 +1206,17 @@
             }
           },
           "404": {
-            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`CARE_NEED_HAS_DOSES`: deja de ser Medicación, pero tiene horarios de medicina.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1216,7 +1226,7 @@
             }
           },
           "422": {
-            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1237,6 +1247,7 @@
         ]
       },
       "delete": {
+        "description": "Borrar una Medicación también borra sus horarios.",
         "operationId": "Pets_removeCareNeed",
         "parameters": [
           {
@@ -1261,7 +1272,7 @@
             "description": ""
           },
           "404": {
-            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta.",
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1271,7 +1282,7 @@
             }
           },
           "422": {
-            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1287,6 +1298,203 @@
           }
         ],
         "summary": "Borrar una tarea de cuidado",
+        "tags": [
+          "pets"
+        ]
+      }
+    },
+    "/v1/pets/{petId}/schedule-items": {
+      "post": {
+        "description": "RN-MAS-02 y RN-CUI-12. Una medicina va con su tarea de cuidado Medicación (`MEDICATION_TASK_REQUIRED`); una comida, sin ninguna (`CARE_NEED_NOT_ALLOWED`).",
+        "operationId": "Pets_addScheduleItem",
+        "parameters": [
+          {
+            "name": "petId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleItemResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Agregar un horario de comida o de medicina",
+        "tags": [
+          "pets"
+        ]
+      }
+    },
+    "/v1/pets/{petId}/schedule-items/{scheduleItemId}": {
+      "put": {
+        "description": "Conserva su id.",
+        "operationId": "Pets_replaceScheduleItem",
+        "parameters": [
+          {
+            "name": "petId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scheduleItemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleItemResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Editar un horario",
+        "tags": [
+          "pets"
+        ]
+      },
+      "delete": {
+        "operationId": "Pets_removeScheduleItem",
+        "parameters": [
+          {
+            "name": "petId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scheduleItemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "`PET_NOT_FOUND`: no existe, está archivada o es de otra cuenta. También `VACCINATION_NOT_FOUND`, `VET_INSTRUCTION_NOT_FOUND`, `CARE_NEED_NOT_FOUND` y `SCHEDULE_ITEM_NOT_FOUND`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`INVALID_DATES`, `UNKNOWN_SPECIES`, `HEAT_ONLY_FOR_FEMALES` (RN-MAS-11), o un archivo que no sirve (`FILE_NOT_UPLOADED`, `WRONG_FILE_PURPOSE`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Borrar un horario",
         "tags": [
           "pets"
         ]
@@ -2921,6 +3129,69 @@
           "overnightEndMinute"
         ]
       },
+      "CareTask": {
+        "type": "string",
+        "enum": [
+          "MEDICATION",
+          "WOUND_CARE",
+          "POST_OPERATIVE_RECOVERY",
+          "SYRINGE_FEEDING",
+          "PRESCRIBED_REST",
+          "CHRONIC_CONDITION_MONITORING",
+          "MOBILITY_ASSISTANCE",
+          "INCONTINENCE_HYGIENE",
+          "INJECTION",
+          "IV_FLUIDS",
+          "STITCH_OR_DRAIN_REMOVAL",
+          "TUBE_PLACEMENT",
+          "SEDATION",
+          "DOSE_CHANGE",
+          "DIAGNOSIS_OR_PRESCRIPTION"
+        ]
+      },
+      "CareTaskGroup": {
+        "type": "string",
+        "enum": [
+          "CLINICAL",
+          "ASSISTANCE",
+          "PROHIBITED"
+        ],
+        "description": "CLINICAL pide las indicaciones del veterinario y ASSISTANCE las del dueño; las dos hacen Especial a la mascota. Con una PROHIBITED activa no se puede reservar."
+      },
+      "CareTaskOption": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CareTask"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "example": "Medicación"
+          },
+          "group": {
+            "description": "CLINICAL pide las indicaciones del veterinario y ASSISTANCE las del dueño; las dos hacen Especial a la mascota. Con una PROHIBITED activa no se puede reservar.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CareTaskGroup"
+              }
+            ]
+          },
+          "canBeOpenEnded": {
+            "type": "boolean",
+            "description": "RN-MAS-08: si puede quedar sin fecha de fin."
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "group",
+          "canBeOpenEnded"
+        ]
+      },
       "CatalogResponse": {
         "type": "object",
         "properties": {
@@ -2945,13 +3216,21 @@
           },
           "bookingRules": {
             "$ref": "#/components/schemas/BookingRules"
+          },
+          "careTasks": {
+            "description": "Las clínicas, las de asistencia y las prohibidas, en ese orden.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CareTaskOption"
+            }
           }
         },
         "required": [
           "districts",
           "species",
           "services",
-          "bookingRules"
+          "bookingRules",
+          "careTasks"
         ]
       },
       "PetSex": {
@@ -3008,6 +3287,22 @@
             "type": "string",
             "nullable": true
           },
+          "foodDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "foodPortion": {
+            "type": "string",
+            "nullable": true
+          },
+          "allowedTreats": {
+            "type": "string",
+            "nullable": true
+          },
+          "dailyRoutine": {
+            "type": "string",
+            "nullable": true
+          },
           "vetName": {
             "type": "string",
             "nullable": true
@@ -3026,7 +3321,19 @@
           },
           "medications": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Solo informa: nunca se muestra como instrucción ni como tarea del cuidador."
+          },
+          "heatStartsOn": {
+            "type": "string",
+            "nullable": true,
+            "format": "date",
+            "description": "RN-MAS-11"
+          },
+          "heatEndsOn": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
           },
           "photoFileId": {
             "type": "string",
@@ -3051,11 +3358,17 @@
           "isSterilized",
           "temperament",
           "handlingNotes",
+          "foodDescription",
+          "foodPortion",
+          "allowedTreats",
+          "dailyRoutine",
           "vetName",
           "vetClinic",
           "vetPhone",
           "healthConditions",
           "medications",
+          "heatStartsOn",
+          "heatEndsOn",
           "photoFileId",
           "photoUrl"
         ]
@@ -3115,6 +3428,28 @@
             "maxLength": 1000,
             "example": "Jala la correa al salir"
           },
+          "foodDescription": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Croquetas para perro adulto, de cordero",
+            "description": "RN-MAS-02: marca o tipo de alimento."
+          },
+          "foodPortion": {
+            "type": "string",
+            "maxLength": 120,
+            "example": "1 taza por comida",
+            "description": "La porción de siempre. Una comida del horario puede tener la suya."
+          },
+          "allowedTreats": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "Galletas de pollo, hasta 3 al día"
+          },
+          "dailyRoutine": {
+            "type": "string",
+            "maxLength": 1000,
+            "example": "Sale al patio al despertar. Duerme en su cama de la sala."
+          },
           "vetName": {
             "type": "string",
             "maxLength": 120,
@@ -3135,7 +3470,18 @@
           },
           "medications": {
             "type": "string",
-            "maxLength": 1000
+            "maxLength": 1000,
+            "description": "Los medicamentos que toma, solo para informar: nunca es una instrucción para el cuidador. Si el cuidador tiene que dárselos, van como tarea MEDICATION con sus horarios (RN-CUI-12)."
+          },
+          "heatStartsOn": {
+            "type": "string",
+            "format": "date",
+            "description": "RN-MAS-11: primer día del celo. Solo para hembras, y junto con heatEndsOn. No la hace Especial ni cambia el precio."
+          },
+          "heatEndsOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Último día del celo, incluido."
           },
           "photoFileId": {
             "type": "string",
@@ -3232,34 +3578,6 @@
           "contentType"
         ]
       },
-      "CareTask": {
-        "type": "string",
-        "enum": [
-          "MEDICATION",
-          "WOUND_CARE",
-          "POST_OPERATIVE_RECOVERY",
-          "SYRINGE_FEEDING",
-          "PRESCRIBED_REST",
-          "CHRONIC_CONDITION_MONITORING",
-          "MOBILITY_ASSISTANCE",
-          "INCONTINENCE_HYGIENE",
-          "INJECTION",
-          "IV_FLUIDS",
-          "STITCH_OR_DRAIN_REMOVAL",
-          "TUBE_PLACEMENT",
-          "SEDATION",
-          "DOSE_CHANGE",
-          "DIAGNOSIS_OR_PRESCRIPTION"
-        ]
-      },
-      "CareTaskGroup": {
-        "type": "string",
-        "enum": [
-          "CLINICAL",
-          "ASSISTANCE",
-          "PROHIBITED"
-        ]
-      },
       "CareNeedResponse": {
         "type": "object",
         "properties": {
@@ -3310,6 +3628,56 @@
           "ownerInstructions"
         ]
       },
+      "PetScheduleKind": {
+        "type": "string",
+        "enum": [
+          "MEAL",
+          "MEDICATION"
+        ]
+      },
+      "ScheduleItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Editar el horario conserva el id."
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PetScheduleKind"
+              }
+            ]
+          },
+          "minuteOfDay": {
+            "type": "integer",
+            "example": 420,
+            "description": "Minutos desde la medianoche."
+          },
+          "label": {
+            "type": "string",
+            "example": "Desayuno"
+          },
+          "dose": {
+            "type": "string",
+            "nullable": true
+          },
+          "careNeedId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "minuteOfDay",
+          "label",
+          "dose",
+          "careNeedId"
+        ]
+      },
       "PetDetail": {
         "type": "object",
         "properties": {
@@ -3357,6 +3725,22 @@
             "type": "string",
             "nullable": true
           },
+          "foodDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "foodPortion": {
+            "type": "string",
+            "nullable": true
+          },
+          "allowedTreats": {
+            "type": "string",
+            "nullable": true
+          },
+          "dailyRoutine": {
+            "type": "string",
+            "nullable": true
+          },
           "vetName": {
             "type": "string",
             "nullable": true
@@ -3375,7 +3759,19 @@
           },
           "medications": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "Solo informa: nunca se muestra como instrucción ni como tarea del cuidador."
+          },
+          "heatStartsOn": {
+            "type": "string",
+            "nullable": true,
+            "format": "date",
+            "description": "RN-MAS-11"
+          },
+          "heatEndsOn": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
           },
           "photoFileId": {
             "type": "string",
@@ -3404,6 +3800,13 @@
             "items": {
               "$ref": "#/components/schemas/CareNeedResponse"
             }
+          },
+          "scheduleItems": {
+            "description": "Comidas y medicinas, ordenadas por hora.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleItemResponse"
+            }
           }
         },
         "required": [
@@ -3418,16 +3821,23 @@
           "isSterilized",
           "temperament",
           "handlingNotes",
+          "foodDescription",
+          "foodPortion",
+          "allowedTreats",
+          "dailyRoutine",
           "vetName",
           "vetClinic",
           "vetPhone",
           "healthConditions",
           "medications",
+          "heatStartsOn",
+          "heatEndsOn",
           "photoFileId",
           "photoUrl",
           "vaccinations",
           "vetInstructions",
-          "careNeeds"
+          "careNeeds",
+          "scheduleItems"
         ]
       },
       "VaccinationRequest": {
@@ -3518,6 +3928,47 @@
         "required": [
           "task",
           "startsOn"
+        ]
+      },
+      "ScheduleItemRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PetScheduleKind"
+              }
+            ]
+          },
+          "minuteOfDay": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1439,
+            "example": 420,
+            "description": "Minutos desde la medianoche, hora de El Salvador: 420 son las 7:00."
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 80,
+            "example": "Desayuno",
+            "description": "La comida o el nombre de la medicina."
+          },
+          "dose": {
+            "type": "string",
+            "maxLength": 80,
+            "example": "1 taza",
+            "description": "Cuánto. En una comida sin porción se usa foodPortion."
+          },
+          "careNeedId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Obligatorio en una medicina: su tarea de cuidado MEDICATION. Una comida no lleva."
+          }
+        },
+        "required": [
+          "kind",
+          "minuteOfDay",
+          "label"
         ]
       },
       "AddressResponse": {

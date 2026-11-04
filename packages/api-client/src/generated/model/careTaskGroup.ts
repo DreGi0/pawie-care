@@ -6,6 +6,9 @@
  * OpenAPI spec version: 1
  */
 
+/**
+ * CLINICAL pide las indicaciones del veterinario y ASSISTANCE las del dueño; las dos hacen Especial a la mascota. Con una PROHIBITED activa no se puede reservar.
+ */
 export type CareTaskGroup = (typeof CareTaskGroup)[keyof typeof CareTaskGroup];
 
 export const CareTaskGroup = {

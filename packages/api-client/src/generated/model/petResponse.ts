@@ -26,6 +26,14 @@ export interface PetResponse {
   /** @nullable */
   handlingNotes: string | null;
   /** @nullable */
+  foodDescription: string | null;
+  /** @nullable */
+  foodPortion: string | null;
+  /** @nullable */
+  allowedTreats: string | null;
+  /** @nullable */
+  dailyRoutine: string | null;
+  /** @nullable */
   vetName: string | null;
   /** @nullable */
   vetClinic: string | null;
@@ -33,8 +41,18 @@ export interface PetResponse {
   vetPhone: string | null;
   /** @nullable */
   healthConditions: string | null;
-  /** @nullable */
+  /**
+   * Solo informa: nunca se muestra como instrucción ni como tarea del cuidador.
+   * @nullable
+   */
   medications: string | null;
+  /**
+   * RN-MAS-11
+   * @nullable
+   */
+  heatStartsOn: string | null;
+  /** @nullable */
+  heatEndsOn: string | null;
   /** @nullable */
   photoFileId: string | null;
   /**

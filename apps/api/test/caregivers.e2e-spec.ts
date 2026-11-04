@@ -168,6 +168,35 @@ describe('caregivers', () => {
       expect(names(body.results)).toEqual(['María José R.', 'Carlos H.']);
     });
 
+    it('keeps a pet in heat Standard, with the same caregivers and prices (RN-MAS-11)', async () => {
+      const dog = await db.prisma.species.findUniqueOrThrow({ where: { code: 'DOG' } });
+      const inHeat = await db.prisma.pet.create({
+        data: {
+          ownerId,
+          speciesId: dog.id,
+          name: 'Luna',
+          birthDate: new Date('2021-01-01'),
+          sex: 'FEMALE',
+          isSterilized: false,
+          heatStartsOn: addDays(new Date(WEDNESDAY), -2),
+          heatEndsOn: addDays(new Date(WEDNESDAY), 5),
+        },
+      });
+      const request = (petId: string) =>
+        search({
+          petIds: [petId],
+          serviceCode: 'HOME_VISIT',
+          visits: [at(WEDNESDAY, '15:00')],
+          districtId: districts['santa-tecla'],
+        }).expect(200);
+
+      const { body } = await request(inHeat.id);
+      const standard = await request(await pet());
+
+      expect(body.careLevel).toBe('STANDARD');
+      expect(body.results).toEqual(standard.body.results);
+    });
+
     it('only shows caregivers with the ⭐ when a pet is Special', async () => {
       const special = await pet([
         { task: 'MOBILITY_ASSISTANCE', ownerInstructions: 'Ayudarlo a subir las gradas.' },
