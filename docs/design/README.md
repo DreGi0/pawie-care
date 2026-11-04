@@ -91,7 +91,7 @@ Están en `apps/mobile/src/components/`. `/catalogo` los muestra todos (solo en 
 
 - **Placa del nivel (`LevelTag`):** placa grande que cuelga de una argolla en una correa `ink`. Va en el perfil y en CuiInicio.
 - **Foto del cuidador (`CaregiverPhoto`):** recortada con la silueta de Nimbus (el cuerpo y la mano que saluda, de `Nimbus.tsx`) y con su contorno en `ink`. Sin foto, las iniciales sobre `tint`. Las mascotas van en círculo (`Avatar`).
-- **Bloque de servicio (`ServiceBlock`):** grande, en el color del servicio, con ícono, nombre y una línea. El elegido lleva borde `ink` de 3 px y un check.
+- **Bloque de servicio (`ServiceBlock`):** grande, en el color del servicio, con ícono, nombre y una línea. El elegido lleva borde `ink` de 3 px y un check. Tres bloques comparten la fila, así que el nombre se achica un poco antes de partirse.
 - **Fila (`Row`):** sin tarjeta, con un divisor `line` arriba (salvo la primera). El precio o la acción va a la derecha.
 - **Chip (`Chip`):** dos usos.
   - Chip de búsqueda: 48 px, blanco, con borde `line` y texto `primary` de 15 px, dentro de una frase: "Para [Toby] el [mar 3 nov, 9:00] en [San Salvador]". Abre su hoja. Con varias mascotas dice "Toby y 2 más", sin foto, para que la frase quepa en dos líneas.
@@ -108,6 +108,7 @@ Están en `apps/mobile/src/components/`. `/catalogo` los muestra todos (solo en 
 
 - Cada pantalla tiene **un solo botón primario**. En una lista, solo lo lleva la acción más urgente y las demás van en secundario. Por ejemplo, en Visitas, con dos reservas por pagar, solo la que vence antes muestra "Pagar" en primario.
 - Los colores de servicio solo marcan servicios, nunca un estado ni otra cosa.
+- Los servicios siempre van en el mismo orden: paseo, visita y pernocta (`SERVICE_ORDER` en `src/theme/services.ts`). El paseo es `paseo` con el ícono `footprints`.
 - `star` es solo para la ⭐. La estrella de la calificación va en `ink`. Una advertencia no es amarilla.
 - No hay sombras: las superficies se separan con color, bordes o divisores.
 - Están prohibidos el fondo crema, las tarjetas blancas idénticas en lista, las etiquetas en mayúsculas, los textos con "·" y los gradientes decorativos.
@@ -159,8 +160,7 @@ Main, Perfil, Reservar, Visitas, Mis mascotas y MascotaPerfil tienen el layout d
 - **Vacunas:** se agregan con su nombre y sus fechas, pero la app todavía no sube la foto del carnet, que la API ya acepta.
 - **Género en la ⭐:** el mockup dice "⭐ Certificada", pero la API no dice si el cuidador es hombre o mujer. La app dice "Con certificación de cuidado especial" y muestra el nombre de la certificación que da la API.
 - **Avisos:** Esperando y Confirmada dicen "Te avisamos", pero la app no tiene notificaciones push. Esperando dice que la pantalla cambia sola, porque vuelve a preguntar mientras está abierta.
-- **Paseo:** Main muestra solo los bloques de visita y pernocta. El de paseo, en `paseo`, llega con su servicio en la etapa 8.
-- **Varias visitas o noches:** la búsqueda pide una sola visita o una sola noche. La API acepta varias (RN-SER-03).
+- **Varios paseos, visitas o noches:** la búsqueda pide un solo paseo, una sola visita o una sola noche. La API acepta varios (RN-SER-03, RN-SER-05).
 - **Nombre de la dirección:** se guarda siempre como "Casa".
 - **Hora:** los mockups de Placas escriben "4:00 p. m."; la app sigue con el formato de 24 horas ("16:00").
 - **Nivel de cuidado en Mis mascotas:** no se muestra si una mascota es Normal o Especial, ni que no se puede reservar (por ejemplo, si necesita insulina). Depende de las fechas de cada servicio (RN-MAS-05) y la API solo lo calcula en la búsqueda.
@@ -176,7 +176,7 @@ Cada pantalla nueva se construye con [Placas](#design-system-placas), sin mockup
 
 | Pantalla    | Qué cambia                                                                              | Reglas    | Etapa        |
 | ----------- | --------------------------------------------------------------------------------------- | --------- | ------------ |
-| `Main`      | Paseo como servicio (los filtros, el nivel y el aviso de la etapa 6 ya están en la app) | RN-SER-05 | 8            |
+| `Main`      | Paseo como servicio (los filtros, el nivel y el aviso de la etapa 6 ya están en la app) | RN-SER-05 | 8 (hecha)    |
 | `Esperando` | Ya no simula la aceptación: espera la respuesta real del cuidador                       | RN-RES-06 | 9b           |
 | `Registro`  | Campo opcional "¿Te recomendó un cuidador?", con el mensaje de la API si no existe      | RN-REF-03 | 11 (eventos) |
 
@@ -189,6 +189,13 @@ Cada pantalla nueva se construye con [Placas](#design-system-placas), sin mockup
 | `Calificar`     | Estrellas y comentario al terminar                                                                 | RN-RSE-01             | 10        |
 | `Ayuda`         | Asistente de opciones guiadas, con Nimbus, y el centro de ayuda                                    | §17                   | 12a       |
 | `Reclamo`       | Reclamar la garantía de una reserva, con el plazo que queda                                        | RN-GAR-01, RN-GAR-02  | 12b       |
+
+Reglas del paseo en `Main` (RN-SER-05, RN-RES-01):
+
+- Es el primer bloque, "Solo perros". Main abre en Paseo si la primera mascota es perro, y en Visita si no, porque el paseo es el servicio más común.
+- Qué especies acepta cada servicio y cuántos perros van en un paseo vienen de `GET /v1/catalog` (`speciesCodes`, `maxDogsPerWalk`). La app no copia la regla.
+- Si al tocar Paseo hay un gato elegido, o más perros de los que caben, la app no cambia de servicio ni quita a nadie. Abre una hoja que nombra a cada mascota con su especie y explica el motivo. Sus opciones son "Buscar paseo para Toby" (solo si los perros elegidos caben), "Elegir perros" o "Seguir con la visita".
+- Con Paseo elegido, "¿Para quién?" muestra solo los perros, con "Hasta 2 perros por paseo", y debajo dice quién no puede ir.
 
 Reglas de `MascotaPerfil`:
 

@@ -13,3 +13,13 @@ export const services = {
   HOME_VISIT: { color: 'visita', icon: 'house' },
   OVERNIGHT_STAY: { color: 'pernocta', icon: 'moon' },
 } as const satisfies Record<ServiceCode, { color: ColorName; icon: IconName }>;
+
+/** The order the app always shows services in, as in Main: paseo, visita and pernocta. */
+export const SERVICE_ORDER = Object.keys(services) as ServiceCode[];
+
+/** Sorts anything with a serviceCode in SERVICE_ORDER. Hermes has no toSorted, so it copies first. */
+export function byServiceOrder<T extends { serviceCode: ServiceCode }>(items: readonly T[]): T[] {
+  return [...items].sort(
+    (a, b) => SERVICE_ORDER.indexOf(a.serviceCode) - SERVICE_ORDER.indexOf(b.serviceCode),
+  );
+}

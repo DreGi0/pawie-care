@@ -2,19 +2,25 @@ import type { BookingResponse, BookingStatus, ServiceCode } from '@pawie/api-cli
 
 import { formatDeadline } from './format';
 
-/** "Visita a domicilio" or "Pernocta". */
+const NAMES: Record<ServiceCode, { name: string; short: string; unit: string }> = {
+  WALK: { name: 'Paseo', short: 'Paseo', unit: 'por paseo' },
+  HOME_VISIT: { name: 'Visita a domicilio', short: 'Visita', unit: 'por visita' },
+  OVERNIGHT_STAY: { name: 'Pernocta', short: 'Pernocta', unit: 'por noche' },
+};
+
+/** "Paseo", "Visita a domicilio" or "Pernocta". */
 export function serviceName(code: ServiceCode): string {
-  return code === 'OVERNIGHT_STAY' ? 'Pernocta' : 'Visita a domicilio';
+  return NAMES[code].name;
 }
 
-/** "Visita" or "Pernocta", for placas and service blocks. */
+/** "Paseo", "Visita" or "Pernocta", for placas and service blocks. */
 export function serviceShortName(code: ServiceCode): string {
-  return code === 'OVERNIGHT_STAY' ? 'Pernocta' : 'Visita';
+  return NAMES[code].short;
 }
 
-/** "por visita" or "por noche". */
+/** "por paseo", "por visita" or "por noche". */
 export function serviceUnit(code: ServiceCode): string {
-  return code === 'OVERNIGHT_STAY' ? 'por noche' : 'por visita';
+  return NAMES[code].unit;
 }
 
 /** "Luna", "Luna y Mishi", "Luna, Mishi y Toby". */
@@ -60,8 +66,11 @@ export function statusTag(booking: BookingResponse, now = new Date()): StatusTag
     case 'CONFIRMED':
       return {
         tone: 'success',
-        label:
-          booking.serviceCode === 'OVERNIGHT_STAY' ? 'Pernocta confirmada' : 'Visita confirmada',
+        label: {
+          WALK: 'Paseo confirmado',
+          HOME_VISIT: 'Visita confirmada',
+          OVERNIGHT_STAY: 'Pernocta confirmada',
+        }[booking.serviceCode],
       };
     case 'IN_PROGRESS':
       return { tone: 'success', label: 'En curso' };
@@ -81,9 +90,8 @@ export function statusTag(booking: BookingResponse, now = new Date()): StatusTag
   }
 }
 
-/** "Visita a domicilio", "Visita especial", "Pernocta" or "Pernocta especial". */
+/** "Paseo", "Visita a domicilio" or "Pernocta", or "Paseo especial", "Visita especial"... */
 export function serviceKind(booking: BookingResponse): string {
-  const special = booking.careLevel === 'SPECIAL';
-  if (booking.serviceCode === 'OVERNIGHT_STAY') return special ? 'Pernocta especial' : 'Pernocta';
-  return special ? 'Visita especial' : 'Visita a domicilio';
+  if (booking.careLevel !== 'SPECIAL') return serviceName(booking.serviceCode);
+  return `${serviceShortName(booking.serviceCode)} especial`;
 }

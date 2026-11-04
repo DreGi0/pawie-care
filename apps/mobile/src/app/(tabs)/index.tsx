@@ -31,7 +31,7 @@ import { StarMedal, Tag } from '@/components/Tag';
 import { Text } from '@/components/Text';
 import { Touchable } from '@/components/Touchable';
 import { errorMessage } from '@/lib/api';
-import { joinNames, serviceUnit } from '@/lib/bookings';
+import { joinNames, serviceShortName, serviceUnit } from '@/lib/bookings';
 import { CERTIFICATION_FILTERS, LEVEL_NAMES } from '@/lib/caregivers';
 import {
   atLocalTime,
@@ -41,21 +41,21 @@ import {
   formatMoney,
   upcomingDays,
 } from '@/lib/format';
-import { setSearch, useSearch, useSearchResults, type Search } from '@/lib/search';
+import { serviceTakes, setSearch, useSearch, useSearchResults, type Search } from '@/lib/search';
 import { colors, fontFamily, gutter, radius, space } from '@/theme/tokens';
 
-// Visits start on the hour, from 7:00 to 19:00, when the overnight stay begins (RN-SER-02).
-const VISIT_HOURS = Array.from({ length: 13 }, (_, i) => (7 + i) * 60);
+// Walks and visits start on the hour, from 7:00 to 19:00, when the overnight stay begins (RN-SER-02).
+const DAY_HOURS = Array.from({ length: 13 }, (_, i) => (7 + i) * 60);
 const DAYS_AHEAD = 14;
 const LEVELS: CaregiverLevel[] = ['TRUSTED', 'PRO', 'SUPER'];
 const RATINGS = [4, 4.5, 4.8];
-// The walk arrives in stage 8 with its own block.
 const SERVICES = [
+  { code: 'WALK', detail: 'Solo perros' },
   { code: 'HOME_VISIT', detail: 'En tu casa' },
   { code: 'OVERNIGHT_STAY', detail: 'Toda la noche' },
 ] as const;
 
-type Picker = 'pets' | 'when' | 'district' | 'filters';
+type Picker = 'pets' | 'when' | 'district' | 'filters' | 'walk';
 
 export default function SearchScreen() {
   const me = useUsersMe();
@@ -64,11 +64,13 @@ export default function SearchScreen() {
   const catalog = useCatalogGet();
   const search = useSearch();
   const [picker, setPicker] = useState<Picker | null>(null);
-  // A visit chosen from its block while the search's hour no longer works: When picks one first.
-  const [pendingVisit, setPendingVisit] = useState(false);
+  // A search that still needs something before it runs, such as an hour that still works or
+  // the dogs of a walk: the open sheet starts from it.
+  const [pending, setPending] = useState<Search | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // The first search: the first pet, tomorrow at 9:00, in the district of its home.
+  // The first search: the first pet, tomorrow at 9:00, in the district of its home. A walk if
+  // the walk takes that pet (a dog), since it's the most common service; otherwise a visit.
   useEffect(() => {
     if (search || !pets.data?.length || !addresses.data || !catalog.data) return;
     const districtId =
@@ -78,7 +80,7 @@ export default function SearchScreen() {
     if (!districtId) return;
     setSearch({
       petIds: [pets.data[0].id],
-      serviceCode: 'HOME_VISIT',
+      serviceCode: serviceTakes(catalog.data, 'WALK', pets.data[0]) ? 'WALK' : 'HOME_VISIT',
       day: upcomingDays(2)[1],
       minute: 9 * 60,
       districtId,
@@ -94,22 +96,35 @@ export default function SearchScreen() {
     setRefreshing(false);
   };
 
-  const chooseService = (serviceCode: ServiceCode) => {
-    if (!search || !catalog.data || serviceCode === search.serviceCode) return;
+  /** Runs the search, unless its hour no longer works: then When picks one first. */
+  const run = (next: Search) => {
+    if (!catalog.data) return;
     if (
-      serviceCode === 'HOME_VISIT' &&
-      !visitHours(search.day, new Date(), catalog.data).includes(search.minute)
+      next.serviceCode !== 'OVERNIGHT_STAY' &&
+      !dayHours(next.day, new Date(), catalog.data).includes(next.minute)
     ) {
-      setPendingVisit(true);
+      setPending(next);
       setPicker('when');
       return;
     }
-    setSearch({ ...search, serviceCode });
+    setPending(null);
+    setPicker(null);
+    setSearch(next);
+  };
+
+  const chooseService = (serviceCode: ServiceCode) => {
+    if (!search || !catalog.data || !pets.data || serviceCode === search.serviceCode) return;
+    // RN-SER-05, RN-RES-01: with a cat or too many dogs, explain why before changing anything.
+    if (serviceCode === 'WALK' && walkProblem(search, pets.data, catalog.data)) {
+      setPicker('walk');
+      return;
+    }
+    run({ ...search, serviceCode });
   };
 
   const closePicker = () => {
     setPicker(null);
-    setPendingVisit(false);
+    setPending(null);
   };
 
   const loading = pets.isPending || addresses.isPending || catalog.isPending;
@@ -193,16 +208,26 @@ export default function SearchScreen() {
           {picker === 'pets' && (
             <PetsSheet
               onClose={closePicker}
-              search={search}
+              search={pending ?? search}
               pets={pets.data}
-              max={catalog.data.bookingRules.maxPetsPerBooking}
+              catalog={catalog.data}
+              onDone={run}
             />
           )}
           {picker === 'when' && (
-            <WhenSheet
+            <WhenSheet onClose={closePicker} search={pending ?? search} catalog={catalog.data} />
+          )}
+          {picker === 'walk' && (
+            <WalkSheet
               onClose={closePicker}
-              search={pendingVisit ? { ...search, serviceCode: 'HOME_VISIT' } : search}
+              search={search}
+              pets={pets.data}
               catalog={catalog.data}
+              onWalk={run}
+              onChoosePets={() => {
+                setPending({ ...search, serviceCode: 'WALK' });
+                setPicker('pets');
+              }}
             />
           )}
           {picker === 'district' && (
@@ -226,10 +251,27 @@ function filterCount({ minLevel, certificationCodes, minRating }: Search): numbe
   return (minLevel ? 1 : 0) + certificationCodes.length + (minRating ? 1 : 0);
 }
 
-/** RN-RES-05: a visit has to be requested this long in advance. */
-function visitHours(day: string, now: Date, catalog: CatalogResponse): number[] {
+/** RN-RES-05: a walk or a visit has to be requested this long in advance. */
+function dayHours(day: string, now: Date, catalog: CatalogResponse): number[] {
   const earliest = now.getTime() + catalog.bookingRules.minLeadTimeMinutes * 60_000;
-  return VISIT_HOURS.filter((minute) => new Date(atLocalTime(day, minute)).getTime() >= earliest);
+  return DAY_HOURS.filter((minute) => new Date(atLocalTime(day, minute)).getTime() >= earliest);
+}
+
+/**
+ * RN-SER-05, RN-RES-01, RN-RES-03: why the chosen pets can't go on a walk, or null. The species
+ * and the limit come from the catalog; the API checks them again.
+ */
+function walkProblem(
+  search: Search,
+  pets: PetResponse[],
+  catalog: CatalogResponse,
+): { notDogs: PetResponse[]; dogs: PetResponse[] } | null {
+  const chosen = pets.filter((pet) => search.petIds.includes(pet.id));
+  const notDogs = chosen.filter((pet) => !serviceTakes(catalog, 'WALK', pet));
+  const dogs = chosen.filter((pet) => serviceTakes(catalog, 'WALK', pet));
+  return notDogs.length > 0 || dogs.length > catalog.bookingRules.maxDogsPerWalk
+    ? { notDogs, dogs }
+    : null;
 }
 
 /** The search as a sentence: "Para [Toby] el [mar 20 oct, 9:00] en [San Salvador]". */
@@ -409,19 +451,30 @@ function Rating({ rating, count }: { rating: number | null; count: number }) {
   );
 }
 
-/** Mounted only while open, so it always starts from the current search. */
+/**
+ * Mounted only while open, so it always starts from the search. A walk takes only dogs, up to
+ * its own limit (RN-SER-05): the sheet lists the dogs and says who can't go.
+ */
 function PetsSheet({
   onClose,
   search,
   pets,
-  max,
+  catalog,
+  onDone,
 }: {
   onClose: () => void;
   search: Search;
   pets: PetResponse[];
-  max: number;
+  catalog: CatalogResponse;
+  onDone: (search: Search) => void;
 }) {
-  const [petIds, setPetIds] = useState(search.petIds);
+  const walk = search.serviceCode === 'WALK';
+  const max = walk ? catalog.bookingRules.maxDogsPerWalk : catalog.bookingRules.maxPetsPerBooking;
+  const allowed = pets.filter((pet) => serviceTakes(catalog, search.serviceCode, pet));
+  const left = pets.filter((pet) => !allowed.includes(pet));
+  const [petIds, setPetIds] = useState(() =>
+    search.petIds.filter((id) => allowed.some((pet) => pet.id === id)).slice(0, max),
+  );
   const toggle = (petId: string) => {
     if (petIds.includes(petId)) {
       // The search needs at least one pet.
@@ -430,6 +483,13 @@ function PetsSheet({
       setPetIds([...petIds, petId]);
     }
   };
+  const label = walk
+    ? max === 1
+      ? 'Un perro por paseo'
+      : `Hasta ${max} perros por paseo`
+    : max === 1
+      ? 'Una mascota por reserva'
+      : `Hasta ${max} por reserva`;
 
   return (
     <Sheet
@@ -439,16 +499,14 @@ function PetsSheet({
       footer={
         <Button
           label="Ver cuidadores"
-          onPress={() => {
-            setSearch({ ...search, petIds });
-            onClose();
-          }}
+          disabled={petIds.length === 0}
+          onPress={() => onDone({ ...search, petIds })}
         />
       }
     >
-      <SheetSection label={max === 1 ? 'Una mascota por reserva' : `Hasta ${max} por reserva`}>
+      <SheetSection label={label}>
         <View style={styles.wrap}>
-          {pets.map((pet) => (
+          {allowed.map((pet) => (
             <Chip
               key={pet.id}
               label={pet.name}
@@ -458,6 +516,12 @@ function PetsSheet({
             />
           ))}
         </View>
+        {left.length > 0 && (
+          <Text variant="caption" color="inkMuted">
+            {joinNames(left.map((pet) => pet.name))} no {left.length === 1 ? 'puede' : 'pueden'} ir:
+            el paseo es solo para perros.
+          </Text>
+        )}
       </SheetSection>
       <Button
         variant="ghost"
@@ -469,6 +533,94 @@ function PetsSheet({
         }}
         style={styles.start}
       />
+    </Sheet>
+  );
+}
+
+/**
+ * RN-SER-05, RN-RES-01: why the chosen pets can't go on a walk. The search stays as it is until
+ * the owner picks an option: the app never drops a pet on its own.
+ */
+function WalkSheet({
+  onClose,
+  search,
+  pets,
+  catalog,
+  onWalk,
+  onChoosePets,
+}: {
+  onClose: () => void;
+  search: Search;
+  pets: PetResponse[];
+  catalog: CatalogResponse;
+  onWalk: (search: Search) => void;
+  onChoosePets: () => void;
+}) {
+  const problem = walkProblem(search, pets, catalog);
+  if (!problem) return null;
+  const { notDogs, dogs } = problem;
+  const max = catalog.bookingRules.maxDogsPerWalk;
+  const ownsDogs = pets.some((pet) => serviceTakes(catalog, 'WALK', pet));
+  const walkTheDogs = dogs.length > 0 && dogs.length <= max;
+  const dogNames = joinNames(dogs.map((pet) => pet.name));
+  const stay = `Seguir con la ${serviceShortName(search.serviceCode).toLowerCase()}`;
+
+  let message: string;
+  if (notDogs.length === 0) {
+    message = `Elegiste ${dogs.length} perros. Elige hasta ${max} para el paseo.`;
+  } else {
+    const who = joinNames(notDogs.map((pet) => pet.name));
+    const cannot = `${who} no ${notDogs.length === 1 ? 'puede' : 'pueden'} ir a un paseo.`;
+    const next = walkTheDogs
+      ? `Puedes buscar el paseo solo para ${dogNames}.`
+      : ownsDogs
+        ? 'Elige qué perros van al paseo.'
+        : 'Ninguna de tus mascotas es perro.';
+    message = `${cannot} ${next}`;
+  }
+
+  return (
+    <Sheet
+      visible
+      onClose={onClose}
+      title={notDogs.length > 0 ? 'El paseo es solo para perros' : `Hasta ${max} perros por paseo`}
+      footer={
+        walkTheDogs ? (
+          <>
+            <Button
+              label={`Buscar paseo para ${dogNames}`}
+              onPress={() =>
+                onWalk({ ...search, serviceCode: 'WALK', petIds: dogs.map((pet) => pet.id) })
+              }
+            />
+            <Button variant="ghost" label={stay} onPress={onClose} />
+          </>
+        ) : ownsDogs ? (
+          <>
+            <Button label="Elegir perros" onPress={onChoosePets} />
+            <Button variant="ghost" label={stay} onPress={onClose} />
+          </>
+        ) : (
+          <Button label={stay} onPress={onClose} />
+        )
+      }
+    >
+      <View style={styles.wrap}>
+        {pets
+          .filter((pet) => search.petIds.includes(pet.id))
+          .map((pet) => (
+            <View key={pet.id} style={styles.walkPet}>
+              <Avatar name={pet.name} photoUrl={pet.photoUrl} size={36} />
+              <View>
+                <Text variant="bodyStrong">{pet.name}</Text>
+                <Text variant="caption" color="inkMuted">
+                  {pet.species.name}
+                </Text>
+              </View>
+            </View>
+          ))}
+      </View>
+      <Text>{message}</Text>
     </Sheet>
   );
 }
@@ -486,7 +638,7 @@ function WhenSheet({
   const [draft, setDraft] = useState(search);
   const [now] = useState(() => new Date());
   const days = upcomingDays(DAYS_AHEAD, now);
-  const hours = visitHours(draft.day, now, catalog);
+  const hours = dayHours(draft.day, now, catalog);
   const overnight = draft.serviceCode === 'OVERNIGHT_STAY';
   const hourIsValid = overnight || hours.includes(draft.minute);
 
@@ -539,7 +691,9 @@ function WhenSheet({
             </View>
           ) : (
             <Text color="inkMuted">
-              Ya no quedan horas para hoy: las visitas se piden con 2 horas de anticipación.
+              Ya no quedan horas para hoy:{' '}
+              {draft.serviceCode === 'WALK' ? 'los paseos' : 'las visitas'} se piden con 2 horas de
+              anticipación.
             </Text>
           )}
         </SheetSection>
@@ -750,6 +904,7 @@ const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   hour: { width: '23%' },
   filter: { minWidth: '45%', flexGrow: 1 },
+  walkPet: { flexDirection: 'row', alignItems: 'center', gap: space[2], minWidth: '45%' },
   option: {
     minHeight: 52,
     flexDirection: 'row',

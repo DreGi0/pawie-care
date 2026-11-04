@@ -147,6 +147,7 @@ export default function ComponentCatalog() {
             <Tag kind="star" label="Cuidado especial" />
             <Tag kind="level" level="PRO" />
             <Tag kind="level" level="SUPER" />
+            <Tag kind="service" service="WALK" />
             <Tag kind="service" service="HOME_VISIT" />
             <Tag kind="service" service="OVERNIGHT_STAY" size="sm" />
             <StarMedal />
@@ -170,6 +171,12 @@ export default function ComponentCatalog() {
 
         <Section title="ServiceBlock">
           <View style={styles.row}>
+            <ServiceBlock
+              service="WALK"
+              detail="Solo perros"
+              selected={service === 'WALK'}
+              onPress={() => setService('WALK')}
+            />
             <ServiceBlock
               service="HOME_VISIT"
               detail="En tu casa"

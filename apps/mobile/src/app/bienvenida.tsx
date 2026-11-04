@@ -39,7 +39,7 @@ export default function WelcomeScreen() {
               Cuidadores de confianza para tu mascota
             </Text>
             <Text style={styles.centered}>
-              Visitas y pernoctas en tu casa, en San Salvador y alrededores.
+              Paseos, visitas y pernoctas, en San Salvador y alrededores.
             </Text>
           </View>
         </Animated.View>
