@@ -17,21 +17,21 @@ Este plan lleva el código a las [reglas v0.6](reglas-de-negocio.md). Cada etapa
 
 ## 1. Brecha entre el código y la v0.6
 
-Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las certificaciones ya siguen las reglas (etapa 6).
+Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las certificaciones ya siguen las reglas (etapa 6), y el cuidador se da de alta desde la app (etapa 9a).
 
-| Área                     | Hoy en el código                                                        | Falta para la v0.6                                                                                                          | Etapa            |
-| ------------------------ | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| Design system            | Placas (etapa D, hecha)                                                 | Nada                                                                                                                        | D                |
-| Alta del cuidador        | No existe; cuidadores del seed                                          | Modo cuidador, documentos, curso de bienvenida, aprobación con script, perfil, horario, distritos y precios con calculadora | 9a               |
-| Métricas del piloto      | Nada                                                                    | Script `metrics:report`                                                                                                     | Métricas         |
-| Ficha                    | Datos, salud, vacunas, indicaciones y tareas de cuidado                 | Alimento, horarios de comida y medicinas, premios, rutina y celo; pantalla de la mascota                                    | 7                |
-| Servicios                | Visita y pernocta                                                       | Paseo                                                                                                                       | 8                |
-| Solicitudes del cuidador | La máquina de estados permite aceptar y rechazar, pero no hay endpoints | Solicitudes, aceptar o rechazar, agenda y ganancias                                                                         | 9b               |
-| Ejecución                | Estados `IN_PROGRESS` a `CLOSED` sin transiciones                       | Check-in, tareas, fotos, ruta, check-out, cierre a las 48 h, pago simulado y reseñas                                        | 10               |
-| Avisos e integraciones   | Nada                                                                    | Push (base y eventos), agregar al calendario y compartir el perfil                                                          | 11               |
-| Referidos                | Nada                                                                    | Código de cada cuidador, campo en el registro y quién refirió a cada dueño                                                  | Eventos de la 11 |
-| Soporte                  | Nada                                                                    | Asistente, centro de ayuda, casos y WhatsApp                                                                                | 12a              |
-| Garantía                 | Nada                                                                    | Reclamo, estado `DISPUTED` y resolución                                                                                     | 12b              |
+| Área                     | Hoy en el código                                                           | Falta para la v0.6                                                                       | Etapa            |
+| ------------------------ | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------- |
+| Design system            | Placas (etapa D, hecha)                                                    | Nada                                                                                     | D                |
+| Alta del cuidador        | Modo cuidador, documentos, curso, aprobación, perfil y precios (9a, hecha) | Nada                                                                                     | 9a               |
+| Métricas del piloto      | Nada                                                                       | Script `metrics:report`                                                                  | Métricas         |
+| Ficha                    | Datos, salud, vacunas, indicaciones y tareas de cuidado                    | Alimento, horarios de comida y medicinas, premios, rutina y celo; pantalla de la mascota | 7                |
+| Servicios                | Visita y pernocta                                                          | Paseo                                                                                    | 8                |
+| Solicitudes del cuidador | La máquina de estados permite aceptar y rechazar, pero no hay endpoints    | Solicitudes, aceptar o rechazar, agenda y ganancias                                      | 9b               |
+| Ejecución                | Estados `IN_PROGRESS` a `CLOSED` sin transiciones                          | Check-in, tareas, fotos, ruta, check-out, cierre a las 48 h, pago simulado y reseñas     | 10               |
+| Avisos e integraciones   | Nada                                                                       | Push (base y eventos), agregar al calendario y compartir el perfil                       | 11               |
+| Referidos                | Nada                                                                       | Código de cada cuidador, campo en el registro y quién refirió a cada dueño               | Eventos de la 11 |
+| Soporte                  | Nada                                                                       | Asistente, centro de ayuda, casos y WhatsApp                                             | 12a              |
+| Garantía                 | Nada                                                                       | Reclamo, estado `DISPUTED` y resolución                                                  | 12b              |
 
 ## 2. IDs de reglas que cambiaron
 
@@ -118,17 +118,27 @@ La v0.6 no agrega settings: las metas del reporte del piloto son constantes del 
 
 Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#design-system-placas). **Parte 1 (hecha, solo docs):** dos direcciones exploradas en HTML y Placas elegida, con sus mockups en `docs/design/directions/`. **Parte 2 (hecha, app):** tokens y fuentes (Gabarito y Lexend en lugar de Nunito), componentes nuevos (placas, placa del nivel, foto con la silueta de Nimbus, bloques de servicio y filas) y el layout de Main, Perfil, Reservar, Visitas y Mis mascotas. Los mockups de `docs/design/screens/` quedan como referencia de textos de la v0.4. **La etapa D está hecha.**
 
-### Etapa 9a: alta del cuidador
+### Etapa 9a: alta del cuidador (hecha)
 
 **Referencia visual:** la dirección elegida en la etapa D. Esta etapa no necesita mockups en HTML.
 
-**Avance:** se hace en dos PR, API y app. **API (hecha):**
+**Avance:** se hizo en dos PR, API y app. **API (hecha):**
 
 - Endpoints `caregivers/me` (con `level`, `prices` y `prices/quote`), `courses/welcome` (con `attempts`) y `mode` en `/v1/users/me`, que guarda el último modo en la cuenta.
 - El DUI se sube por los dos lados (`ID_DOCUMENT_FRONT` y `ID_DOCUMENT_BACK`), y los documentos quedan fijos al aprobarse el alta.
 - `isActive` pasó a `isPaused` (RN-CUI-20), porque "activo" se confundía con "aprobado". La migración conserva el estado de cada cuidador, y los que ya estaban aprobados quedan con el curso aprobado.
 - `caregivers:approve` exige los documentos, pero no el curso.
 - El curso tiene 4 módulos con 3 preguntas cada uno, marcados `TODO(contenido)`, y su nota mínima es `certifications.minExamScoreBp`.
+
+**App (hecha):**
+
+- CuiActivar desde Cuenta y las pestañas por modo: Inicio y Cuenta para el cuidador.
+- CuiInicio, CuiDocumentos, CuiCurso, CuiPerfil y CuiPrecios, con Placas (`docs/design/README.md`).
+- El horario se edita por franjas: mañana, tarde y la noche de la pernocta.
+- La calculadora pide lo que recibe a `/prices/quote` 400 ms después del último −/+.
+- Las subidas usan `File` de expo-file-system con `expo/fetch`, porque `fetch(uri).blob()` leía mal los archivos locales en SDK 58. Eso también arregla la foto de la mascota.
+
+**La etapa 9a está hecha.**
 
 **Reglas:** RN-CTA-06, RN-CUI-01 a RN-CUI-04, RN-CUI-16 a RN-CUI-20, RN-NIV-05, RN-PRE-04.
 
@@ -380,14 +390,14 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 
 Las que bloquean una etapa están marcadas.
 
-| Decisión                              | Etapa                               | Valor provisional                      |
-| ------------------------------------- | ----------------------------------- | -------------------------------------- |
-| Comisión al cuidador: 0% o 10%        | 9a y 9b                             | 0% (RN-PRE-04)                         |
-| Rangos de visita y pernocta por nivel | 6                                   | Los de RN-PRE-01                       |
-| Umbrales de los niveles               | 6                                   | Los de RN-NIV-02                       |
-| Documentos exactos de antecedentes    | 9a                                  | DUI, selfie y antecedentes o solvencia |
-| Contenido del curso de bienvenida     | 9a (**bloquea**)                    | Ninguno: lo escribe el equipo          |
-| URL para compartir el perfil          | Eventos de la 11                    | `https://pawieapp.com`                 |
-| Clave de Google Maps para Android     | 10 (**bloquea** el mapa en Android) | Ninguno                                |
-| Número de WhatsApp Business           | 12a                                 | Un número de prueba en el seed         |
-| Contenido del asistente               | 12a (**bloquea**)                   | Ninguno: lo escribe el equipo          |
+| Decisión                              | Etapa                               | Valor provisional                                                                    |
+| ------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------ |
+| Comisión al cuidador: 0% o 10%        | 9a y 9b                             | 0% (RN-PRE-04)                                                                       |
+| Rangos de visita y pernocta por nivel | 6                                   | Los de RN-PRE-01                                                                     |
+| Umbrales de los niveles               | 6                                   | Los de RN-NIV-02                                                                     |
+| Documentos exactos de antecedentes    | 9a                                  | DUI por los dos lados, selfie y antecedentes o solvencia                             |
+| Contenido del curso de bienvenida     | 9a                                  | 4 módulos de ejemplo marcados `TODO(contenido)`; el texto final lo escribe el equipo |
+| URL para compartir el perfil          | Eventos de la 11                    | `https://pawieapp.com`                                                               |
+| Clave de Google Maps para Android     | 10 (**bloquea** el mapa en Android) | Ninguno                                                                              |
+| Número de WhatsApp Business           | 12a                                 | Un número de prueba en el seed                                                       |
+| Contenido del asistente               | 12a (**bloquea**)                   | Ninguno: lo escribe el equipo                                                        |

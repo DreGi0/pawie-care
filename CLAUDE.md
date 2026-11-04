@@ -17,8 +17,8 @@ Los documentos de negocio del equipo (Buyer, Promesa, Vehículo, Pricing y la ho
 
 ## Estado actual
 
-- El código de `main` implementa las **reglas v0.4 más la etapa 6**: niveles del cuidador, precio por nivel del cuidador, tarifa de 15% y comisión de 0%, primer servicio sin tarifa y filtros de búsqueda. Todavía tiene solo visita y pernocta, y no tiene app del cuidador.
-- Lo que falta para la v0.6 está en **[docs/plan-v0.6.md](docs/plan-v0.6.md)**, en este orden: D, 9a, métricas, 7, 8, 9b, base de la 11, 10, eventos de la 11, 12a y 12b.
+- El código implementa las **reglas v0.4 más las etapas 6, D y 9a**: niveles del cuidador, precio por nivel del cuidador, tarifa de 15% y comisión de 0%, primer servicio sin tarifa, filtros de búsqueda, el design system Placas y el alta del cuidador (modo cuidador, documentos, curso de bienvenida, perfil y precios). Todavía tiene solo visita y pernocta, y el cuidador no recibe solicitudes (9b).
+- Lo que falta para la v0.6 está en **[docs/plan-v0.6.md](docs/plan-v0.6.md)**, en este orden: métricas, 7, 8, 9b, base de la 11, 10, eventos de la 11, 12a y 12b.
 - Si el código contradice las reglas v0.6, no es un bug que haya que respetar: es trabajo pendiente de una etapa. Revisa el plan antes de "arreglarlo" fuera de su etapa.
 
 ## Cómo trabajar una tarea
