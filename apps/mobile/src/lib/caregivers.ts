@@ -149,7 +149,7 @@ export function requirementText({
       };
     case 'AVERAGE_RATING':
       return current === 0
-        ? { value: 'Promedio', text: ' de reseñas', of: `de ${required.toFixed(1)}` }
+        ? { value: 'Promedio', text: ` de ${required.toFixed(1)} o más` }
         : { value: current.toFixed(1), text: ' de promedio', of: `de ${required.toFixed(1)}` };
     case 'COMPLETED_BOOKINGS':
       return {

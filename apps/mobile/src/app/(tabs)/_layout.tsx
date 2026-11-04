@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router/tabs';
 
 import { Icon, type IconName } from '@/components/Icon';
 import { TabBar } from '@/components/TabBar';
+import { HOME } from '@/lib/mode';
 import { useMode } from '@/lib/session';
 import { colors } from '@/theme/tokens';
 
@@ -25,7 +26,9 @@ export default function TabsLayout() {
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bg } }}
     >
-      <Tabs.Protected guard={mode === 'OWNER'}>
+      {/* Each mode's tabs send the other mode to its home: without it, opening "/" in caregiver
+          mode landed on Cuenta. */}
+      <Tabs.Protected guard={mode === 'OWNER'} redirectTo={HOME.CAREGIVER}>
         <Tabs.Screen name="index" options={{ title: 'Buscar', tabBarIcon: tabIcon('search') }} />
         <Tabs.Screen
           name="visitas"
@@ -42,7 +45,7 @@ export default function TabsLayout() {
           options={{ title: 'Mascotas', tabBarIcon: tabIcon('paw-print') }}
         />
       </Tabs.Protected>
-      <Tabs.Protected guard={mode === 'CAREGIVER'}>
+      <Tabs.Protected guard={mode === 'CAREGIVER'} redirectTo={HOME.OWNER}>
         <Tabs.Screen name="inicio" options={{ title: 'Inicio', tabBarIcon: tabIcon('house') }} />
       </Tabs.Protected>
       <Tabs.Screen name="cuenta" options={{ title: 'Cuenta', tabBarIcon: tabIcon('user') }} />
