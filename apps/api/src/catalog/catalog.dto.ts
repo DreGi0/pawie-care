@@ -36,6 +36,14 @@ export class ServiceOption {
 
   @ApiProperty()
   description: string;
+
+  @ApiProperty({
+    type: [String],
+    example: ['DOG'],
+    description:
+      'Códigos de las especies que acepta, de `species`. RN-SER-05: el paseo es solo para perros.',
+  })
+  speciesCodes: string[];
 }
 
 /**
@@ -45,6 +53,9 @@ export class ServiceOption {
 export class BookingRules {
   @ApiProperty({ type: 'integer', example: 3, description: 'RN-RES-03' })
   maxPetsPerBooking: number;
+
+  @ApiProperty({ type: 'integer', example: 2, description: 'RN-SER-05, RN-RES-03' })
+  maxDogsPerWalk: number;
 
   @ApiProperty({
     type: 'integer',
@@ -59,6 +70,13 @@ export class BookingRules {
     description: 'RN-SER-01: cada visita ocupa este tiempo en el calendario del cuidador.',
   })
   homeVisitMinutes: number;
+
+  @ApiProperty({
+    type: 'integer',
+    example: 45,
+    description: 'RN-SER-05: cada paseo ocupa este tiempo en el calendario del cuidador.',
+  })
+  walkMinutes: number;
 
   @ApiProperty({
     type: 'integer',

@@ -3,6 +3,7 @@ import { planSlots, type ScheduleRules, serviceDates } from './slot-plan.js';
 
 const RULES: ScheduleRules = {
   homeVisitMinutes: 60,
+  walkMinutes: 45,
   overnightStartMinute: 19 * 60,
   overnightEndMinute: 8 * 60,
   minLeadTimeMinutes: 120,
@@ -93,7 +94,8 @@ describe('planSlots', () => {
       ),
     ).toMatchObject({
       errorCode: 'INVALID_SCHEDULE',
-      message: 'Dos de los horarios se cruzan. Cada visita y cada noche van por separado.',
+      message:
+        'Dos de los horarios se cruzan. Cada paseo, cada visita y cada noche van por separado.',
     });
     expect(
       errorOf(() =>
@@ -107,6 +109,81 @@ describe('planSlots', () => {
         ),
       ),
     ).toMatchObject({ errorCode: 'INVALID_SCHEDULE' });
+  });
+
+  describe('walks (RN-SER-05)', () => {
+    const walk = (...walks: string[]) => ({
+      serviceCode: ServiceCode.WALK,
+      walks: walks.map((time) => `2026-11-20T${time}:00-06:00`),
+    });
+
+    it('gives each walk the walk time, and several fit in a day', () => {
+      const slots = planSlots(walk('17:00', '07:00'), RULES, NOW);
+
+      expect(slots).toEqual([
+        { serviceCode: 'WALK', startsAt: sv('2026-11-20T07:00'), endsAt: sv('2026-11-20T07:45') },
+        { serviceCode: 'WALK', startsAt: sv('2026-11-20T17:00'), endsAt: sv('2026-11-20T17:45') },
+      ]);
+    });
+
+    it('lets a walk start right when the previous one ends, but not before (RN-CUI-15)', () => {
+      expect(planSlots(walk('07:00', '07:45'), RULES, NOW)).toHaveLength(2);
+      expect(errorOf(() => planSlots(walk('07:00', '07:44'), RULES, NOW))).toMatchObject({
+        errorCode: 'INVALID_SCHEDULE',
+      });
+      expect(errorOf(() => planSlots(walk('07:00', '07:00'), RULES, NOW))).toMatchObject({
+        errorCode: 'INVALID_SCHEDULE',
+      });
+    });
+
+    it('takes the walk time from the rules', () => {
+      const [slot] = planSlots(walk('07:00'), { ...RULES, walkMinutes: 30 }, NOW);
+
+      expect(slot.endsAt).toEqual(sv('2026-11-20T07:30'));
+    });
+
+    it('has only walks, and walks only go in a walk booking', () => {
+      expect(errorOf(() => planSlots({ serviceCode: ServiceCode.WALK }, RULES, NOW))).toEqual({
+        errorCode: 'INVALID_SCHEDULE',
+        message: 'Elige cuándo empieza cada paseo.',
+      });
+      expect(
+        errorOf(() =>
+          planSlots({ ...walk('07:00'), visits: ['2026-11-20T09:00:00-06:00'] }, RULES, NOW),
+        ),
+      ).toMatchObject({ message: 'Un paseo no lleva noches ni visitas.' });
+      expect(
+        errorOf(() => planSlots({ ...walk('07:00'), nights: ['2026-11-20'] }, RULES, NOW)),
+      ).toMatchObject({ message: 'Un paseo no lleva noches ni visitas.' });
+      for (const serviceCode of [ServiceCode.HOME_VISIT, ServiceCode.OVERNIGHT_STAY]) {
+        expect(
+          errorOf(() =>
+            planSlots(
+              {
+                serviceCode,
+                nights: ['2026-11-20'],
+                visits: ['2026-11-20T09:00:00-06:00'],
+                walks: ['2026-11-20T07:00:00-06:00'],
+              },
+              RULES,
+              NOW,
+            ),
+          ),
+        ).toMatchObject({ message: 'Los paseos van en una reserva de paseo.' });
+      }
+    });
+
+    it('needs the minimum lead time (RN-RES-05)', () => {
+      const today = (time: string) => ({
+        serviceCode: ServiceCode.WALK,
+        walks: [`2026-11-01T${time}:00-06:00`],
+      });
+
+      expect(planSlots(today('14:00'), RULES, NOW)).toHaveLength(1);
+      expect(errorOf(() => planSlots(today('13:59'), RULES, NOW))).toMatchObject({
+        errorCode: 'TOO_SOON',
+      });
+    });
   });
 
   it('lets one visit start right when the previous one ends', () => {

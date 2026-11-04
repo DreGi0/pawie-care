@@ -259,7 +259,8 @@ export class PetsService {
   async findForBooking(ownerId: string, petIds: readonly string[]) {
     const pets = await this.prisma.pet.findMany({
       where: { id: { in: [...petIds] }, ownerId, archivedAt: null },
-      include: { careNeeds: true },
+      // The species: a walk takes only dogs (RN-SER-05).
+      include: { careNeeds: true, species: { select: { code: true } } },
     });
     if (pets.length !== new Set(petIds).size) {
       throw petNotFound();

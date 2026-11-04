@@ -25,7 +25,6 @@ describe('settings registry', () => {
     // §15 already lists the parameters of the later stages (docs/plan-v0.6.md). Remove each
     // rule from here when its stage adds the setting.
     const comesLater = [
-      'RN-SER-05', // stage 8
       'RN-EJE-03', // stage 10
       'RN-EJE-06', // stage 10
       'RN-SOP-03', // stage 12a

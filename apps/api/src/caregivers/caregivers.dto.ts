@@ -127,7 +127,7 @@ export class CaregiverProfileResponse extends CaregiverSummary {
   prices: CaregiverPrice[];
 }
 
-/** RN-RES-01: the owner's pets, the service with its nights or visits, and the district. */
+/** RN-RES-01: the owner's pets, the service with its nights, visits or walks, and the district. */
 export class SearchCaregiversRequest extends ScheduleRequest {
   @ApiProperty({ type: [String], format: 'uuid', description: 'Mascotas del dueño.' })
   @IsArray()

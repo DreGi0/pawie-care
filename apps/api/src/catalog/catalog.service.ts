@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { CareTask } from '../generated/prisma/enums.js';
+import { WALK_SPECIES_CODES } from '../bookings/walk.js';
+import { CareTask, ServiceCode } from '../generated/prisma/enums.js';
 import { CARE_TASK_GROUPS, CARE_TASK_NAMES, canBeOpenEnded } from '../pets/care-tasks.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SettingsService } from '../settings/settings.service.js';
@@ -31,7 +32,14 @@ export class CatalogService {
     return {
       districts: districts.toSorted((a, b) => spanish.compare(a.name, b.name)),
       species,
-      services,
+      // RN-SER-05: the walk is only for dogs; the other services take every species.
+      services: services.map((service) => ({
+        ...service,
+        speciesCodes:
+          service.code === ServiceCode.WALK
+            ? [...WALK_SPECIES_CODES]
+            : species.map(({ code }) => code),
+      })),
       bookingRules,
       careTasks: Object.values(CareTask).map(careTaskOption),
     };
@@ -40,14 +48,18 @@ export class CatalogService {
   private async bookingRules(): Promise<BookingRules> {
     const settings = await this.settings.getMany([
       'bookings.maxPetsPerBooking',
+      'bookings.maxDogsPerWalk',
       'bookings.minLeadTimeMinutes',
       'services.homeVisitMaxMinutes',
+      'services.walkDurationMinutes',
       'services.overnightHours',
     ]);
     return {
       maxPetsPerBooking: settings['bookings.maxPetsPerBooking'],
+      maxDogsPerWalk: settings['bookings.maxDogsPerWalk'],
       minLeadTimeMinutes: settings['bookings.minLeadTimeMinutes'],
       homeVisitMinutes: settings['services.homeVisitMaxMinutes'],
+      walkMinutes: settings['services.walkDurationMinutes'],
       overnightStartMinute: settings['services.overnightHours'].startMinute,
       overnightEndMinute: settings['services.overnightHours'].endMinute,
     };

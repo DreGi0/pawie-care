@@ -7,6 +7,7 @@ import {
 import { slotTaken } from '../bookings/booking-errors.js';
 import type { ScheduleRequest, SlotResponse } from '../bookings/schedule.dto.js';
 import { type PlannedSlot, planSlots, serviceDates } from '../bookings/slot-plan.js';
+import { requireWalkablePets } from '../bookings/walk.js';
 import { dateInElSalvador } from '../common/time/calendar.js';
 import { FilesService } from '../files/files.service.js';
 import {
@@ -14,7 +15,7 @@ import {
   CaregiverStatus,
   CareLevel,
   Prisma,
-  type ServiceCode,
+  ServiceCode,
 } from '../generated/prisma/client.js';
 import { careLevelOn, type PetCareLevel } from '../pets/care-level.js';
 import { CARE_TASK_LABELS } from '../pets/care-tasks.js';
@@ -60,8 +61,10 @@ type PriceRanges = SettingValue<'pricing.priceRanges'>;
 /** The settings a search or a booking request is checked against (§15). */
 export const BOOKING_PLAN_SETTING_KEYS = [
   'bookings.maxPetsPerBooking',
+  'bookings.maxDogsPerWalk',
   'bookings.minLeadTimeMinutes',
   'services.homeVisitMaxMinutes',
+  'services.walkDurationMinutes',
   'services.overnightHours',
   'pricing.priceRanges',
 ] as const;
@@ -205,8 +208,9 @@ export class CaregiversService {
 
   /**
    * Checks what a search or a booking asks for: the number of pets (RN-RES-03), the
-   * schedule (planSlots), the pets' care level and prohibited needs on the dates of the
-   * service (RN-MAS-05, RN-MAS-09), and the district.
+   * schedule (planSlots), only dogs and up to the maximum on a walk (RN-SER-05,
+   * RN-RES-01), the pets' care level and prohibited needs on the dates of the service
+   * (RN-MAS-05, RN-MAS-09), and the district.
    */
   async planBooking(
     ownerId: string,
@@ -226,6 +230,7 @@ export class CaregiversService {
       request,
       {
         homeVisitMinutes: settings['services.homeVisitMaxMinutes'],
+        walkMinutes: settings['services.walkDurationMinutes'],
         overnightStartMinute: overnight.startMinute,
         overnightEndMinute: overnight.endMinute,
         minLeadTimeMinutes: settings['bookings.minLeadTimeMinutes'],
@@ -234,6 +239,9 @@ export class CaregiversService {
     );
     const dates = serviceDates(slots);
     const pets = await this.petsOnDates(ownerId, request.petIds, dates);
+    if (request.serviceCode === ServiceCode.WALK) {
+      requireWalkablePets(pets, settings['bookings.maxDogsPerWalk']);
+    }
     await this.requireDistrict(request.districtId);
 
     return {

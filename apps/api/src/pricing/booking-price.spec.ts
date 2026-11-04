@@ -6,6 +6,7 @@ import {
   priceBooking,
   quoteBooking,
 } from './booking-price.js';
+import { SETTINGS } from '../settings/settings.registry.js';
 
 // The initial values of §15.
 const RATES: PricingRates = {
@@ -20,10 +21,24 @@ const RATES: PricingRates = {
 const visit = (unitPriceCents: number) => ({ unitPriceCents });
 
 describe('priceBooking', () => {
-  it('reproduces the example of RN-PRE: a $6.50 service pays $7.48 and the caregiver gets $6.50', () => {
-    const { amounts } = priceBooking([visit(650)], 1, RATES);
+  it('reproduces the example of RN-PRE: a $6.50 walk with a Confiable caregiver pays $7.48 and the caregiver gets $6.50', () => {
+    const { amounts } = quoteBooking({
+      slots: [{ serviceCode: ServiceCode.WALK }],
+      caregiverLevel: CaregiverLevel.TRUSTED,
+      firstServiceFeeWaived: false,
+      petCount: 1,
+      prices: [
+        {
+          serviceCode: ServiceCode.WALK,
+          caregiverPriceCents: null,
+          range: SETTINGS['pricing.priceRanges'].initialValue.WALK.TRUSTED,
+        },
+      ],
+      rates: RATES,
+    });
 
-    // The fee is 650 × 15% = 97.5, which rounds half up to 98 (RN-PRE-03, RN-PRE-08).
+    // $6.50 is the suggested walk price of Confiable (RN-PRE-01). The fee is 650 × 15% =
+    // 97.5, which rounds half up to 98 (RN-PRE-03, RN-PRE-08).
     expect(amounts).toEqual({
       subtotalCents: 650,
       ownerServiceFeeCents: 98,
@@ -149,14 +164,15 @@ describe('quoteBooking', () => {
   });
 
   it('charges no service fee on the first service and keeps the zero in the snapshot (RN-PRE-09, RN-PRE-07)', () => {
+    // The example of RN-PRE: on the first service, the $6.50 walk costs the owner $6.50.
     const quote = quoteBooking({
-      slots: [{ serviceCode: HOME_VISIT }],
+      slots: [{ serviceCode: ServiceCode.WALK }],
       caregiverLevel: CaregiverLevel.TRUSTED,
       firstServiceFeeWaived: true,
       petCount: 1,
       prices: [
         {
-          serviceCode: HOME_VISIT,
+          serviceCode: ServiceCode.WALK,
           caregiverPriceCents: 650,
           range: { minCents: 500, suggestedCents: 650, maxCents: 800 },
         },

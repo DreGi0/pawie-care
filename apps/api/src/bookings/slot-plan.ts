@@ -17,25 +17,36 @@ export interface PlannedSlot {
 /** The settings planSlots needs (§15). */
 export interface ScheduleRules {
   homeVisitMinutes: number;
+  walkMinutes: number;
   overnightStartMinute: number;
   overnightEndMinute: number;
   minLeadTimeMinutes: number;
 }
 
 /**
- * Turns the nights and visits the owner asked for into slots, sorted by start, and
- * checks that they make sense:
+ * Turns the nights, visits and walks the owner asked for into slots, sorted by start,
+ * and checks that they make sense:
+ * - a walk booking has walks and nothing else (RN-SER-05);
  * - a home visit booking has visits and no nights; an overnight booking has nights,
  *   and its visits fall during the stay (RN-SER-03);
  * - the slots don't overlap, since each one blocks its own time (RN-CUI-15);
  * - the first one starts at least the minimum lead time from now (RN-RES-05).
  */
 export function planSlots(
-  { serviceCode, nights = [], visits = [] }: ScheduleRequest,
+  { serviceCode, nights = [], visits = [], walks = [] }: ScheduleRequest,
   rules: ScheduleRules,
   now: Date,
 ): PlannedSlot[] {
-  if (serviceCode === ServiceCode.HOME_VISIT) {
+  if (serviceCode === ServiceCode.WALK) {
+    if (nights.length > 0 || visits.length > 0) {
+      throw invalidSchedule('Un paseo no lleva noches ni visitas.');
+    }
+    if (walks.length === 0) {
+      throw invalidSchedule('Elige cuándo empieza cada paseo.');
+    }
+  } else if (walks.length > 0) {
+    throw invalidSchedule('Los paseos van en una reserva de paseo.');
+  } else if (serviceCode === ServiceCode.HOME_VISIT) {
     if (nights.length > 0) {
       throw invalidSchedule('Una visita a domicilio no lleva noches.');
     }
@@ -65,6 +76,14 @@ export function planSlots(
       endsAt: new Date(startsAt.getTime() + rules.homeVisitMinutes * 60_000),
     };
   });
+  const walkSlots = walks.map((walk) => {
+    const startsAt = new Date(walk);
+    return {
+      serviceCode: ServiceCode.WALK,
+      startsAt,
+      endsAt: new Date(startsAt.getTime() + rules.walkMinutes * 60_000),
+    };
+  });
 
   if (nightSlots.length > 0 && visitSlots.length > 0) {
     const stayStart = Math.min(...nightSlots.map(({ startsAt }) => startsAt.getTime()));
@@ -78,13 +97,13 @@ export function planSlots(
     }
   }
 
-  const slots = [...nightSlots, ...visitSlots].toSorted(
+  const slots = [...nightSlots, ...visitSlots, ...walkSlots].toSorted(
     (a, b) => a.startsAt.getTime() - b.startsAt.getTime(),
   );
   for (let i = 1; i < slots.length; i++) {
     if (slots[i].startsAt < slots[i - 1].endsAt) {
       throw invalidSchedule(
-        'Dos de los horarios se cruzan. Cada visita y cada noche van por separado.',
+        'Dos de los horarios se cruzan. Cada paseo, cada visita y cada noche van por separado.',
       );
     }
   }
