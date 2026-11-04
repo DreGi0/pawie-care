@@ -6,17 +6,25 @@ import {
   atLocalTime,
   dayLabel,
   daysUntil,
+  formatDate,
+  formatDateSpan,
   formatDay,
   formatDeadline,
   formatLongDay,
   formatLongDayTime,
+  formatMinute,
   formatMoney,
+  formatPhone,
   formatRange,
   localDate,
   maskDate,
+  maskTime,
   parseDate,
+  parseTime,
   maskPhone,
   parsePhone,
+  toDateInput,
+  toTimeInput,
   upcomingDays,
 } from './format.ts';
 
@@ -78,4 +86,34 @@ test('counts the days that are left, rounding up', () => {
   assert.equal(daysUntil('2026-11-03T12:00:00Z', now), 15);
   assert.equal(daysUntil('2026-10-20T00:00:00Z', now), 1);
   assert.equal(daysUntil('2026-10-19T11:00:00Z', now), 0);
+});
+
+test('shows days without a time, and spans of them', () => {
+  assert.equal(formatDate('2026-11-03'), '3 nov 2026');
+  assert.equal(formatDateSpan('2026-11-03', '2026-11-12'), 'del 3 al 12 nov 2026');
+  assert.equal(formatDateSpan('2026-10-28', '2026-11-03'), 'del 28 oct al 3 nov 2026');
+  assert.equal(formatDateSpan('2026-12-28', '2027-01-03'), 'del 28 dic 2026 al 3 ene 2027');
+  assert.equal(formatDateSpan('2026-11-03', null), 'desde el 3 nov 2026');
+  assert.equal(toDateInput('2023-03-12'), '12/03/2023');
+  assert.equal(parseDate(toDateInput('2023-03-12')), '2023-03-12');
+});
+
+test('reads and writes times of day in minutes since midnight', () => {
+  assert.equal(formatMinute(420), '7:00');
+  assert.equal(formatMinute(1095), '18:15');
+  assert.equal(maskTime('0730'), '07:30');
+  assert.equal(maskTime('7'), '7');
+  assert.equal(parseTime('07:30'), 450);
+  assert.equal(parseTime('7:30'), 450);
+  assert.equal(parseTime('23:59'), 1439);
+  assert.equal(parseTime('24:00'), null);
+  assert.equal(parseTime('7:3'), null);
+  assert.equal(toTimeInput(450), '07:30');
+  assert.equal(parseTime(toTimeInput(1080)), 1080);
+});
+
+test('shows Salvadoran phones in groups of four', () => {
+  assert.equal(formatPhone('+50322220000'), '+503 2222 0000');
+  assert.equal(formatPhone('+503 2222 0000'), '+503 2222 0000');
+  assert.equal(formatPhone('+15551234567'), '+15551234567');
 });

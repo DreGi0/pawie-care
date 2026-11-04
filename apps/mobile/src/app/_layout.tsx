@@ -49,6 +49,14 @@ export default function RootLayout() {
         <Stack.Protected guard={session === 'signedIn'} redirectTo="/bienvenida">
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="mascotas/nueva" />
+          <Stack.Screen name="mascotas/[id]/index" />
+          <Stack.Screen name="mascotas/[id]/datos" />
+          <Stack.Screen name="mascotas/[id]/rutina" />
+          <Stack.Screen name="mascotas/[id]/horario" />
+          <Stack.Screen name="mascotas/[id]/salud" />
+          <Stack.Screen name="mascotas/[id]/vacuna" />
+          <Stack.Screen name="mascotas/[id]/tarea" />
+          <Stack.Screen name="mascotas/[id]/celo" />
           <Stack.Screen name="direcciones/nueva" />
           <Stack.Screen name="cuidadores/[id]" />
           <Stack.Screen name="reservar" />

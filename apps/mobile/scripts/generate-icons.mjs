@@ -35,6 +35,7 @@ const names = [
   'pause',
   'paw-print',
   'phone',
+  'pill',
   'plus',
   'repeat',
   'rotate-cw',
@@ -44,6 +45,7 @@ const names = [
   'sliders-horizontal',
   'star',
   'user',
+  'utensils',
   'x',
 ];
 
