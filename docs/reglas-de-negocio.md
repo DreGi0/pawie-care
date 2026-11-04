@@ -478,8 +478,8 @@ Las metas, los umbrales y los plazos del reporte del piloto (§19) **no** son pa
   - Una **reserva pagada** es una que llegó a `CONFIRMADA` (RN-PAG-02), y su **fecha de pago** es cuando llegó.
   - Las métricas con plazo solo cuentan a quienes ya tuvieron el plazo completo: en RN-MET-04, a los dueños registrados hace al menos 15 días, y en RN-MET-07, a los que pagaron su primera reserva hace al menos 60 días.
   - No cuentan las cuentas de prueba del seed.
-  - Cada métrica muestra su porcentaje, de cuántos sale y su meta.
-- **RN-MET-02** **Número crítico: cuidadores verificados activos.** El reporte muestra el número contra tres umbrales: **15** (rojo), **25** (verde) y **35** (súper verde). Cuenta a los cuidadores que cumplen todo esto a la vez:
+  - Cada métrica muestra su porcentaje, de cuántos sale, su meta y si la **cumple** o **no la cumple**. No usa colores, para no confundirla con los tramos del número crítico.
+- **RN-MET-02** **Número crítico: cuidadores verificados activos.** El reporte muestra el número contra tres umbrales: **15** (rojo), **25** (verde) y **35** (súper verde). El rojo es el mínimo aceptable, así que los tramos son: menos de 15, "bajo el mínimo"; de 15 a 24, "rojo"; de 25 a 34, "verde"; y 35 o más, "súper verde". Cuenta a los cuidadores que cumplen todo esto a la vez:
   - están aprobados (RN-CUI-03) y aprobaron el curso de bienvenida (RN-CUI-02);
   - no están pausados (RN-CUI-20);
   - tienen al menos una ventana en su horario semanal y al menos un distrito en San Salvador o Santa Tecla (RN-CUI-04).

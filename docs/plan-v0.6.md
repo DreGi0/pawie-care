@@ -17,13 +17,13 @@ Este plan lleva el código a las [reglas v0.6](reglas-de-negocio.md). Cada etapa
 
 ## 1. Brecha entre el código y la v0.6
 
-Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las certificaciones ya siguen las reglas (etapa 6), y el cuidador se da de alta desde la app (etapa 9a).
+Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las certificaciones ya siguen las reglas (etapa 6), el cuidador se da de alta desde la app (etapa 9a) y el reporte del piloto sale con un script (métricas).
 
 | Área                     | Hoy en el código                                                           | Falta para la v0.6                                                                       | Etapa            |
 | ------------------------ | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------- |
 | Design system            | Placas (etapa D, hecha)                                                    | Nada                                                                                     | D                |
 | Alta del cuidador        | Modo cuidador, documentos, curso, aprobación, perfil y precios (9a, hecha) | Nada                                                                                     | 9a               |
-| Métricas del piloto      | Nada                                                                       | Script `metrics:report`                                                                  | Métricas         |
+| Métricas del piloto      | Script `metrics:report` (métricas, hecha)                                  | Crecimiento (RN-MET-06), que necesita los referidos                                      | Eventos de la 11 |
 | Ficha                    | Datos, salud, vacunas, indicaciones y tareas de cuidado                    | Alimento, horarios de comida y medicinas, premios, rutina y celo; pantalla de la mascota | 7                |
 | Servicios                | Visita y pernocta                                                          | Paseo                                                                                    | 8                |
 | Solicitudes del cuidador | La máquina de estados permite aceptar y rechazar, pero no hay endpoints    | Solicitudes, aceptar o rechazar, agenda y ganancias                                      | 9b               |
@@ -175,24 +175,27 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 - Con `pricing.caregiverCommissionBp` en 1000 (`settings:set`), Precios muestra lo que recibe con el 10% sin cambiar la app.
 - Un Súper Cuidador no ve el sugerido del siguiente nivel.
 
-### Etapa de métricas: reporte del piloto
+### Etapa de métricas: reporte del piloto (hecha)
 
 **Reglas:** RN-MET-01 a RN-MET-07.
 
-**API:**
+**API (hecha, la etapa no toca la app):**
 
-- Script `metrics:report` en `src/metrics/`, como `caregivers:recalculate-levels`: solo lee la base y escribe en la consola.
-- Cada métrica es una consulta y una función pura que arma su línea del reporte, con su `.spec.ts`.
-- Las metas, los umbrales y los plazos son constantes en `src/metrics/`, no settings, y no van en la §15 (RN-MET-01).
-- Las cuentas del seed (`@example.com`) no cuentan.
-- Cada línea muestra el porcentaje, el numerador, el denominador y la meta. Con el denominador en 0 dice "sin datos".
-- Crecimiento (RN-MET-06) sale como "pendiente" hasta "eventos de la 11", que agrega los referidos.
+- Script `metrics:report` en `src/metrics/`, con el runner de los demás scripts: solo lee la base y escribe una tabla en la consola. `pilot-targets.ts` tiene las metas, `pilot-report.ts` las consultas y las líneas, y `metrics-report.command.ts` los argumentos.
+- Las metas, los umbrales y los plazos son constantes en `pilot-targets.ts`, no settings, y no van en la §15 (RN-MET-01).
+- `--from` y `--to` son opcionales: días en El Salvador, con los dos extremos incluidos. Filtran cada grupo por cuándo entró: el embudo y Oferta por la creación del perfil de cuidador, Valor por el registro del dueño y Retención por su primer pago. El número crítico es siempre el de hoy, porque la pausa y el horario no guardan historial. Sin fechas, el reporte usa todo el historial.
+- Una reserva pagada es una con su estado en `CONFIRMED_STATUSES`, que ahora se exporta de `booking-status.ts`. Su fecha de pago es su primer `BookingStatusChange` a `CONFIRMED`.
+- Las cuentas del seed (`@example.com`) no cuentan, así que con el seed de demo todo sale en 0. Las factories de los tests aceptan otro correo.
+- Número crítico: menos de 15 es "bajo el mínimo", de 15 a 24 "rojo", de 25 a 34 "verde" y desde 35 "súper verde" (RN-MET-02). Las hipótesis muestran el porcentaje, el numerador, el denominador, la meta y si "cumple" o "no cumple". Con el denominador en 0 dicen "sin datos". El embudo no tiene meta: muestra el % de cada paso sobre el anterior.
+- Crecimiento (RN-MET-06) dice "sin datos todavía" hasta "eventos de la 11", que agrega los referidos.
+- Hay un solo test, `test/metrics.e2e-spec.ts`, en lugar de un `.spec.ts` por métrica.
 
 **Terminado cuando:**
 
-- El número crítico no cuenta a un cuidador pausado, sin horario, sin el curso o con distritos solo fuera de San Salvador y Santa Tecla.
-- Hay tests con un reloj fijo de los bordes de 15 y 60 días, y de que un dueño registrado hace menos de 15 días no entra en la métrica de valor.
-- El embudo no cuenta en un paso a quien no cumple los anteriores.
+- El número crítico no cuenta a un cuidador pausado, sin horario, sin el curso o con distritos solo fuera de San Salvador y Santa Tecla, ni a una cuenta del seed.
+- Con un reloj fijo, Valor cuenta al dueño que paga su primera reserva el día 15 y no al que la paga el día 16, y no cuenta a un dueño registrado hace menos de 15 días.
+
+**La etapa de métricas está hecha.**
 
 ### Etapa 7: ficha ampliada y certificaciones
 
