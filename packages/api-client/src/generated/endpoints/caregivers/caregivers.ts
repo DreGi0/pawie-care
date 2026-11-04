@@ -22,6 +22,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CaregiverBookingResponse,
+  CaregiverBookingsListParams,
+  CaregiverEarningsResponse,
   CaregiverLevelResponse,
   CaregiverMeResponse,
   CaregiverPricesResponse,
@@ -53,6 +56,425 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getCaregiverBookingsListUrl = (params?: CaregiverBookingsListParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    const explodeParameters = ['status'];
+
+    if (Array.isArray(value) && explodeParameters.includes(key)) {
+      value.forEach((v) => {
+        normalizedParams.append(key, v === null ? 'null' : String(v));
+      });
+      return;
+    }
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/caregivers/me/bookings?${stringifiedParams}`
+    : `/v1/caregivers/me/bookings`;
+};
+
+/**
+ * RN-RES-11. Primero las solicitudes, la que vence primero arriba (RN-RES-06); después el resto, por inicio. La dirección exacta y los datos de emergencia aparecen desde CONFIRMED (RN-CTA-04).
+ * @summary Mis reservas como cuidador
+ */
+export const caregiverBookingsList = async (
+  params?: CaregiverBookingsListParams,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<CaregiverBookingResponse[]> => {
+  return customFetch<CaregiverBookingResponse[]>(getCaregiverBookingsListUrl(params), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getCaregiverBookingsListQueryKey = (params?: CaregiverBookingsListParams) => {
+  return [`/v1/caregivers/me/bookings`, ...(params ? [params] : [])] as const;
+};
+
+export const getCaregiverBookingsListQueryOptions = <
+  TData = Awaited<ReturnType<typeof caregiverBookingsList>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  params?: CaregiverBookingsListParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsList>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getCaregiverBookingsListQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof caregiverBookingsList>>> = ({ signal }) =>
+    caregiverBookingsList(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof caregiverBookingsList>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CaregiverBookingsListQueryResult = NonNullable<
+  Awaited<ReturnType<typeof caregiverBookingsList>>
+>;
+export type CaregiverBookingsListQueryError = ErrorType<ErrorResponse>;
+
+export function useCaregiverBookingsList<
+  TData = Awaited<ReturnType<typeof caregiverBookingsList>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  params: undefined | CaregiverBookingsListParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsList>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof caregiverBookingsList>>,
+          TError,
+          Awaited<ReturnType<typeof caregiverBookingsList>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useCaregiverBookingsList<
+  TData = Awaited<ReturnType<typeof caregiverBookingsList>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  params?: CaregiverBookingsListParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsList>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof caregiverBookingsList>>,
+          TError,
+          Awaited<ReturnType<typeof caregiverBookingsList>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useCaregiverBookingsList<
+  TData = Awaited<ReturnType<typeof caregiverBookingsList>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  params?: CaregiverBookingsListParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsList>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary Mis reservas como cuidador
+ */
+
+export function useCaregiverBookingsList<
+  TData = Awaited<ReturnType<typeof caregiverBookingsList>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  params?: CaregiverBookingsListParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsList>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCaregiverBookingsListQueryOptions(params, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+export const getCaregiverBookingsGetUrl = (bookingId: string) => {
+  return `/v1/caregivers/me/bookings/${bookingId}`;
+};
+
+/**
+ * RN-RES-11: las mascotas con su ficha para esas fechas, celo y Especial, el servicio, los tramos, el distrito y lo que va a ganar.
+ * @summary Ver una reserva como cuidador
+ */
+export const caregiverBookingsGet = async (
+  bookingId: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<CaregiverBookingResponse> => {
+  return customFetch<CaregiverBookingResponse>(getCaregiverBookingsGetUrl(bookingId), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getCaregiverBookingsGetQueryKey = (bookingId: string) => {
+  return [`/v1/caregivers/me/bookings/${bookingId}`] as const;
+};
+
+export const getCaregiverBookingsGetQueryOptions = <
+  TData = Awaited<ReturnType<typeof caregiverBookingsGet>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  bookingId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsGet>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getCaregiverBookingsGetQueryKey(bookingId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof caregiverBookingsGet>>> = ({ signal }) =>
+    caregiverBookingsGet(bookingId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: bookingId !== null && bookingId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsGet>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+};
+
+export type CaregiverBookingsGetQueryResult = NonNullable<
+  Awaited<ReturnType<typeof caregiverBookingsGet>>
+>;
+export type CaregiverBookingsGetQueryError = ErrorType<ErrorResponse>;
+
+export function useCaregiverBookingsGet<
+  TData = Awaited<ReturnType<typeof caregiverBookingsGet>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  bookingId: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsGet>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof caregiverBookingsGet>>,
+          TError,
+          Awaited<ReturnType<typeof caregiverBookingsGet>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useCaregiverBookingsGet<
+  TData = Awaited<ReturnType<typeof caregiverBookingsGet>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  bookingId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsGet>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof caregiverBookingsGet>>,
+          TError,
+          Awaited<ReturnType<typeof caregiverBookingsGet>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useCaregiverBookingsGet<
+  TData = Awaited<ReturnType<typeof caregiverBookingsGet>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  bookingId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsGet>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary Ver una reserva como cuidador
+ */
+
+export function useCaregiverBookingsGet<
+  TData = Awaited<ReturnType<typeof caregiverBookingsGet>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  bookingId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsGet>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCaregiverBookingsGetQueryOptions(bookingId, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+export const getCaregiverBookingsEarningsUrl = () => {
+  return `/v1/caregivers/me/earnings`;
+};
+
+/**
+ * RN-PAG-10: por cobrar, pagado y el total del mes en curso, hora de El Salvador. Pagado es 0 hasta que existan los pagos al cuidador.
+ * @summary Mis ganancias
+ */
+export const caregiverBookingsEarnings = async (
+  options?: Parameters<typeof customFetch>[1],
+): Promise<CaregiverEarningsResponse> => {
+  return customFetch<CaregiverEarningsResponse>(getCaregiverBookingsEarningsUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getCaregiverBookingsEarningsQueryKey = () => {
+  return [`/v1/caregivers/me/earnings`] as const;
+};
+
+export const getCaregiverBookingsEarningsQueryOptions = <
+  TData = Awaited<ReturnType<typeof caregiverBookingsEarnings>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsEarnings>>, TError, TData>
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getCaregiverBookingsEarningsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof caregiverBookingsEarnings>>> = ({
+    signal,
+  }) => caregiverBookingsEarnings({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof caregiverBookingsEarnings>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CaregiverBookingsEarningsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof caregiverBookingsEarnings>>
+>;
+export type CaregiverBookingsEarningsQueryError = ErrorType<ErrorResponse>;
+
+export function useCaregiverBookingsEarnings<
+  TData = Awaited<ReturnType<typeof caregiverBookingsEarnings>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsEarnings>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof caregiverBookingsEarnings>>,
+          TError,
+          Awaited<ReturnType<typeof caregiverBookingsEarnings>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useCaregiverBookingsEarnings<
+  TData = Awaited<ReturnType<typeof caregiverBookingsEarnings>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsEarnings>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof caregiverBookingsEarnings>>,
+          TError,
+          Awaited<ReturnType<typeof caregiverBookingsEarnings>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useCaregiverBookingsEarnings<
+  TData = Awaited<ReturnType<typeof caregiverBookingsEarnings>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsEarnings>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary Mis ganancias
+ */
+
+export function useCaregiverBookingsEarnings<
+  TData = Awaited<ReturnType<typeof caregiverBookingsEarnings>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof caregiverBookingsEarnings>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCaregiverBookingsEarningsQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
 
 export const getCaregiverMeCreateUrl = () => {
   return `/v1/caregivers/me`;

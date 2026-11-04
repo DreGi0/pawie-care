@@ -8,6 +8,462 @@
 import * as zod from 'zod';
 
 /**
+ * RN-RES-11. Primero las solicitudes, la que vence primero arriba (RN-RES-06); después el resto, por inicio. La dirección exacta y los datos de emergencia aparecen desde CONFIRMED (RN-CTA-04).
+ * @summary Mis reservas como cuidador
+ */
+export const CaregiverBookingsListQueryParams = zod.object({
+  status: zod
+    .array(
+      zod
+        .enum([
+          'REQUESTED',
+          'PENDING_PAYMENT',
+          'CONFIRMED',
+          'IN_PROGRESS',
+          'COMPLETED',
+          'CLOSED',
+          'REJECTED',
+          'EXPIRED',
+          'CANCELLED_BY_OWNER',
+          'CANCELLED_BY_CAREGIVER',
+          'DISPUTED',
+        ])
+        .describe('Sección 8.2.'),
+    )
+    .optional()
+    .describe('Solo las reservas en estos estados. Sin él, todas.'),
+  upcoming: zod.boolean().optional().describe('Solo las que todavía no terminan, para la agenda.'),
+});
+
+export const CaregiverBookingsListResponseItem = zod.object({
+  id: zod.uuid(),
+  status: zod
+    .enum([
+      'REQUESTED',
+      'PENDING_PAYMENT',
+      'CONFIRMED',
+      'IN_PROGRESS',
+      'COMPLETED',
+      'CLOSED',
+      'REJECTED',
+      'EXPIRED',
+      'CANCELLED_BY_OWNER',
+      'CANCELLED_BY_CAREGIVER',
+      'DISPUTED',
+    ])
+    .describe('Sección 8.2.'),
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
+  careLevel: zod
+    .enum(['STANDARD', 'SPECIAL'])
+    .describe(
+      'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+    )
+    .describe('RN-MAS-06: Especial si alguna mascota lo es.'),
+  startsAt: zod.iso.datetime({ offset: true }).describe('Inicio del primer tramo.'),
+  endsAt: zod.iso.datetime({ offset: true }).describe('Fin del último tramo.'),
+  responseDueAt: zod.iso
+    .datetime({ offset: true })
+    .nullable()
+    .describe('Mientras está SOLICITADA: hasta cuándo puede responder (RN-RES-06).'),
+  paymentDueAt: zod.iso
+    .datetime({ offset: true })
+    .nullable()
+    .describe('Mientras está PENDIENTE DE PAGO: hasta cuándo puede pagar el dueño (RN-RES-07).'),
+  owner: zod.object({
+    displayName: zod.string(),
+  }),
+  district: zod.object({
+    id: zod.uuid(),
+    slug: zod.string(),
+    name: zod.string(),
+  }),
+  address: zod
+    .object({
+      street: zod.string(),
+      details: zod.string().nullable(),
+    })
+    .nullable()
+    .describe('RN-CTA-04: la dirección exacta, solo desde que la reserva está CONFIRMED.'),
+  emergency: zod
+    .object({
+      contactName: zod.string(),
+      contactPhone: zod.string(),
+      vetName: zod.string().nullable(),
+      vetPhone: zod.string().nullable(),
+      preauthorizedCents: zod.int(),
+      clinicConsent: zod.boolean(),
+    })
+    .nullable()
+    .describe('RN-RES-04, RN-CTA-04: los datos de emergencia, solo desde CONFIRMED.'),
+  instructions: zod
+    .string()
+    .nullable()
+    .describe('RN-RES-03: las instrucciones del dueño para este servicio.'),
+  slots: zod
+    .array(
+      zod.object({
+        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
+        startsAt: zod.iso.datetime({ offset: true }),
+        endsAt: zod.iso.datetime({ offset: true }),
+      }),
+    )
+    .describe('Cada tramo, en orden.'),
+  earnings: zod.object({
+    subtotalCents: zod.int().describe('Lo que cobra el cuidador: la suma de los tramos.'),
+    commissionBp: zod.int().describe('RN-PRE-04, en puntos básicos.'),
+    commissionCents: zod.int(),
+    payoutCents: zod
+      .int()
+      .describe('Lo que va a ganar: el subtotal menos la comisión. La app muestra este monto.'),
+  }),
+  pets: zod.array(
+    zod.object({
+      id: zod.uuid(),
+      name: zod.string(),
+      species: zod.object({
+        id: zod.uuid(),
+        code: zod.string(),
+        name: zod.string(),
+      }),
+      breed: zod.string().nullable(),
+      birthDate: zod.iso.date(),
+      birthDateIsApproximate: zod.boolean(),
+      sex: zod.enum(['MALE', 'FEMALE']),
+      weightGrams: zod.int().nullable(),
+      isSterilized: zod.boolean().nullable(),
+      temperament: zod.string().nullable(),
+      handlingNotes: zod.string().nullable(),
+      foodDescription: zod.string().nullable(),
+      foodPortion: zod.string().nullable(),
+      allowedTreats: zod.string().nullable(),
+      dailyRoutine: zod.string().nullable(),
+      vetName: zod.string().nullable(),
+      vetClinic: zod.string().nullable(),
+      vetPhone: zod.string().nullable(),
+      healthConditions: zod.string().nullable(),
+      medications: zod
+        .string()
+        .nullable()
+        .describe('Solo informa: nunca se muestra como instrucción ni como tarea del cuidador.'),
+      heatStartsOn: zod.iso.date().nullable().describe('RN-MAS-11'),
+      heatEndsOn: zod.iso.date().nullable(),
+      photoFileId: zod.uuid().nullable(),
+      photoUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
+      careLevel: zod
+        .enum(['STANDARD', 'SPECIAL'])
+        .describe(
+          'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+        )
+        .describe('RN-MAS-05: su nivel en las fechas de la reserva, guardado al reservar.'),
+      inHeat: zod.boolean().describe('RN-MAS-11: el celo cae en alguna fecha de la reserva.'),
+      careNeeds: zod
+        .array(
+          zod.object({
+            id: zod.uuid(),
+            task: zod.enum([
+              'MEDICATION',
+              'WOUND_CARE',
+              'POST_OPERATIVE_RECOVERY',
+              'SYRINGE_FEEDING',
+              'PRESCRIBED_REST',
+              'CHRONIC_CONDITION_MONITORING',
+              'MOBILITY_ASSISTANCE',
+              'INCONTINENCE_HYGIENE',
+              'INJECTION',
+              'IV_FLUIDS',
+              'STITCH_OR_DRAIN_REMOVAL',
+              'TUBE_PLACEMENT',
+              'SEDATION',
+              'DOSE_CHANGE',
+              'DIAGNOSIS_OR_PRESCRIPTION',
+            ]),
+            group: zod
+              .enum(['CLINICAL', 'ASSISTANCE', 'PROHIBITED'])
+              .describe(
+                'CLINICAL pide las indicaciones del veterinario y ASSISTANCE las del dueño; las dos hacen Especial a la mascota. Con una PROHIBITED activa no se puede reservar.',
+              ),
+            startsOn: zod.iso.date(),
+            endsOn: zod.iso.date().nullable(),
+            vetInstructionId: zod.uuid().nullable(),
+            ownerInstructions: zod.string().nullable(),
+          }),
+        )
+        .describe('Las tareas de cuidado activas en las fechas de la reserva (RN-MAS-05).'),
+      scheduleItems: zod
+        .array(
+          zod.object({
+            id: zod.uuid().describe('Editar el horario conserva el id.'),
+            kind: zod.enum(['MEAL', 'MEDICATION']),
+            minuteOfDay: zod.int().describe('Minutos desde la medianoche.'),
+            label: zod.string(),
+            dose: zod.string().nullable(),
+            careNeedId: zod.uuid().nullable(),
+          }),
+        )
+        .describe(
+          'Las comidas y las dosis de las tareas de Medicación activas en esas fechas, ordenadas por hora (RN-CUI-12).',
+        ),
+      vetInstructions: zod
+        .array(
+          zod.object({
+            id: zod.uuid(),
+            issuedOn: zod.iso.date(),
+            vetName: zod.string().nullable(),
+            notes: zod.string().nullable(),
+            fileId: zod.uuid(),
+            fileUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
+            contentType: zod.string(),
+          }),
+        )
+        .describe('RN-RES-03: las indicaciones del veterinario que se adjuntaron a la reserva.'),
+    }),
+  ),
+  createdAt: zod.iso.datetime({ offset: true }),
+});
+export const CaregiverBookingsListResponse = zod.array(CaregiverBookingsListResponseItem);
+
+/**
+ * RN-RES-11: las mascotas con su ficha para esas fechas, celo y Especial, el servicio, los tramos, el distrito y lo que va a ganar.
+ * @summary Ver una reserva como cuidador
+ */
+export const CaregiverBookingsGetParams = zod.object({
+  bookingId: zod.string(),
+});
+
+export const CaregiverBookingsGetResponse = zod.object({
+  id: zod.uuid(),
+  status: zod
+    .enum([
+      'REQUESTED',
+      'PENDING_PAYMENT',
+      'CONFIRMED',
+      'IN_PROGRESS',
+      'COMPLETED',
+      'CLOSED',
+      'REJECTED',
+      'EXPIRED',
+      'CANCELLED_BY_OWNER',
+      'CANCELLED_BY_CAREGIVER',
+      'DISPUTED',
+    ])
+    .describe('Sección 8.2.'),
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
+  careLevel: zod
+    .enum(['STANDARD', 'SPECIAL'])
+    .describe(
+      'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+    )
+    .describe('RN-MAS-06: Especial si alguna mascota lo es.'),
+  startsAt: zod.iso.datetime({ offset: true }).describe('Inicio del primer tramo.'),
+  endsAt: zod.iso.datetime({ offset: true }).describe('Fin del último tramo.'),
+  responseDueAt: zod.iso
+    .datetime({ offset: true })
+    .nullable()
+    .describe('Mientras está SOLICITADA: hasta cuándo puede responder (RN-RES-06).'),
+  paymentDueAt: zod.iso
+    .datetime({ offset: true })
+    .nullable()
+    .describe('Mientras está PENDIENTE DE PAGO: hasta cuándo puede pagar el dueño (RN-RES-07).'),
+  owner: zod.object({
+    displayName: zod.string(),
+  }),
+  district: zod.object({
+    id: zod.uuid(),
+    slug: zod.string(),
+    name: zod.string(),
+  }),
+  address: zod
+    .object({
+      street: zod.string(),
+      details: zod.string().nullable(),
+    })
+    .nullable()
+    .describe('RN-CTA-04: la dirección exacta, solo desde que la reserva está CONFIRMED.'),
+  emergency: zod
+    .object({
+      contactName: zod.string(),
+      contactPhone: zod.string(),
+      vetName: zod.string().nullable(),
+      vetPhone: zod.string().nullable(),
+      preauthorizedCents: zod.int(),
+      clinicConsent: zod.boolean(),
+    })
+    .nullable()
+    .describe('RN-RES-04, RN-CTA-04: los datos de emergencia, solo desde CONFIRMED.'),
+  instructions: zod
+    .string()
+    .nullable()
+    .describe('RN-RES-03: las instrucciones del dueño para este servicio.'),
+  slots: zod
+    .array(
+      zod.object({
+        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
+        startsAt: zod.iso.datetime({ offset: true }),
+        endsAt: zod.iso.datetime({ offset: true }),
+      }),
+    )
+    .describe('Cada tramo, en orden.'),
+  earnings: zod.object({
+    subtotalCents: zod.int().describe('Lo que cobra el cuidador: la suma de los tramos.'),
+    commissionBp: zod.int().describe('RN-PRE-04, en puntos básicos.'),
+    commissionCents: zod.int(),
+    payoutCents: zod
+      .int()
+      .describe('Lo que va a ganar: el subtotal menos la comisión. La app muestra este monto.'),
+  }),
+  pets: zod.array(
+    zod.object({
+      id: zod.uuid(),
+      name: zod.string(),
+      species: zod.object({
+        id: zod.uuid(),
+        code: zod.string(),
+        name: zod.string(),
+      }),
+      breed: zod.string().nullable(),
+      birthDate: zod.iso.date(),
+      birthDateIsApproximate: zod.boolean(),
+      sex: zod.enum(['MALE', 'FEMALE']),
+      weightGrams: zod.int().nullable(),
+      isSterilized: zod.boolean().nullable(),
+      temperament: zod.string().nullable(),
+      handlingNotes: zod.string().nullable(),
+      foodDescription: zod.string().nullable(),
+      foodPortion: zod.string().nullable(),
+      allowedTreats: zod.string().nullable(),
+      dailyRoutine: zod.string().nullable(),
+      vetName: zod.string().nullable(),
+      vetClinic: zod.string().nullable(),
+      vetPhone: zod.string().nullable(),
+      healthConditions: zod.string().nullable(),
+      medications: zod
+        .string()
+        .nullable()
+        .describe('Solo informa: nunca se muestra como instrucción ni como tarea del cuidador.'),
+      heatStartsOn: zod.iso.date().nullable().describe('RN-MAS-11'),
+      heatEndsOn: zod.iso.date().nullable(),
+      photoFileId: zod.uuid().nullable(),
+      photoUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
+      careLevel: zod
+        .enum(['STANDARD', 'SPECIAL'])
+        .describe(
+          'RN-MAS-06: Especial si alguna mascota lo es. Exige la ⭐ del cuidador, pero no cambia el precio.',
+        )
+        .describe('RN-MAS-05: su nivel en las fechas de la reserva, guardado al reservar.'),
+      inHeat: zod.boolean().describe('RN-MAS-11: el celo cae en alguna fecha de la reserva.'),
+      careNeeds: zod
+        .array(
+          zod.object({
+            id: zod.uuid(),
+            task: zod.enum([
+              'MEDICATION',
+              'WOUND_CARE',
+              'POST_OPERATIVE_RECOVERY',
+              'SYRINGE_FEEDING',
+              'PRESCRIBED_REST',
+              'CHRONIC_CONDITION_MONITORING',
+              'MOBILITY_ASSISTANCE',
+              'INCONTINENCE_HYGIENE',
+              'INJECTION',
+              'IV_FLUIDS',
+              'STITCH_OR_DRAIN_REMOVAL',
+              'TUBE_PLACEMENT',
+              'SEDATION',
+              'DOSE_CHANGE',
+              'DIAGNOSIS_OR_PRESCRIPTION',
+            ]),
+            group: zod
+              .enum(['CLINICAL', 'ASSISTANCE', 'PROHIBITED'])
+              .describe(
+                'CLINICAL pide las indicaciones del veterinario y ASSISTANCE las del dueño; las dos hacen Especial a la mascota. Con una PROHIBITED activa no se puede reservar.',
+              ),
+            startsOn: zod.iso.date(),
+            endsOn: zod.iso.date().nullable(),
+            vetInstructionId: zod.uuid().nullable(),
+            ownerInstructions: zod.string().nullable(),
+          }),
+        )
+        .describe('Las tareas de cuidado activas en las fechas de la reserva (RN-MAS-05).'),
+      scheduleItems: zod
+        .array(
+          zod.object({
+            id: zod.uuid().describe('Editar el horario conserva el id.'),
+            kind: zod.enum(['MEAL', 'MEDICATION']),
+            minuteOfDay: zod.int().describe('Minutos desde la medianoche.'),
+            label: zod.string(),
+            dose: zod.string().nullable(),
+            careNeedId: zod.uuid().nullable(),
+          }),
+        )
+        .describe(
+          'Las comidas y las dosis de las tareas de Medicación activas en esas fechas, ordenadas por hora (RN-CUI-12).',
+        ),
+      vetInstructions: zod
+        .array(
+          zod.object({
+            id: zod.uuid(),
+            issuedOn: zod.iso.date(),
+            vetName: zod.string().nullable(),
+            notes: zod.string().nullable(),
+            fileId: zod.uuid(),
+            fileUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
+            contentType: zod.string(),
+          }),
+        )
+        .describe('RN-RES-03: las indicaciones del veterinario que se adjuntaron a la reserva.'),
+    }),
+  ),
+  createdAt: zod.iso.datetime({ offset: true }),
+});
+
+/**
+ * RN-PAG-10: por cobrar, pagado y el total del mes en curso, hora de El Salvador. Pagado es 0 hasta que existan los pagos al cuidador.
+ * @summary Mis ganancias
+ */
+export const CaregiverBookingsEarningsResponse = zod.object({
+  pendingCents: zod
+    .int()
+    .describe(
+      'Por cobrar: lo que va a ganar con las reservas confirmadas o en retención (RN-PAG-03).',
+    ),
+  paidCents: zod
+    .int()
+    .describe('Pagado (simulado en la demo). Es 0 hasta que existan los pagos al cuidador.'),
+  month: zod.string().describe('El mes en curso, hora de El Salvador.'),
+  monthTotalCents: zod
+    .int()
+    .describe(
+      'Lo que gana con los servicios que empiezan en el mes, por cobrar o pagados. No cuenta las reservas que no se confirmaron.',
+    ),
+  pending: zod
+    .array(
+      zod.object({
+        bookingId: zod.uuid(),
+        status: zod
+          .enum([
+            'REQUESTED',
+            'PENDING_PAYMENT',
+            'CONFIRMED',
+            'IN_PROGRESS',
+            'COMPLETED',
+            'CLOSED',
+            'REJECTED',
+            'EXPIRED',
+            'CANCELLED_BY_OWNER',
+            'CANCELLED_BY_CAREGIVER',
+            'DISPUTED',
+          ])
+          .describe('Sección 8.2.'),
+        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
+        startsAt: zod.iso.datetime({ offset: true }),
+        petNames: zod.array(zod.string()),
+        payoutCents: zod.int(),
+      }),
+    )
+    .describe('Lo por cobrar, el servicio más próximo primero.'),
+});
+
+/**
  * RN-CTA-06. Crea el perfil de cuidador en `PENDING_APPROVAL`, con todos los servicios al precio sugerido (RN-CUI-17), y la cuenta queda en modo cuidador.
  * @summary Activar el modo cuidador
  */
