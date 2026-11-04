@@ -31,8 +31,14 @@ export const SPECIES = [
   { code: 'CAT', name: 'Gato' },
 ] as const;
 
-/** RN-SER-01, RN-SER-02. Durations and hours are settings, so the texts don't give them. */
+/** RN-SER-01, RN-SER-02, RN-SER-05. Durations and hours are settings, so the texts don't give them. */
 export const SERVICES = [
+  {
+    code: ServiceCode.WALK,
+    name: 'Paseo',
+    description:
+      'El cuidador recoge al perro en la casa del dueño, lo saca a pasear y lo regresa. Solo para perros.',
+  },
   {
     code: ServiceCode.HOME_VISIT,
     name: 'Visita a domicilio',

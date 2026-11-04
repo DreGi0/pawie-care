@@ -117,6 +117,7 @@ Las fotos y los documentos van en un bucket privado (arquitectura §4.11). La ap
 
 - **Pernocta:** `nights` es la fecha en que empieza cada noche, de 19:00 a 08:00 del día siguiente. Puede llevar `visits` durante la estadía (RN-SER-03).
 - **Visita:** `visits` es la hora en que empieza cada una, con zona horaria. Cada visita dura 60 min.
+- **Paseo (RN-SER-05):** `walks` es la hora en que empieza cada paseo, con zona horaria. Cada uno dura 45 min (`services.walkDurationMinutes`), y se pueden pedir varios en un día. Un paseo no lleva noches ni visitas, y solo lleva perros, hasta 2 (`bookings.maxDogsPerWalk`).
 
 [src/bookings/slot-plan.ts](src/bookings/slot-plan.ts) convierte eso en tramos, los mismos que usa la reserva.
 
@@ -131,6 +132,7 @@ Los resultados van ordenados por calificación y después por servicios completa
 
 - **Errores:**
   - `TOO_MANY_PETS` (RN-RES-03);
+  - `WALK_ONLY_FOR_DOGS` (RN-RES-01), con las mascotas que no son perros en `details`, y `TOO_MANY_DOGS_PER_WALK` (RN-SER-05);
   - `INVALID_SCHEDULE`;
   - `TOO_SOON` (RN-RES-05);
   - `PET_NOT_BOOKABLE` (RN-MAS-09), con un mensaje que explica el motivo y las mascotas y tareas en `details`;
@@ -142,7 +144,7 @@ Los resultados van ordenados por calificación y después por servicios completa
 
 Etapa 9a. Toda cuenta empieza como dueño (RN-CTA-06). `POST /v1/caregivers/me` activa el modo cuidador:
 
-- crea el perfil en `PENDING_APPROVAL`, con visita y pernocta al precio sugerido (RN-CUI-17);
+- crea el perfil en `PENDING_APPROVAL`, con paseo, visita y pernocta al precio sugerido (RN-CUI-17);
 - agrega el rol `CAREGIVER`;
 - y deja la cuenta en modo cuidador. La cuenta recuerda el último modo: `mode` en `GET` y `PATCH /v1/users/me`.
 

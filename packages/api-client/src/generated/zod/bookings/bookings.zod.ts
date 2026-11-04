@@ -15,6 +15,8 @@ export const bookingsCreateBodyNightsMax = 31;
 
 export const bookingsCreateBodyVisitsMax = 62;
 
+export const bookingsCreateBodyWalksMax = 62;
+
 export const bookingsCreateBodyPetIdsMax = 10;
 
 export const bookingsCreateBodyInstructionsMax = 2000;
@@ -27,7 +29,7 @@ export const bookingsCreateBodyEmergencyPreauthorizedCentsMin = 0;
 export const bookingsCreateBodyEmergencyPreauthorizedCentsMax = 200000;
 
 export const BookingsCreateBody = zod.object({
-  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
   nights: zod
     .array(zod.iso.date())
     .max(bookingsCreateBodyNightsMax)
@@ -40,6 +42,11 @@ export const BookingsCreateBody = zod.object({
     .describe(
       'Cuándo empieza cada visita. En una pernocta son las visitas de día durante la estadía (RN-SER-03).',
     ),
+  walks: zod
+    .array(zod.iso.datetime({ offset: true }))
+    .max(bookingsCreateBodyWalksMax)
+    .optional()
+    .describe('Solo en paseo: cuándo empieza cada paseo (RN-SER-05).'),
   caregiverId: zod.uuid().describe('Un cuidador de los resultados de la búsqueda.'),
   petIds: zod
     .array(zod.uuid())
@@ -97,7 +104,7 @@ export const BookingsCreateResponse = zod.object({
     ])
     .describe('Sección 8.2.')
     .describe('Sección 8.2.'),
-  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
   careLevel: zod
     .enum(['STANDARD', 'SPECIAL'])
     .describe(
@@ -143,7 +150,7 @@ export const BookingsCreateResponse = zod.object({
   slots: zod
     .array(
       zod.object({
-        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
         startsAt: zod.iso.datetime({ offset: true }),
         endsAt: zod.iso.datetime({ offset: true }),
         unitPriceCents: zod.int().describe('Precio del cuidador por una mascota, en centavos.'),
@@ -239,7 +246,7 @@ export const BookingsListResponseItem = zod.object({
     ])
     .describe('Sección 8.2.')
     .describe('Sección 8.2.'),
-  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
   careLevel: zod
     .enum(['STANDARD', 'SPECIAL'])
     .describe(
@@ -285,7 +292,7 @@ export const BookingsListResponseItem = zod.object({
   slots: zod
     .array(
       zod.object({
-        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
         startsAt: zod.iso.datetime({ offset: true }),
         endsAt: zod.iso.datetime({ offset: true }),
         unitPriceCents: zod.int().describe('Precio del cuidador por una mascota, en centavos.'),
@@ -368,12 +375,14 @@ export const bookingsQuoteBodyNightsMax = 31;
 
 export const bookingsQuoteBodyVisitsMax = 62;
 
+export const bookingsQuoteBodyWalksMax = 62;
+
 export const bookingsQuoteBodyPetIdsMax = 10;
 
 export const bookingsQuoteBodyInstructionsMax = 2000;
 
 export const BookingsQuoteBody = zod.object({
-  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
   nights: zod
     .array(zod.iso.date())
     .max(bookingsQuoteBodyNightsMax)
@@ -386,6 +395,11 @@ export const BookingsQuoteBody = zod.object({
     .describe(
       'Cuándo empieza cada visita. En una pernocta son las visitas de día durante la estadía (RN-SER-03).',
     ),
+  walks: zod
+    .array(zod.iso.datetime({ offset: true }))
+    .max(bookingsQuoteBodyWalksMax)
+    .optional()
+    .describe('Solo en paseo: cuándo empieza cada paseo (RN-SER-05).'),
   caregiverId: zod.uuid().describe('Un cuidador de los resultados de la búsqueda.'),
   petIds: zod
     .array(zod.uuid())
@@ -445,7 +459,7 @@ export const BookingsGetResponse = zod.object({
     ])
     .describe('Sección 8.2.')
     .describe('Sección 8.2.'),
-  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
   careLevel: zod
     .enum(['STANDARD', 'SPECIAL'])
     .describe(
@@ -491,7 +505,7 @@ export const BookingsGetResponse = zod.object({
   slots: zod
     .array(
       zod.object({
-        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
         startsAt: zod.iso.datetime({ offset: true }),
         endsAt: zod.iso.datetime({ offset: true }),
         unitPriceCents: zod.int().describe('Precio del cuidador por una mascota, en centavos.'),
@@ -601,7 +615,7 @@ export const BookingsCancelResponse = zod.object({
     ])
     .describe('Sección 8.2.')
     .describe('Sección 8.2.'),
-  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+  serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
   careLevel: zod
     .enum(['STANDARD', 'SPECIAL'])
     .describe(
@@ -647,7 +661,7 @@ export const BookingsCancelResponse = zod.object({
   slots: zod
     .array(
       zod.object({
-        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+        serviceCode: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
         startsAt: zod.iso.datetime({ offset: true }),
         endsAt: zod.iso.datetime({ offset: true }),
         unitPriceCents: zod.int().describe('Precio del cuidador por una mascota, en centavos.'),

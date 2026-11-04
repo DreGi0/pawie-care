@@ -4,7 +4,7 @@
 
 Las reglas de negocio están en [reglas-de-negocio.md](reglas-de-negocio.md) y el orden de construcción en [plan-v0.6.md](plan-v0.6.md). Este documento cubre cómo se construye.
 
-> **Ojo:** el código implementa las reglas v0.4 más las etapas 6 (niveles y precios por nivel del cuidador), D (design system Placas) y 9a (alta del cuidador). Lo demás que describe este documento (paseo, solicitudes y agenda del cuidador, métricas del piloto, ejecución, push, referidos y soporte) se construye en las etapas del plan.
+> **Ojo:** el código implementa las reglas v0.4 más las etapas 6 (niveles y precios por nivel del cuidador), D (design system Placas), 9a (alta del cuidador), métricas (reporte del piloto), 7 (ficha completa) y 8 (paseo, sin la ruta). Lo demás que describe este documento (solicitudes y agenda del cuidador, ejecución con la ruta del paseo, push, referidos y soporte) se construye en las etapas del plan.
 
 ## 1. Resumen
 

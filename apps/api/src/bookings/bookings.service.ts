@@ -266,10 +266,10 @@ export class BookingsService {
     const now = this.clock.now();
     const address = await this.addresses.findOwn(ownerId, request.addressId);
     const settings = await this.settings.getMany(BOOKING_SETTING_KEYS);
-    const { serviceCode, nights, visits, petIds } = request;
+    const { serviceCode, nights, visits, walks, petIds } = request;
     const plan = await this.caregivers.planBooking(
       ownerId,
-      { serviceCode, nights, visits, petIds, districtId: address.districtId },
+      { serviceCode, nights, visits, walks, petIds, districtId: address.districtId },
       settings,
       now,
     );

@@ -266,6 +266,7 @@ describe('caregiver sign-up (stage 9a)', () => {
           caregiverPriceCents: null,
           priceCents: 1800,
         },
+        { serviceCode: 'WALK', offered: true, caregiverPriceCents: null, priceCents: 400 },
       ]);
     });
   });
@@ -495,6 +496,15 @@ describe('caregiver sign-up (stage 9a)', () => {
             range: { minCents: 1500, suggestedCents: 1800, maxCents: 2200 },
             nextLevel: { level: 'TRUSTED', suggestedCents: 2400 },
           },
+          {
+            serviceCode: 'WALK',
+            offered: true,
+            caregiverPriceCents: null,
+            priceCents: 400,
+            payoutCents: 400,
+            range: { minCents: 300, suggestedCents: 400, maxCents: 500 },
+            nextLevel: { level: 'TRUSTED', suggestedCents: 650 },
+          },
         ],
       });
     });
@@ -529,7 +539,21 @@ describe('caregiver sign-up (stage 9a)', () => {
       expect(body.prices).toMatchObject([
         { serviceCode: 'HOME_VISIT', offered: true, caregiverPriceCents: 850, priceCents: 850 },
         { serviceCode: 'OVERNIGHT_STAY', offered: false },
+        { serviceCode: 'WALK', offered: false },
       ]);
+    });
+
+    it('names the walk when its price is out of the range (RN-PRE-01)', async () => {
+      const ana = await caregiver();
+
+      const { body } = await ana
+        .post('/v1/caregivers/me/prices/quote', { serviceCode: 'WALK', priceCents: 650 })
+        .expect(422);
+
+      expect(body).toMatchObject({
+        errorCode: 'PRICE_OUT_OF_RANGE',
+        message: 'Para tu nivel, el precio del paseo va de $3.00 a $5.00.',
+      });
     });
 
     it('shows what the caregiver gets with the commission in force, without changing the app', async () => {

@@ -72,8 +72,8 @@ export const SETTINGS = {
     parse: object({
       [ServiceCode.HOME_VISIT]: priceRangesByLevel,
       [ServiceCode.OVERNIGHT_STAY]: priceRangesByLevel,
+      [ServiceCode.WALK]: priceRangesByLevel,
     }),
-    // The walk joins in stage 8 (RN-PRE-01).
     initialValue: {
       HOME_VISIT: {
         NEW: { minCents: 600, suggestedCents: 700, maxCents: 900 },
@@ -86,6 +86,12 @@ export const SETTINGS = {
         TRUSTED: { minCents: 2000, suggestedCents: 2400, maxCents: 2800 },
         PRO: { minCents: 2600, suggestedCents: 3000, maxCents: 3500 },
         SUPER: { minCents: 3200, suggestedCents: 3800, maxCents: 4500 },
+      },
+      WALK: {
+        NEW: { minCents: 300, suggestedCents: 400, maxCents: 500 },
+        TRUSTED: { minCents: 500, suggestedCents: 650, maxCents: 800 },
+        PRO: { minCents: 900, suggestedCents: 1100, maxCents: 1400 },
+        SUPER: { minCents: 1500, suggestedCents: 1800, maxCents: 2200 },
       },
     },
   }),
@@ -149,6 +155,12 @@ export const SETTINGS = {
     ),
     initialValue: { startMinute: 19 * 60, endMinute: 8 * 60 },
   }),
+  'services.walkDurationMinutes': setting({
+    description: 'Duración del paseo',
+    rules: ['RN-SER-05'],
+    parse: integer({ min: 15, max: 4 * 60 }),
+    initialValue: 45,
+  }),
 
   // ─── Bookings ───
   'bookings.maxPetsPerBooking': setting({
@@ -156,6 +168,12 @@ export const SETTINGS = {
     rules: ['RN-RES-03'],
     parse: integer({ min: 1, max: 10 }),
     initialValue: 3,
+  }),
+  'bookings.maxDogsPerWalk': setting({
+    description: 'Máximo de perros por paseo',
+    rules: ['RN-SER-05', 'RN-RES-03'],
+    parse: integer({ min: 1, max: 10 }),
+    initialValue: 2,
   }),
   'bookings.minLeadTimeMinutes': setting({
     description: 'Anticipación mínima para solicitar',

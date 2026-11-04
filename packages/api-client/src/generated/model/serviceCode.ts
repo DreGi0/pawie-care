@@ -11,4 +11,5 @@ export type ServiceCode = (typeof ServiceCode)[keyof typeof ServiceCode];
 export const ServiceCode = {
   HOME_VISIT: 'HOME_VISIT',
   OVERNIGHT_STAY: 'OVERNIGHT_STAY',
+  WALK: 'WALK',
 } as const;

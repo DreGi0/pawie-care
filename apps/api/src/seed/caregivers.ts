@@ -54,15 +54,16 @@ function minutesOf(time: string): number {
   return hours * 60 + minutes;
 }
 
-const { HOME_VISIT, OVERNIGHT_STAY } = ServiceCode;
+const { HOME_VISIT, OVERNIGHT_STAY, WALK } = ServiceCode;
 const { LARGE_DOGS, CATS, PUPPIES, SENIOR_PETS, DIFFICULT_BEHAVIOR } = CaregiverSkill;
 
 /**
  * Demo caregivers: approved, with instant booking (docs/reglas-de-negocio.md §2).
- * They mix the four profiles (⭐, vet student, both and neither), and Gabriela, Diego
- * and Sofía don't do overnight stays. They cover the four levels (RN-NIV-02, with the
- * initial requirements): Valeria is Súper Cuidador; Carlos, Gabriela and Ricardo are
- * Pro; Sofía is Nuevo; the rest are Confiable. Emails use example.com, a reserved domain.
+ * They mix the four profiles (⭐, vet student, both and neither). Gabriela, Diego and
+ * Sofía don't do overnight stays, and Andrea, María José and Sofía don't do walks
+ * (RN-SER-05). They cover the four levels (RN-NIV-02, with the initial requirements):
+ * Valeria is Súper Cuidador; Carlos, Gabriela and Ricardo are Pro; Sofía is Nuevo; the
+ * rest are Confiable. Emails use example.com, a reserved domain.
  */
 export const DEMO_CAREGIVERS: DemoCaregiver[] = [
   {
@@ -78,6 +79,7 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     prices: {
       [HOME_VISIT]: 1800,
       [OVERNIGHT_STAY]: 4000,
+      [WALK]: 2000,
     },
     availability: [
       ...every(MONDAY_TO_FRIDAY, '14:00', '19:00'),
@@ -99,6 +101,7 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     prices: {
       [HOME_VISIT]: null,
       [OVERNIGHT_STAY]: 3000,
+      [WALK]: null,
     },
     availability: [...every(EVERY_DAY, '07:00', '19:00'), ...every(EVERY_DAY, '19:00', '08:00')],
     ratings: { count: 71, sum: 337, specialCount: 30, specialSum: 144 },
@@ -136,6 +139,7 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     prices: {
       [HOME_VISIT]: 1000,
       [OVERNIGHT_STAY]: 2000,
+      [WALK]: 600,
     },
     availability: [
       ...every([1, 2, 3, 4, 5, 6], '06:00', '18:00'),
@@ -153,7 +157,7 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     certifications: { SPECIAL_CARE: 2, FIRST_AID: 1 },
     skills: [SENIOR_PETS],
     districts: ['san-salvador', 'ciudad-delgado', 'cuscatancingo', 'mejicanos'],
-    prices: { [HOME_VISIT]: 1400 },
+    prices: { [HOME_VISIT]: 1400, [WALK]: 1200 },
     availability: every(MONDAY_TO_FRIDAY, '07:00', '17:00'),
     ratings: { count: 58, sum: 281, specialCount: 25, specialSum: 122 },
     completedBookings: 64,
@@ -163,10 +167,10 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     firstName: 'Diego',
     lastName: 'Castillo',
     birthDate: '2004-08-07',
-    bio: 'Estudiante de veterinaria. Por las clases solo hago visitas: paseos cortos y compañía para perros con mucha energía.',
+    bio: 'Estudiante de veterinaria. Por las clases no hago pernoctas: paseos y visitas para perros con mucha energía.',
     vetStudentMonthsLeft: 4,
     districts: ['antiguo-cuscatlan', 'santa-tecla'],
-    prices: { [HOME_VISIT]: null },
+    prices: { [HOME_VISIT]: null, [WALK]: null },
     availability: [...every([1, 3, 5], '12:00', '18:00'), ...every(WEEKEND, '09:00', '17:00')],
     ratings: { count: 5, sum: 23, specialCount: 0, specialSum: 0 },
     completedBookings: 6,
@@ -199,6 +203,7 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     prices: {
       [HOME_VISIT]: 1000,
       [OVERNIGHT_STAY]: 2000,
+      [WALK]: 500,
     },
     availability: [
       ...every(MONDAY_TO_FRIDAY, '17:00', '19:00'),
@@ -237,6 +242,7 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     prices: {
       [HOME_VISIT]: 1300,
       [OVERNIGHT_STAY]: 2700,
+      [WALK]: 1300,
     },
     availability: [...every(EVERY_DAY, '06:00', '19:00'), ...every(EVERY_DAY, '19:00', '08:00')],
     ratings: { count: 104, sum: 497, specialCount: 47, specialSum: 226 },

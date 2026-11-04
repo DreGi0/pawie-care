@@ -240,7 +240,7 @@ describe('seed', () => {
     ]);
   });
 
-  it('loads dogs, cats and the two services', async () => {
+  it('loads dogs, cats and the three services', async () => {
     const [species, services] = await Promise.all([
       db.prisma.species.findMany({ orderBy: { code: 'asc' } }),
       db.prisma.service.findMany({ orderBy: { code: 'asc' } }),
@@ -253,6 +253,7 @@ describe('seed', () => {
     expect(services.map(({ code }) => code)).toEqual([
       ServiceCode.HOME_VISIT,
       ServiceCode.OVERNIGHT_STAY,
+      ServiceCode.WALK,
     ]);
   });
 

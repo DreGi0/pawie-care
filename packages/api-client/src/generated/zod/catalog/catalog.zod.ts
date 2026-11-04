@@ -31,19 +31,28 @@ export const CatalogGetResponse = zod.object({
   services: zod.array(
     zod.object({
       id: zod.uuid(),
-      code: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY']),
+      code: zod.enum(['HOME_VISIT', 'OVERNIGHT_STAY', 'WALK']),
       name: zod.string(),
       description: zod.string(),
+      speciesCodes: zod
+        .array(zod.string())
+        .describe(
+          'Códigos de las especies que acepta, de `species`. RN-SER-05: el paseo es solo para perros.',
+        ),
     }),
   ),
   bookingRules: zod.object({
     maxPetsPerBooking: zod.int().describe('RN-RES-03'),
+    maxDogsPerWalk: zod.int().describe('RN-SER-05, RN-RES-03'),
     minLeadTimeMinutes: zod
       .int()
       .describe('RN-RES-05: el primer tramo empieza al menos esto después de pedirlo.'),
     homeVisitMinutes: zod
       .int()
       .describe('RN-SER-01: cada visita ocupa este tiempo en el calendario del cuidador.'),
+    walkMinutes: zod
+      .int()
+      .describe('RN-SER-05: cada paseo ocupa este tiempo en el calendario del cuidador.'),
     overnightStartMinute: zod
       .int()
       .describe('RN-SER-02: inicio de la pernocta, en minutos desde la medianoche.'),

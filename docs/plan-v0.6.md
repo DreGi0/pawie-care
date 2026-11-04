@@ -242,7 +242,17 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 
 **Reglas:** RN-SER-05, RN-RES-01, RN-RES-03, RN-PRE-01.
 
-**API:**
+**Avance:** se hace en dos PR, API y app. **API (hecha):**
+
+- `ServiceCode.WALK`, `services.walkDurationMinutes` y `bookings.maxDogsPerWalk`. La migración suma el rango del paseo a `pricing.priceRanges` solo si falta, así que no deshace un `settings:set`. La fila de `services` la crea el seed, como la de los otros servicios.
+- Un paseo lleva solo `walks`: ni noches ni visitas. Se pueden pedir varios en un día.
+- `planBooking` revisa las especies, así que la búsqueda, `/quote` y la reserva responden igual: `WALK_ONLY_FOR_DOGS`, con las mascotas que no son perros en `details`, o `TOO_MANY_DOGS_PER_WALK`. El segundo perro suma el 50%, como cualquier mascota adicional (RN-PRE-02).
+- `GET /v1/catalog` suma `services[].speciesCodes`, `bookingRules.walkMinutes` y `bookingRules.maxDogsPerWalk`, para que la app no copie la regla.
+- Precios del cuidador: el paseo sale solo, y un cuidador nuevo empieza ofreciéndolo al sugerido, como los otros servicios.
+- El seed le da paseo a 7 de los 10 cuidadores. Andrea, María José y Sofía no pasean perros.
+- El ejemplo de RN-PRE (paseo con un cuidador Confiable) ya es un test con `WALK`.
+
+**Diseño original:**
 
 - `ServiceCode.WALK`, con los settings `services.walkDurationMinutes = 45` y `bookings.maxDogsPerWalk = 2`.
 - `pricing.priceRanges` suma el rango del paseo (RN-PRE-01).

@@ -40,10 +40,11 @@ const profileInclude = {
 
 type Profile = Prisma.CaregiverProfileGetPayload<{ include: typeof profileInclude }>;
 
-/** How the out-of-range message names each service. */
-const SERVICE_NOUNS: Record<ServiceCode, string> = {
-  HOME_VISIT: 'la visita',
-  OVERNIGHT_STAY: 'la pernocta',
+/** How the out-of-range message names each service: "el precio de la visita". */
+const PRICE_OF: Record<ServiceCode, string> = {
+  HOME_VISIT: 'de la visita',
+  OVERNIGHT_STAY: 'de la pernocta',
+  WALK: 'del paseo',
 };
 
 const spanish = new Intl.Collator('es', { sensitivity: 'base' });
@@ -367,7 +368,7 @@ function requireInRange(serviceCode: ServiceCode, priceCents: number, range: Pri
   if (priceCents < range.minCents || priceCents > range.maxCents) {
     throw new UnprocessableEntityException({
       errorCode: 'PRICE_OUT_OF_RANGE',
-      message: `Para tu nivel, el precio de ${SERVICE_NOUNS[serviceCode]} va de ${dollars(range.minCents)} a ${dollars(range.maxCents)}.`,
+      message: `Para tu nivel, el precio ${PRICE_OF[serviceCode]} va de ${dollars(range.minCents)} a ${dollars(range.maxCents)}.`,
       details: { serviceCode, minCents: range.minCents, maxCents: range.maxCents },
     });
   }

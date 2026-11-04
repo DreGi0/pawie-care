@@ -35,14 +35,23 @@ describe('GET /v1/catalog', () => {
     ]);
     expect(body.districts.at(-1)).toMatchObject({ slug: 'tonacatepeque', name: 'Tonacatepeque' });
     expect(body.species.map(({ code }: { code: string }) => code)).toEqual(['CAT', 'DOG']);
-    expect(body.services.map(({ code }: { code: string }) => code)).toEqual([
-      'HOME_VISIT',
-      'OVERNIGHT_STAY',
+    // RN-SER-05: the walk is only for dogs.
+    expect(
+      body.services.map(({ code, speciesCodes }: { code: string; speciesCodes: string[] }) => [
+        code,
+        speciesCodes,
+      ]),
+    ).toEqual([
+      ['HOME_VISIT', ['CAT', 'DOG']],
+      ['OVERNIGHT_STAY', ['CAT', 'DOG']],
+      ['WALK', ['DOG']],
     ]);
     expect(body.bookingRules).toEqual({
       maxPetsPerBooking: 3,
+      maxDogsPerWalk: 2,
       minLeadTimeMinutes: 120,
       homeVisitMinutes: 60,
+      walkMinutes: 45,
       overnightStartMinute: 1140,
       overnightEndMinute: 480,
     });

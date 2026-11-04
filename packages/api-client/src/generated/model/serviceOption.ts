@@ -12,4 +12,6 @@ export interface ServiceOption {
   code: ServiceCode;
   name: string;
   description: string;
+  /** Códigos de las especies que acepta, de `species`. RN-SER-05: el paseo es solo para perros. */
+  speciesCodes: string[];
 }

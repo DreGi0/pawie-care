@@ -148,6 +148,8 @@ enum ServiceCode {
   HOME_VISIT
   /// RN-SER-02
   OVERNIGHT_STAY
+  /// RN-SER-05
+  WALK
 
   @@map("service_code")
 }

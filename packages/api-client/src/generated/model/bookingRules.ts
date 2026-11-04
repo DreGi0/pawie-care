@@ -9,10 +9,14 @@
 export interface BookingRules {
   /** RN-RES-03 */
   maxPetsPerBooking: number;
+  /** RN-SER-05, RN-RES-03 */
+  maxDogsPerWalk: number;
   /** RN-RES-05: el primer tramo empieza al menos esto después de pedirlo. */
   minLeadTimeMinutes: number;
   /** RN-SER-01: cada visita ocupa este tiempo en el calendario del cuidador. */
   homeVisitMinutes: number;
+  /** RN-SER-05: cada paseo ocupa este tiempo en el calendario del cuidador. */
+  walkMinutes: number;
   /** RN-SER-02: inicio de la pernocta, en minutos desde la medianoche. */
   overnightStartMinute: number;
   /** RN-SER-02: fin de la pernocta, al día siguiente. */

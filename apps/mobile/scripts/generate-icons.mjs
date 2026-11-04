@@ -23,6 +23,7 @@ const names = [
   'eye',
   'eye-off',
   'file-text',
+  'footprints',
   'graduation-cap',
   'house',
   'id-card',

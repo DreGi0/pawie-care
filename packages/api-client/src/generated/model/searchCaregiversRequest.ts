@@ -21,6 +21,11 @@ export interface SearchCaregiversRequest {
    */
   visits?: string[];
   /**
+   * Solo en paseo: cuándo empieza cada paseo (RN-SER-05).
+   * @maxItems 62
+   */
+  walks?: string[];
+  /**
    * Mascotas del dueño.
    * @minItems 1
    * @maxItems 10

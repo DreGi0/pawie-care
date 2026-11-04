@@ -417,6 +417,167 @@ describe('bookings', () => {
     });
   });
 
+  describe('walks (RN-SER-05)', () => {
+    /** A cat of the owner, which a walk doesn't take (RN-RES-01). */
+    async function cat(ownerId: string, name = 'Nala') {
+      const species = await db.prisma.species.findUniqueOrThrow({ where: { code: 'CAT' } });
+      const created = await db.prisma.pet.create({
+        data: {
+          ownerId,
+          speciesId: species.id,
+          name,
+          birthDate: new Date('2020-01-01'),
+          sex: 'FEMALE',
+        },
+      });
+      return created.id;
+    }
+
+    it('books 45 minutes per walk, several a day, and adds 50% for the second dog (RN-PRE-02)', async () => {
+      const { pet, book } = await owner();
+      const [toby, luna] = [await pet('Toby'), await pet('Luna')];
+      const walks = [at(day(40), '07:00'), at(day(40), '17:00')];
+
+      const { body } = await book({ serviceCode: 'WALK', petIds: [toby, luna], walks }).expect(201);
+
+      // Carlos is Pro and set no walk price: the suggested $11 of his level (RN-PRE-01),
+      // × 1.5 for Luna. 3300 × 15% = 495.
+      expect(body).toMatchObject({
+        serviceCode: 'WALK',
+        startsAt: new Date(walks[0]).toISOString(),
+        endsAt: new Date(new Date(walks[1]).getTime() + 45 * 60_000).toISOString(),
+        slots: [
+          { serviceCode: 'WALK', unitPriceCents: 1100, subtotalCents: 1650 },
+          { serviceCode: 'WALK', unitPriceCents: 1100, subtotalCents: 1650 },
+        ],
+        price: { subtotalCents: 3300, serviceFeeCents: 495, totalCents: 3795 },
+      });
+      expect(
+        (await bookingRow(body.id)).slots.map(({ startsAt, endsAt }) => [startsAt, endsAt]),
+      ).toEqual([
+        [new Date(walks[0]), new Date(new Date(walks[0]).getTime() + 45 * 60_000)],
+        [new Date(walks[1]), new Date(new Date(walks[1]).getTime() + 45 * 60_000)],
+      ]);
+    });
+
+    it('shows only caregivers who walk dogs, at the price of their walk', async () => {
+      const { as, pet } = await owner();
+      const toby = await pet();
+
+      const { body } = await as
+        .post('/v1/caregivers/search', {
+          petIds: [toby],
+          serviceCode: 'WALK',
+          walks: [at(day(40), '09:00')],
+          districtId: districts['santa-tecla'],
+        })
+        .expect(200);
+      const ids = body.results.map(({ id }: { id: string }) => id);
+
+      // Carlos walks dogs in Santa Tecla every day; María José works there but doesn't walk.
+      expect(ids).toContain(caregivers.Carlos);
+      expect(ids).not.toContain(caregivers['María José']);
+      expect(body.slots).toEqual([
+        {
+          serviceCode: 'WALK',
+          startsAt: new Date(at(day(40), '09:00')).toISOString(),
+          endsAt: new Date(at(day(40), '09:45')).toISOString(),
+        },
+      ]);
+      expect(
+        body.results.find(({ id }: { id: string }) => id === caregivers.Carlos).prices,
+      ).toEqual([{ serviceCode: 'WALK', priceCents: 1100 }]);
+    });
+
+    it('cannot be booked or searched for a cat (RN-RES-01)', async () => {
+      const { user, as, pet, book, quote } = await owner();
+      const toby = await pet();
+      const nala = await cat(user.id);
+      const walk = { serviceCode: 'WALK', petIds: [toby, nala], walks: [at(day(40), '08:00')] };
+
+      const booking = await book(walk).expect(422);
+      const quoted = await quote(walk).expect(422);
+      const search = await as
+        .post('/v1/caregivers/search', { ...walk, districtId: districts['santa-tecla'] })
+        .expect(422);
+
+      for (const { body } of [booking, quoted, search]) {
+        expect(body).toMatchObject({
+          errorCode: 'WALK_ONLY_FOR_DOGS',
+          message:
+            'El paseo es solo para perros, así que Nala no puede ir. Elige solo perros, o busca una visita o una pernocta.',
+          details: { pets: [{ petId: nala, name: 'Nala' }] },
+        });
+      }
+      expect(await db.prisma.booking.count({ where: { ownerId: user.id } })).toBe(0);
+      // The cat can still have a visit.
+      await book({ petIds: [toby, nala], visits: [at(day(40), '08:00')] }).expect(201);
+    });
+
+    it('takes up to 2 dogs (RN-SER-05, RN-RES-03)', async () => {
+      const { pet, book } = await owner();
+      const dogs = [await pet('Toby'), await pet('Luna'), await pet('Max')];
+
+      const response = await book({
+        serviceCode: 'WALK',
+        petIds: dogs,
+        walks: [at(day(40), '11:00')],
+      }).expect(422);
+
+      expect(response.body).toMatchObject({
+        errorCode: 'TOO_MANY_DOGS_PER_WALK',
+        message: 'En un paseo van hasta 2 perros.',
+        details: { maxDogs: 2 },
+      });
+    });
+
+    it('does not overlap a visit of the same caregiver, but can start when it ends (RN-CUI-15)', async () => {
+      await (await owner()).book({ visits: [at(day(41), '10:00')] }).expect(201);
+      const { book } = await owner();
+
+      const overlapping = await book({ serviceCode: 'WALK', walks: [at(day(41), '10:30')] });
+      const right = await book({ serviceCode: 'WALK', walks: [at(day(41), '11:00')] });
+
+      expect(overlapping.status).toBe(409);
+      expect(overlapping.body.errorCode).toBe('SLOT_TAKEN');
+      expect(right.status).toBe(201);
+    });
+
+    it('the exclusion of booking_slots keeps a walk off a visit even past the check', async () => {
+      await (await owner()).book({ visits: [at(day(41), '15:00')] }).expect(201);
+      // As if the visit had been written right after the walk's check.
+      const service = api.app().get(CaregiversService);
+      const check = vi.spyOn(service, 'bookableCaregiver').mockResolvedValueOnce({
+        caregiverId: caregivers.Carlos,
+        level: 'PRO',
+        instantBooking: true,
+        prices: [
+          {
+            serviceCode: 'WALK',
+            caregiverPriceCents: null,
+            range: { minCents: 900, suggestedCents: 1100, maxCents: 1400 },
+          },
+        ],
+      });
+
+      try {
+        const response = await (
+          await owner()
+        )
+          .book({ serviceCode: 'WALK', walks: [at(day(41), '15:15')] })
+          .expect(409);
+        expect(response.body.errorCode).toBe('SLOT_TAKEN');
+      } finally {
+        check.mockRestore();
+      }
+      expect(
+        await db.prisma.bookingSlot.count({
+          where: { caregiverId: caregivers.Carlos, startsAt: new Date(at(day(41), '15:15')) },
+        }),
+      ).toBe(0);
+    });
+  });
+
   describe('the same time twice (RN-CUI-15)', () => {
     it('answers SLOT_TAKEN when the time is already booked', async () => {
       const visits = [at(day(7), '10:00')];

@@ -355,6 +355,7 @@ describe('caregivers', () => {
       expect(body.prices).toEqual([
         { serviceCode: 'HOME_VISIT', priceCents: 1800 },
         { serviceCode: 'OVERNIGHT_STAY', priceCents: 4000 },
+        { serviceCode: 'WALK', priceCents: 2000 },
       ]);
     });
 
