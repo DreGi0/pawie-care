@@ -10,11 +10,12 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { Banner } from '@/components/Banner';
+import { BottomBar } from '@/components/BottomBar';
 import { Button } from '@/components/Button';
+import { FormScreen } from '@/components/FormScreen';
 import { Icon, type IconName } from '@/components/Icon';
 import { IconButton } from '@/components/IconButton';
 import { Row } from '@/components/Row';
@@ -24,7 +25,7 @@ import { Text } from '@/components/Text';
 import { errorMessage, queryClient } from '@/lib/api';
 import { DOCUMENTS } from '@/lib/caregivers';
 import { uploadFile } from '@/lib/files';
-import { colors, gutter, radius, space } from '@/theme/tokens';
+import { colors, radius, space } from '@/theme/tokens';
 
 type Document = (typeof DOCUMENTS)[number];
 type Source = 'camera' | 'library' | 'pdf';
@@ -119,62 +120,64 @@ export default function DocumentsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <FormScreen
+      title="Tus documentos"
+      subtitle="Con ellos verificamos tu identidad y tus antecedentes, para que los dueños confíen en ti."
+      top={
         <IconButton icon="chevron-left" accessibilityLabel="Volver" onPress={() => router.back()} />
-        <View style={styles.header}>
-          <Text variant="title" accessibilityRole="header">
-            Tus documentos
-          </Text>
-          <Text color="inkMuted">
-            Con ellos verificamos tu identidad y tus antecedentes, para que los dueños confíen en
-            ti.
-          </Text>
-        </View>
+      }
+      footer={
+        // Once the four are in, the review starts by itself: this only takes the caregiver back,
+        // and it shows without scrolling on any phone.
+        complete &&
+        !verified && (
+          <BottomBar>
+            <Button label="Listo" onPress={() => router.back()} />
+          </BottomBar>
+        )
+      }
+    >
+      {profile.isPending ? (
+        <ActivityIndicator color={colors.primary} style={styles.loading} />
+      ) : profile.isError ? (
+        <Banner tone="error" message={errorMessage(profile.error)} />
+      ) : (
+        <>
+          {verified ? (
+            <Banner
+              tone="success"
+              message="Tus documentos están verificados. Ya tienes las insignias Identidad verificada y Antecedentes verificados."
+            />
+          ) : complete ? (
+            <Banner
+              tone="info"
+              message="Ya están todos. El equipo de Pawie los revisa para aprobar tu alta."
+            />
+          ) : (
+            <Banner
+              tone="info"
+              icon="lock"
+              message="Solo los ve el equipo de Pawie. Nunca se muestran a los dueños."
+            />
+          )}
 
-        {profile.isPending ? (
-          <ActivityIndicator color={colors.primary} style={styles.loading} />
-        ) : profile.isError ? (
-          <Banner tone="error" message={errorMessage(profile.error)} />
-        ) : (
-          <>
-            {verified ? (
-              <Banner
-                tone="success"
-                message="Tus documentos están verificados. Ya tienes las insignias Identidad verificada y Antecedentes verificados."
+          <View>
+            {DOCUMENTS.map((document, index) => (
+              <DocumentRow
+                key={document.kind}
+                document={document}
+                file={documents.get(document.kind)}
+                verified={verified}
+                uploading={uploading === document.kind}
+                divider={index > 0}
+                onPress={verified || uploading ? undefined : () => choose(document)}
               />
-            ) : complete ? (
-              <Banner
-                tone="info"
-                message="Ya están todos. El equipo de Pawie los revisa para aprobar tu alta."
-              />
-            ) : (
-              <Banner
-                tone="info"
-                icon="lock"
-                message="Solo los ve el equipo de Pawie. Nunca se muestran a los dueños."
-              />
-            )}
+            ))}
+          </View>
 
-            <View>
-              {DOCUMENTS.map((document, index) => (
-                <DocumentRow
-                  key={document.kind}
-                  document={document}
-                  file={documents.get(document.kind)}
-                  verified={verified}
-                  uploading={uploading === document.kind}
-                  divider={index > 0}
-                  onPress={verified || uploading ? undefined : () => choose(document)}
-                />
-              ))}
-            </View>
-
-            {error && <Banner tone="error" message={error} />}
-            {complete && !verified && <Button label="Listo" onPress={() => router.back()} />}
-          </>
-        )}
-      </ScrollView>
+          {error && <Banner tone="error" message={error} />}
+        </>
+      )}
 
       <Sheet
         visible={choosing !== null}
@@ -193,7 +196,7 @@ export default function DocumentsScreen() {
             ))}
         </View>
       </Sheet>
-    </SafeAreaView>
+    </FormScreen>
   );
 }
 
@@ -258,14 +261,6 @@ function Preview({ document, file }: { document: Document; file: FileResponse | 
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  content: {
-    gap: space[6],
-    paddingHorizontal: gutter,
-    paddingTop: space[1],
-    paddingBottom: space[8],
-  },
-  header: { gap: space[1] },
   flex: { flex: 1 },
   loading: { marginTop: space[8] },
   state: { marginTop: space[1] },

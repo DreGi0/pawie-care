@@ -12,12 +12,20 @@ export type FormScreenProps = {
   /** Above the title, such as the back button or the StepBar. */
   top?: ReactNode;
   children: ReactNode;
+  /**
+   * Fixed under the scrolling content, such as a BottomBar with the screen's action, so it
+   * shows without scrolling on any phone.
+   */
+  footer?: ReactNode;
 };
 
-/** The frame of a form screen: it scrolls and keeps the focused field above the keyboard. */
-export function FormScreen({ title, subtitle, top, children }: FormScreenProps) {
+/**
+ * The frame of a form screen: it scrolls, keeps the focused field above the keyboard and keeps
+ * the last element clear of the home indicator. With a footer, the footer keeps clear of it.
+ */
+export function FormScreen({ title, subtitle, top, children, footer }: FormScreenProps) {
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={footer ? ['top', 'left', 'right'] : undefined}>
       <KeyboardAvoidingView
         style={styles.screen}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -32,6 +40,7 @@ export function FormScreen({ title, subtitle, top, children }: FormScreenProps) 
           </View>
           {children}
         </ScrollView>
+        {footer}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
