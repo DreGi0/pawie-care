@@ -101,7 +101,8 @@ Están en `apps/mobile/src/components/`. `/catalogo` los muestra todos (solo en 
 - **Marca de paso (`StepMark`):** círculo `primary` con check si el requisito o el paso está cumplido, o círculo punteado si falta. Va en los requisitos del nivel y en los pasos del alta de `CuiInicio`.
 - **Aviso (`Banner`):** `info` y `success` en `tint`, cada uno con su ícono; `warning` en blanco con borde `ink`; `error` en `dangerTint` con texto `danger`.
 - **Superficie (`Card`):** blanca, con borde `line`. Solo para agrupar campos o un desglose, como el precio de Reservar. Las listas son filas.
-- **Barras:** `TabBar` y `BottomBar` van pegadas al borde inferior, sobre `bg` y con borde superior `line`. La pestaña activa lleva el ícono y el texto en `primary` sobre una pastilla `tint`.
+- **Barras:** `TabBar` y `BottomBar` van pegadas al borde inferior, sobre `bg` y con borde superior `line`. La pestaña activa lleva el ícono y el texto en `primary` sobre una pastilla `tint`. `BottomBar` sin monto deja el botón a todo el ancho.
+- **Pantalla de formulario (`FormScreen`):** scroll, título y, con `footer`, una barra fija abajo. Se encarga del margen de la zona segura inferior: sin `footer` lo deja bajo el contenido, y con `footer` lo pone la barra.
 
 ### Reglas
 
@@ -218,4 +219,4 @@ Reglas para las pantallas del cuidador:
 - **El horario semanal se edita por franjas** en `CuiPerfil`: cada día tiene mañana (7:00 a 12:00), tarde (hasta que empieza la pernocta) y noche (la de la pernocta, que sale de `GET /v1/catalog`). La API acepta cualquier ventana; las franjas son solo el editor de la app.
 - **`CuiInicio` antes de aparecer en búsquedas** muestra los pasos del alta (`pendingSteps` de la API), cada uno con `StepMark`, y un solo botón primario para el siguiente paso que puede hacer el cuidador. La revisión de Pawie no tiene botón.
 - **`CuiPrecios`** cambia el precio con −/+ de $0.50 dentro del rango, y pide "Recibes" a la API 400 ms después del último toque.
-- **`CuiDocumentos`** guarda cada documento apenas se sube. La selfie se toma con la cámara frontal; los antecedentes también aceptan PDF.
+- **`CuiDocumentos`** guarda cada documento apenas se sube. La selfie se toma con la cámara frontal; los antecedentes también aceptan PDF. Con los cuatro subidos, la revisión empieza sola y "Listo" va en una `BottomBar` sin monto, para que se vea sin bajar en cualquier teléfono.
