@@ -141,7 +141,7 @@ flowchart LR
 | `Confirmada.dc.html`   | Visita confirmada (`CONFIRMED`) con Nimbus "hola" | `GET /v1/bookings/{id}`                              |
 | `Visitas.dc.html`      | Pestaña Mis visitas, con estado vacío             | `GET /v1/bookings`                                   |
 
-Main, Perfil, Reservar, Visitas y Mis mascotas tienen el layout de Placas. Las demás toman el estilo por los componentes, pero conservan el layout de su mockup.
+Main, Perfil, Reservar, Visitas, Mis mascotas y MascotaPerfil tienen el layout de Placas. Las demás toman el estilo por los componentes, pero conservan el layout de su mockup.
 
 ## Cómo leer los `.dc.html`
 
@@ -155,8 +155,8 @@ Main, Perfil, Reservar, Visitas y Mis mascotas tienen el layout de Placas. Las d
 - **Galería de 3 fotos:** el backend solo tiene `photoUrl`. Falta agregar `photos: [{ fileId, caption }]` (máximo 3) a `CaregiverProfile`.
 - **Recuperar contraseña:** el enlace aparece en el login, pero el endpoint no existe. La app todavía no lo muestra.
 - **Términos y Aviso de privacidad:** Registro los nombra como texto, sin enlace, porque esas páginas no existen.
-- **Mis mascotas y Cuenta no tienen mockup**, aunque están en la barra de pestañas. Mis mascotas es una lista de filas (foto en círculo, especie, raza y edad), con un estado vacío y "Agregar mascota". Cuenta muestra el nombre y el correo, la entrada al modo cuidador o el cambio de modo, las pantallas del cuidador en modo cuidador y "Cerrar sesión".
-- **Perfil de la mascota:** OnbMascota dice "Agrégalo luego en su perfil", pero la app todavía no tiene la pantalla de la mascota con sus tareas de cuidado, vacunas e indicaciones del veterinario.
+- **Mis mascotas y Cuenta no tienen mockup**, aunque están en la barra de pestañas. Mis mascotas es una lista de filas (foto en círculo, especie, raza y edad), con un estado vacío y "Agregar mascota"; cada fila abre MascotaPerfil. Cuenta muestra el nombre y el correo, la entrada al modo cuidador o el cambio de modo, las pantallas del cuidador en modo cuidador y "Cerrar sesión".
+- **Vacunas:** se agregan con su nombre y sus fechas, pero la app todavía no sube la foto del carnet, que la API ya acepta.
 - **Género en la ⭐:** el mockup dice "⭐ Certificada", pero la API no dice si el cuidador es hombre o mujer. La app dice "Con certificación de cuidado especial" y muestra el nombre de la certificación que da la API.
 - **Avisos:** Esperando y Confirmada dicen "Te avisamos", pero la app no tiene notificaciones push. Esperando dice que la pantalla cambia sola, porque vuelve a preguntar mientras está abierta.
 - **Paseo:** Main muestra solo los bloques de visita y pernocta. El de paseo, en `paseo`, llega con su servicio en la etapa 8.
@@ -182,13 +182,26 @@ Cada pantalla nueva se construye con [Placas](#design-system-placas), sin mockup
 
 ### Del dueño: nuevas
 
-| Pantalla        | Qué muestra                                                                                        | Reglas                | Etapa |
-| --------------- | -------------------------------------------------------------------------------------------------- | --------------------- | ----- |
-| `MascotaPerfil` | Ficha completa: datos, rutina, horarios de comida y medicinas, salud, tareas de cuidado y celo     | RN-MAS-02, RN-MAS-11  | 7     |
-| `Seguimiento`   | El servicio en una sola pantalla: estado, tareas hechas, fotos y, en un paseo, el mapa con la ruta | RN-EJE-05 a RN-EJE-07 | 10    |
-| `Calificar`     | Estrellas y comentario al terminar                                                                 | RN-RSE-01             | 10    |
-| `Ayuda`         | Asistente de opciones guiadas, con Nimbus, y el centro de ayuda                                    | §17                   | 12a   |
-| `Reclamo`       | Reclamar la garantía de una reserva, con el plazo que queda                                        | RN-GAR-01, RN-GAR-02  | 12b   |
+| Pantalla        | Qué muestra                                                                                        | Reglas                | Etapa     |
+| --------------- | -------------------------------------------------------------------------------------------------- | --------------------- | --------- |
+| `MascotaPerfil` | Ficha completa: datos, rutina, horarios de comida y medicinas, salud, tareas de cuidado y celo     | RN-MAS-02, RN-MAS-11  | 7 (hecha) |
+| `Seguimiento`   | El servicio en una sola pantalla: estado, tareas hechas, fotos y, en un paseo, el mapa con la ruta | RN-EJE-05 a RN-EJE-07 | 10        |
+| `Calificar`     | Estrellas y comentario al terminar                                                                 | RN-RSE-01             | 10        |
+| `Ayuda`         | Asistente de opciones guiadas, con Nimbus, y el centro de ayuda                                    | §17                   | 12a       |
+| `Reclamo`       | Reclamar la garantía de una reserva, con el plazo que queda                                        | RN-GAR-01, RN-GAR-02  | 12b       |
+
+Reglas de `MascotaPerfil`:
+
+- Se entra tocando una fila de Mis mascotas. Muestra la ficha por partes, en este orden: datos, rutina, horarios de comida y medicinas, salud, vacunas, tareas de cuidado y celo.
+- Cada parte tiene "Editar" o "Agregar" a la derecha del título, en `ghost`, y abre su pantalla. La ficha no tiene botón primario. Cada pantalla de edición tiene "Guardar" en una `BottomBar`.
+- Los datos y las partes de texto se guardan con el mismo `PUT` de la mascota, que reemplaza toda la ficha. Por eso la app manda el resto tal cual está.
+- **Horarios:** cada fila muestra la hora, un ícono (cubiertos para la comida, pastilla para la medicina) y la porción o la dosis.
+  - Una medicina se elige de una tarea de Medicación, y su fila muestra los días de esa tarea (RN-CUI-12).
+  - Sin una tarea de Medicación, la app lleva a crearla antes de guardar la dosis.
+- **"Medicamentos que toma"**, en Salud, solo informa. Su ayuda dice: "Si el cuidador tiene que dárselos, agrégalos como tarea de cuidado." Las pantallas del cuidador (9b y 10) nunca lo muestran como instrucción ni como tarea.
+- **Tareas de cuidado:** lo que pide cada tarea (indicaciones del veterinario, las instrucciones del dueño o nada) sale de `careTasks` en `GET /v1/catalog`. Una tarea prohibida se marca en `danger`, porque no deja reservar mientras dure (RN-MAS-09).
+- **Celo:** solo para hembras (RN-MAS-11). Un macho no ve la sección.
+- No muestra si la mascota es Normal o Especial, por lo mismo que Mis mascotas: depende de las fechas de cada servicio.
 
 ### Del cuidador: nuevas
 
