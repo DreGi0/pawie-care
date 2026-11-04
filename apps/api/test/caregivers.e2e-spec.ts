@@ -384,10 +384,10 @@ describe('caregivers', () => {
       });
     });
 
-    it('hides caregivers who are not approved and active', async () => {
+    it('hides paused caregivers (RN-CUI-20)', async () => {
       await db.prisma.caregiverProfile.update({
         where: { userId: caregivers.José },
-        data: { isActive: false },
+        data: { isPaused: true },
       });
 
       const response = await profile(caregivers.José).expect(404);

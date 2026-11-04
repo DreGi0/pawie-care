@@ -85,16 +85,30 @@ export function priceBooking<S extends { unitPriceCents: number }>(
 
   const subtotalCents = priced.reduce((sum, slot) => sum + slot.subtotalCents, 0);
   const ownerServiceFeeCents = applyBasisPoints(subtotalCents, rates.ownerServiceFeeBp);
-  const caregiverCommissionCents = applyBasisPoints(subtotalCents, rates.caregiverCommissionBp);
   return {
     slots: priced,
     amounts: {
       subtotalCents,
       ownerServiceFeeCents,
       totalCents: subtotalCents + ownerServiceFeeCents,
-      caregiverCommissionCents,
-      caregiverPayoutCents: subtotalCents - caregiverCommissionCents,
+      ...caregiverPayout(subtotalCents, rates.caregiverCommissionBp),
     },
+  };
+}
+
+/**
+ * RN-PRE-04, RN-PRE-08: the commission on what the caregiver charges, rounded once, and
+ * what is left for them. Bookings and the caregiver's price calculator (RN-CUI-17) both
+ * use it, so the calculator shows what a booking will pay.
+ */
+export function caregiverPayout(
+  subtotalCents: number,
+  caregiverCommissionBp: number,
+): Pick<BookingAmounts, 'caregiverCommissionCents' | 'caregiverPayoutCents'> {
+  const caregiverCommissionCents = applyBasisPoints(subtotalCents, caregiverCommissionBp);
+  return {
+    caregiverCommissionCents,
+    caregiverPayoutCents: subtotalCents - caregiverCommissionCents,
   };
 }
 

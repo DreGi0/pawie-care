@@ -240,16 +240,17 @@ describe('seed', () => {
     expect(await db.prisma.setting.count()).toBe(SETTING_KEYS.length);
   });
 
-  it('loads about ten approved caregivers with instant booking who cannot sign in', async () => {
+  it('loads about ten approved caregivers with instant booking and the welcome course, who cannot sign in', async () => {
     const all = await caregivers();
 
     expect(all.length).toBeGreaterThanOrEqual(8);
-    for (const { status, isActive, instantBooking, user } of all) {
-      expect({ status, isActive, instantBooking }).toEqual({
+    for (const { status, isPaused, welcomeCoursePassedAt, instantBooking, user } of all) {
+      expect({ status, isPaused, instantBooking }).toEqual({
         status: 'APPROVED',
-        isActive: true,
+        isPaused: false,
         instantBooking: true,
       });
+      expect(welcomeCoursePassedAt).not.toBeNull();
       expect(user.roles).toEqual(['CAREGIVER']);
       expect(user.passwordHash).toBeNull();
     }

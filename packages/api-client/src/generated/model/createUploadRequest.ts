@@ -10,7 +10,7 @@ import type { UploadPurpose } from './uploadPurpose';
 export interface CreateUploadRequest {
   purpose: UploadPurpose;
   /**
-   * Fotos: JPEG, PNG, WebP o HEIC, hasta 10 MB. Recetas y carnés de vacunas: también PDF, hasta 15 MB.
+   * Fotos y selfie: JPEG, PNG, WebP o HEIC, hasta 10 MB. Recetas, carnés de vacunas, DUI y antecedentes: también PDF, hasta 15 MB.
    * @maxLength 100
    */
   contentType: string;

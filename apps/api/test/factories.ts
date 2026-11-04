@@ -60,7 +60,7 @@ export function createUser(prisma: PrismaClient, roles: Role[] = [Role.OWNER]) {
 export async function createCaregiver(prisma: PrismaClient) {
   const user = await createUser(prisma, [Role.CAREGIVER]);
   return prisma.caregiverProfile.create({
-    data: { userId: user.id, status: CaregiverStatus.APPROVED, isActive: true },
+    data: { userId: user.id, status: CaregiverStatus.APPROVED, welcomeCoursePassedAt: new Date() },
   });
 }
 

@@ -88,9 +88,17 @@ describe('maintenance', () => {
     await db.prisma.vetInstruction.create({
       data: { petId: pet.id, fileId: prescription, issuedOn: new Date('2026-10-01') },
     });
+    // RN-CUI-01: a caregiver's document waits for approval longer than a day.
+    const selfie = await uploadFile(api, token, 'SELFIE');
+    await db.prisma.caregiverProfile.create({
+      data: {
+        userId: owner.id,
+        documents: { create: { kind: 'SELFIE', fileId: selfie } },
+      },
+    });
     // Everything but `recent` was created two days ago.
     await db.prisma.file.updateMany({
-      where: { id: { in: [unused, photo, prescription, unfinished] } },
+      where: { id: { in: [unused, photo, prescription, unfinished, selfie] } },
       data: { createdAt: new Date(Date.now() - 2 * DAY_MS) },
     });
     const unusedKey = (await db.prisma.file.findUniqueOrThrow({ where: { id: unused } }))
@@ -100,7 +108,9 @@ describe('maintenance', () => {
 
     expect(deleted).toBe(2);
     const left = await db.prisma.file.findMany({ where: { uploadedById: owner.id } });
-    expect(left.map(({ id }) => id).toSorted()).toEqual([photo, prescription, recent].toSorted());
+    expect(left.map(({ id }) => id).toSorted()).toEqual(
+      [photo, prescription, selfie, recent].toSorted(),
+    );
     expect(await api.app().get(StorageService).head(unusedKey)).toBeNull();
   });
 

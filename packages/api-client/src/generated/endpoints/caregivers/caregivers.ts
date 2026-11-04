@@ -5,24 +5,33 @@
  * API REST de Pawie Care. Las reglas de negocio están en docs/reglas-de-negocio.md y el diseño en docs/arquitectura.md. Los errores siempre tienen la forma de `ErrorResponse`.
  * OpenAPI spec version: 1
  */
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from '@tanstack/react-query';
 
 import type {
+  CaregiverLevelResponse,
+  CaregiverMeResponse,
+  CaregiverPricesResponse,
   CaregiverProfileResponse,
   CaregiverSearchResponse,
   ErrorResponse,
+  PriceQuoteRequest,
+  PriceQuoteResponse,
   SearchCaregiversRequest,
+  UpdateCaregiverMeRequest,
 } from '../../model';
 
 import { customFetch } from '../../../fetcher';
@@ -45,6 +54,630 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
+export const getCaregiverMeCreateUrl = () => {
+  return `/v1/caregivers/me`;
+};
+
+/**
+ * RN-CTA-06. Crea el perfil de cuidador en `PENDING_APPROVAL`, con todos los servicios al precio sugerido (RN-CUI-17), y la cuenta queda en modo cuidador.
+ * @summary Activar el modo cuidador
+ */
+export const caregiverMeCreate = async (
+  options?: Parameters<typeof customFetch>[1],
+): Promise<CaregiverMeResponse> => {
+  return customFetch<CaregiverMeResponse>(getCaregiverMeCreateUrl(), {
+    ...options,
+    method: 'POST',
+  });
+};
+
+export const getCaregiverMeCreateMutationKey = () => ['caregiverMeCreate'] as const;
+
+export const getCaregiverMeCreateMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof caregiverMeCreate>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<Awaited<ReturnType<typeof caregiverMeCreate>>, TError, void, TContext> => {
+  const mutationKey = getCaregiverMeCreateMutationKey();
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof caregiverMeCreate>>, void> = () => {
+    return caregiverMeCreate(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CaregiverMeCreateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof caregiverMeCreate>>
+>;
+
+export type CaregiverMeCreateMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Activar el modo cuidador
+ */
+export const useCaregiverMeCreate = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof caregiverMeCreate>>,
+      TError,
+      void,
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<Awaited<ReturnType<typeof caregiverMeCreate>>, TError, void, TContext> => {
+  return useMutation(getCaregiverMeCreateMutationOptions(options), queryClient);
+};
+export const getCaregiverMeGetUrl = () => {
+  return `/v1/caregivers/me`;
+};
+
+/**
+ * Con los documentos, el curso de bienvenida y lo que le falta para aparecer en búsquedas.
+ * @summary Mi perfil de cuidador
+ */
+export const caregiverMeGet = async (
+  options?: Parameters<typeof customFetch>[1],
+): Promise<CaregiverMeResponse> => {
+  return customFetch<CaregiverMeResponse>(getCaregiverMeGetUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getCaregiverMeGetQueryKey = () => {
+  return [`/v1/caregivers/me`] as const;
+};
+
+export const getCaregiverMeGetQueryOptions = <
+  TData = Awaited<ReturnType<typeof caregiverMeGet>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMeGet>>, TError, TData>>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getCaregiverMeGetQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof caregiverMeGet>>> = ({ signal }) =>
+    caregiverMeGet({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof caregiverMeGet>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CaregiverMeGetQueryResult = NonNullable<Awaited<ReturnType<typeof caregiverMeGet>>>;
+export type CaregiverMeGetQueryError = ErrorType<ErrorResponse>;
+
+export function useCaregiverMeGet<
+  TData = Awaited<ReturnType<typeof caregiverMeGet>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMeGet>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof caregiverMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof caregiverMeGet>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useCaregiverMeGet<
+  TData = Awaited<ReturnType<typeof caregiverMeGet>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMeGet>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof caregiverMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof caregiverMeGet>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useCaregiverMeGet<
+  TData = Awaited<ReturnType<typeof caregiverMeGet>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMeGet>>, TError, TData>>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary Mi perfil de cuidador
+ */
+
+export function useCaregiverMeGet<
+  TData = Awaited<ReturnType<typeof caregiverMeGet>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMeGet>>, TError, TData>>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCaregiverMeGetQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+export const getCaregiverMeUpdateUrl = () => {
+  return `/v1/caregivers/me`;
+};
+
+/**
+ * RN-CUI-18. Foto, descripción, habilidades, distritos, horario semanal, precios, Reserva inmediata, pausa (RN-CUI-20) y documentos (RN-CUI-01). Cada campo enviado reemplaza al anterior.
+ * @summary Editar mi perfil de cuidador
+ */
+export const caregiverMeUpdate = async (
+  updateCaregiverMeRequest: UpdateCaregiverMeRequest,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<CaregiverMeResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<CaregiverMeResponse>(getCaregiverMeUpdateUrl(), {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateCaregiverMeRequest),
+  });
+};
+
+export const getCaregiverMeUpdateMutationKey = () => ['caregiverMeUpdate'] as const;
+
+export const getCaregiverMeUpdateMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof caregiverMeUpdate>>,
+    TError,
+    CaregiverMeUpdateMutationVariables,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof caregiverMeUpdate>>,
+  TError,
+  CaregiverMeUpdateMutationVariables,
+  TContext
+> => {
+  const mutationKey = getCaregiverMeUpdateMutationKey();
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof caregiverMeUpdate>>,
+    CaregiverMeUpdateMutationVariables
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return caregiverMeUpdate(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CaregiverMeUpdateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof caregiverMeUpdate>>
+>;
+export type CaregiverMeUpdateMutationBody = UpdateCaregiverMeRequest;
+export type CaregiverMeUpdateMutationError = ErrorType<ErrorResponse>;
+export type CaregiverMeUpdateMutationVariables = { data: UpdateCaregiverMeRequest };
+
+/**
+ * @summary Editar mi perfil de cuidador
+ */
+export const useCaregiverMeUpdate = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof caregiverMeUpdate>>,
+      TError,
+      CaregiverMeUpdateMutationVariables,
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof caregiverMeUpdate>>,
+  TError,
+  CaregiverMeUpdateMutationVariables,
+  TContext
+> => {
+  return useMutation(getCaregiverMeUpdateMutationOptions(options), queryClient);
+};
+export const getCaregiverMeLevelUrl = () => {
+  return `/v1/caregivers/me/level`;
+};
+
+/**
+ * RN-NIV-05: el nivel actual y cada requisito del siguiente, cumplido o no.
+ * @summary Mi nivel
+ */
+export const caregiverMeLevel = async (
+  options?: Parameters<typeof customFetch>[1],
+): Promise<CaregiverLevelResponse> => {
+  return customFetch<CaregiverLevelResponse>(getCaregiverMeLevelUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getCaregiverMeLevelQueryKey = () => {
+  return [`/v1/caregivers/me/level`] as const;
+};
+
+export const getCaregiverMeLevelQueryOptions = <
+  TData = Awaited<ReturnType<typeof caregiverMeLevel>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMeLevel>>, TError, TData>>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getCaregiverMeLevelQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof caregiverMeLevel>>> = ({ signal }) =>
+    caregiverMeLevel({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof caregiverMeLevel>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CaregiverMeLevelQueryResult = NonNullable<Awaited<ReturnType<typeof caregiverMeLevel>>>;
+export type CaregiverMeLevelQueryError = ErrorType<ErrorResponse>;
+
+export function useCaregiverMeLevel<
+  TData = Awaited<ReturnType<typeof caregiverMeLevel>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMeLevel>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof caregiverMeLevel>>,
+          TError,
+          Awaited<ReturnType<typeof caregiverMeLevel>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useCaregiverMeLevel<
+  TData = Awaited<ReturnType<typeof caregiverMeLevel>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMeLevel>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof caregiverMeLevel>>,
+          TError,
+          Awaited<ReturnType<typeof caregiverMeLevel>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useCaregiverMeLevel<
+  TData = Awaited<ReturnType<typeof caregiverMeLevel>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMeLevel>>, TError, TData>>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary Mi nivel
+ */
+
+export function useCaregiverMeLevel<
+  TData = Awaited<ReturnType<typeof caregiverMeLevel>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMeLevel>>, TError, TData>>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCaregiverMeLevelQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+export const getCaregiverMePricesUrl = () => {
+  return `/v1/caregivers/me/prices`;
+};
+
+/**
+ * RN-CUI-17, RN-PRE-01, RN-PRE-04. Por servicio: su precio, lo que recibe con él, el rango y el sugerido de su nivel, y el sugerido del siguiente nivel.
+ * @summary Mis precios
+ */
+export const caregiverMePrices = async (
+  options?: Parameters<typeof customFetch>[1],
+): Promise<CaregiverPricesResponse> => {
+  return customFetch<CaregiverPricesResponse>(getCaregiverMePricesUrl(), {
+    ...options,
+    method: 'GET',
+  });
+};
+
+export const getCaregiverMePricesQueryKey = () => {
+  return [`/v1/caregivers/me/prices`] as const;
+};
+
+export const getCaregiverMePricesQueryOptions = <
+  TData = Awaited<ReturnType<typeof caregiverMePrices>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMePrices>>, TError, TData>>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getCaregiverMePricesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof caregiverMePrices>>> = ({ signal }) =>
+    caregiverMePrices({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof caregiverMePrices>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CaregiverMePricesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof caregiverMePrices>>
+>;
+export type CaregiverMePricesQueryError = ErrorType<ErrorResponse>;
+
+export function useCaregiverMePrices<
+  TData = Awaited<ReturnType<typeof caregiverMePrices>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMePrices>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof caregiverMePrices>>,
+          TError,
+          Awaited<ReturnType<typeof caregiverMePrices>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useCaregiverMePrices<
+  TData = Awaited<ReturnType<typeof caregiverMePrices>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMePrices>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof caregiverMePrices>>,
+          TError,
+          Awaited<ReturnType<typeof caregiverMePrices>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+export function useCaregiverMePrices<
+  TData = Awaited<ReturnType<typeof caregiverMePrices>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMePrices>>, TError, TData>>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+/**
+ * @summary Mis precios
+ */
+
+export function useCaregiverMePrices<
+  TData = Awaited<ReturnType<typeof caregiverMePrices>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof caregiverMePrices>>, TError, TData>>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCaregiverMePricesQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+export const getCaregiverMeQuoteUrl = () => {
+  return `/v1/caregivers/me/prices/quote`;
+};
+
+/**
+ * RN-CUI-17, RN-PRE-04. Para la calculadora de precios, mientras el cuidador lo cambia. No guarda nada.
+ * @summary Cuánto recibiría con un precio
+ */
+export const caregiverMeQuote = async (
+  priceQuoteRequest: PriceQuoteRequest,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<PriceQuoteResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<PriceQuoteResponse>(getCaregiverMeQuoteUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(priceQuoteRequest),
+  });
+};
+
+export const getCaregiverMeQuoteMutationKey = () => ['caregiverMeQuote'] as const;
+
+export const getCaregiverMeQuoteMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof caregiverMeQuote>>,
+    TError,
+    CaregiverMeQuoteMutationVariables,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof caregiverMeQuote>>,
+  TError,
+  CaregiverMeQuoteMutationVariables,
+  TContext
+> => {
+  const mutationKey = getCaregiverMeQuoteMutationKey();
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof caregiverMeQuote>>,
+    CaregiverMeQuoteMutationVariables
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return caregiverMeQuote(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CaregiverMeQuoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof caregiverMeQuote>>
+>;
+export type CaregiverMeQuoteMutationBody = PriceQuoteRequest;
+export type CaregiverMeQuoteMutationError = ErrorType<ErrorResponse>;
+export type CaregiverMeQuoteMutationVariables = { data: PriceQuoteRequest };
+
+/**
+ * @summary Cuánto recibiría con un precio
+ */
+export const useCaregiverMeQuote = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof caregiverMeQuote>>,
+      TError,
+      CaregiverMeQuoteMutationVariables,
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof caregiverMeQuote>>,
+  TError,
+  CaregiverMeQuoteMutationVariables,
+  TContext
+> => {
+  return useMutation(getCaregiverMeQuoteMutationOptions(options), queryClient);
+};
 export const getCaregiversSearchUrl = () => {
   return `/v1/caregivers/search`;
 };

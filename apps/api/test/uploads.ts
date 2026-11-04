@@ -1,13 +1,17 @@
+import type { UploadPurpose } from '../src/files/files.dto.js';
 import type { useApi } from './use-api.js';
 
 type Api = ReturnType<typeof useApi>;
+
+/** The purposes that only take photos; the others are uploaded as a PDF. */
+const PHOTO_PURPOSES: UploadPurpose[] = ['PET_PHOTO', 'CAREGIVER_PHOTO', 'SELFIE'];
 
 /** Uploads a small file the way the app does: ask, PUT to the signed URL, complete. */
 export async function uploadFile(
   api: Api,
   token: string,
-  purpose: 'PET_PHOTO' | 'VET_INSTRUCTION' | 'VACCINATION_RECORD',
-  contentType = purpose === 'PET_PHOTO' ? 'image/jpeg' : 'application/pdf',
+  purpose: UploadPurpose,
+  contentType = PHOTO_PURPOSES.includes(purpose) ? 'image/jpeg' : 'application/pdf',
 ): Promise<string> {
   const bytes = new TextEncoder().encode(`${purpose} de prueba`);
   const { body } = await api

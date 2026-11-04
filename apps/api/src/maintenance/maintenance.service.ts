@@ -37,8 +37,8 @@ export class MaintenanceService {
 
   /**
    * Deletes the files that were never uploaded, and the uploaded ones that nothing
-   * points to: a photo, vaccination record or vet instructions the owner never
-   * attached, or a photo that was replaced. Each row goes first, and only if it's
+   * points to: a photo, vaccination record, vet instructions or caregiver document
+   * that was never attached, or a photo or document that was replaced. Each row goes first, and only if it's
    * still abandoned at that moment; then its object in the bucket. Returns how many
    * it deleted.
    */
@@ -86,6 +86,7 @@ function abandonedFiles(cutoff: Date): Prisma.FileWhereInput {
       { uploadedAt: null },
       {
         caregiverProfiles: { none: {} },
+        caregiverDocuments: { none: {} },
         pets: { none: {} },
         vaccinations: { none: {} },
         vetInstructions: { none: {} },

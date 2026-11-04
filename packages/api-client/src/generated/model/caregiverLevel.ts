@@ -6,9 +6,6 @@
  * OpenAPI spec version: 1
  */
 
-/**
- * Solo cuidadores de este nivel o uno más alto.
- */
 export type CaregiverLevel = (typeof CaregiverLevel)[keyof typeof CaregiverLevel];
 
 export const CaregiverLevel = {

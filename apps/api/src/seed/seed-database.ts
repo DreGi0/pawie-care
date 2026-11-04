@@ -21,6 +21,7 @@ import {
 } from './catalog.js';
 import { DEMO_OWNER } from './demo-owner.js';
 import { mediaName, type SeedMedia, seedPhoto } from './seed-media.js';
+import { seedWelcomeCourse, WELCOME_COURSE } from './welcome-course.js';
 
 export interface SeedOptions {
   /** Dates such as the certifications' validity are relative to it. */
@@ -40,6 +41,8 @@ export interface SeedSummary {
   districts: number;
   species: number;
   services: number;
+  /** Questions of the welcome course (RN-CUI-02). */
+  courseQuestions: number;
   caregivers: number;
   /** Email of the demo owner, or null when there was no password for it. */
   demoOwner: string | null;
@@ -59,8 +62,8 @@ interface CatalogIds {
 }
 
 /**
- * Loads what the demo needs: the catalog, every setting of §15, the demo caregivers
- * and the demo owner. It can run any number of times:
+ * Loads what the demo needs: the catalog, the welcome course, every setting of §15, the
+ * demo caregivers and the demo owner. It can run any number of times:
  * - the catalog and the accounts are upserted by their natural keys (slug, code,
  *   email), and each caregiver's districts, prices, schedule and certifications are
  *   replaced, and their level recalculated from them (RN-NIV-04);
@@ -74,6 +77,7 @@ export async function seedDatabase(
   { now = new Date(), demoOwnerPassword, demoCaregiverPhone, media }: SeedOptions = {},
 ): Promise<SeedSummary> {
   const catalog = await seedCatalog(prisma);
+  await seedWelcomeCourse(prisma);
   const createdSettings = await settings.createMissing({
     changedBy: 'seed',
     reason: 'Valor inicial de la sección 15 de las reglas de negocio',
@@ -113,6 +117,10 @@ export async function seedDatabase(
     districts: DISTRICTS.length,
     species: SPECIES.length,
     services: SERVICES.length,
+    courseQuestions: WELCOME_COURSE.modules.reduce(
+      (sum, { questions }) => sum + questions.length,
+      0,
+    ),
     caregivers: DEMO_CAREGIVERS.length,
     demoOwner: demoOwnerPassword === undefined ? null : DEMO_OWNER.email,
     caregiverPhone: demoCaregiverPhone ?? null,
@@ -285,7 +293,9 @@ async function seedCaregiver(
   };
   const profile = {
     status: CaregiverStatus.APPROVED,
-    isActive: true,
+    isPaused: false,
+    // RN-CUI-02, RN-CUI-03: without the welcome course they wouldn't show up in searches.
+    welcomeCoursePassedAt: now,
     instantBooking: true,
     bio: caregiver.bio,
     vetStudentUntil:

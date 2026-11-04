@@ -17,20 +17,24 @@ export interface LevelInput {
   certificationCodes: readonly string[];
 }
 
-/** A requirement the caregiver doesn't meet yet, requirement by requirement (RN-NIV-05). */
-export type MissingRequirement =
+/**
+ * One requirement of a level and whether the caregiver meets it (RN-NIV-05). Only what
+ * the level asks for: a threshold of 0 isn't a requirement.
+ */
+export type LevelRequirement = { met: boolean } & (
   | {
       kind: 'reviews' | 'averageRatingTenths' | 'completedBookings' | 'certifications';
       /** The caregiver's figure. The average is in tenths of a star, rounded down. */
       current: number;
       required: number;
     }
-  | { kind: 'certification'; code: string };
+  | { kind: 'certification'; code: string }
+);
 
 export interface CaregiverLevelResult {
   level: CaregiverLevel;
-  /** What is missing for the next level. Null at the top. */
-  next: { level: CaregiverLevel; missing: MissingRequirement[] } | null;
+  /** The next level and each of its requirements, met or not. Null at the top. */
+  next: { level: CaregiverLevel; requirements: LevelRequirement[] } | null;
 }
 
 /**
@@ -42,55 +46,58 @@ export function caregiverLevel(
   input: LevelInput,
   requirements: LevelRequirements,
 ): CaregiverLevelResult {
-  const missingFor = (level: (typeof UPPER_LEVELS)[number]) =>
-    missingRequirements(input, requirements[level]);
+  const requirementsOf = (level: (typeof UPPER_LEVELS)[number]) =>
+    levelRequirements(input, requirements[level]);
 
   const level =
-    UPPER_LEVELS.findLast((level) => missingFor(level).length === 0) ?? CaregiverLevel.NEW;
+    UPPER_LEVELS.findLast((level) => requirementsOf(level).every(({ met }) => met)) ??
+    CaregiverLevel.NEW;
   const nextLevel = RANKED_LEVELS[RANKED_LEVELS.indexOf(level) + 1] as
     (typeof UPPER_LEVELS)[number] | undefined;
   return {
     level,
-    next: nextLevel ? { level: nextLevel, missing: missingFor(nextLevel) } : null,
+    next: nextLevel ? { level: nextLevel, requirements: requirementsOf(nextLevel) } : null,
   };
 }
 
-function missingRequirements(
+function levelRequirements(
   { ratingCount, ratingSum, completedBookingCount, certificationCodes }: LevelInput,
   requirement: LevelRequirements[(typeof UPPER_LEVELS)[number]],
-): MissingRequirement[] {
+): LevelRequirement[] {
   const held = new Set(certificationCodes);
-  const missing: MissingRequirement[] = [];
-
-  if (ratingCount < requirement.minReviews) {
-    missing.push({ kind: 'reviews', current: ratingCount, required: requirement.minReviews });
-  }
-  // sum / count ≥ tenths / 10, without dividing: integers compare exactly.
-  if (ratingCount === 0 || ratingSum * 10 < requirement.minAverageRatingTenths * ratingCount) {
-    missing.push({
+  const requirements: LevelRequirement[] = [
+    {
+      kind: 'reviews',
+      current: ratingCount,
+      required: requirement.minReviews,
+      met: ratingCount >= requirement.minReviews,
+    },
+    {
       kind: 'averageRatingTenths',
       current: ratingCount === 0 ? 0 : Math.floor((ratingSum * 10) / ratingCount),
       required: requirement.minAverageRatingTenths,
-    });
-  }
-  if (completedBookingCount < requirement.minCompletedBookings) {
-    missing.push({
+      // sum / count ≥ tenths / 10, without dividing: integers compare exactly.
+      met: ratingCount > 0 && ratingSum * 10 >= requirement.minAverageRatingTenths * ratingCount,
+    },
+  ];
+  if (requirement.minCompletedBookings > 0) {
+    requirements.push({
       kind: 'completedBookings',
       current: completedBookingCount,
       required: requirement.minCompletedBookings,
+      met: completedBookingCount >= requirement.minCompletedBookings,
     });
   }
-  if (held.size < requirement.minCertifications) {
-    missing.push({
+  if (requirement.minCertifications > 0) {
+    requirements.push({
       kind: 'certifications',
       current: held.size,
       required: requirement.minCertifications,
+      met: held.size >= requirement.minCertifications,
     });
   }
   for (const code of requirement.requiredCertificationCodes) {
-    if (!held.has(code)) {
-      missing.push({ kind: 'certification', code });
-    }
+    requirements.push({ kind: 'certification', code, met: held.has(code) });
   }
-  return missing;
+  return requirements;
 }

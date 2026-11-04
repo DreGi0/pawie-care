@@ -6,9 +6,6 @@
  * OpenAPI spec version: 1
  */
 
-/**
- * Habilidades que declara el cuidador. Nadie las verifica (RN-CUI-19).
- */
 export type CaregiverSkill = (typeof CaregiverSkill)[keyof typeof CaregiverSkill];
 
 export const CaregiverSkill = {

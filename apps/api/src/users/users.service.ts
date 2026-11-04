@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { Clock } from '../common/time/clock.js';
-import { Role, type User } from '../generated/prisma/client.js';
+import { AppMode, Role, type User } from '../generated/prisma/client.js';
 import { firstServiceFeeWaiverEndsAt } from '../pricing/first-service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SettingsService } from '../settings/settings.service.js';
@@ -20,6 +20,7 @@ export function toUserProfile(user: User): UserProfile {
     birthDate: user.birthDate.toISOString().slice(0, 10),
     phone: user.phone,
     roles: user.roles,
+    mode: user.lastMode,
   };
 }
 
@@ -53,6 +54,20 @@ export class UsersService {
     return this.prisma.user.create({
       data: { ...owner, email: normalizeEmail(email), roles: [Role.OWNER] },
     });
+  }
+
+  /** RN-CTA-06: the app remembers the last mode in the account, so another phone opens in it too. */
+  async setMode(userId: string, mode: AppMode): Promise<User> {
+    if (mode === AppMode.CAREGIVER) {
+      const profile = await this.prisma.caregiverProfile.findUnique({ where: { userId } });
+      if (!profile) {
+        throw new UnprocessableEntityException({
+          errorCode: 'CAREGIVER_PROFILE_NOT_FOUND',
+          message: 'Primero activa el modo cuidador desde Cuenta.',
+        });
+      }
+    }
+    return this.prisma.user.update({ where: { id: userId }, data: { lastMode: mode } });
   }
 
   /** RN-PRE-09: the end of the owner's first-service window, as an ISO instant, or null. */

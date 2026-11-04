@@ -5,20 +5,23 @@
  * API REST de Pawie Care. Las reglas de negocio están en docs/reglas-de-negocio.md y el diseño en docs/arquitectura.md. Los errores siempre tienen la forma de `ErrorResponse`.
  * OpenAPI spec version: 1
  */
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from '@tanstack/react-query';
 
-import type { ErrorResponse, MeResponse } from '../../model';
+import type { ErrorResponse, MeResponse, UpdateMeRequest } from '../../model';
 
 import { customFetch } from '../../../fetcher';
 import type { ErrorType } from '../../../fetcher';
@@ -151,3 +154,108 @@ export function useUsersMe<
 
   return withQueryKey(query, queryOptions.queryKey);
 }
+
+export const getUsersUpdateUrl = () => {
+  return `/v1/users/me`;
+};
+
+/**
+ * RN-CTA-06: el modo en que abre la app, que la cuenta recuerda.
+ * @summary Cambiar mi cuenta
+ */
+export const usersUpdate = async (
+  updateMeRequest: UpdateMeRequest,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<MeResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<MeResponse>(getUsersUpdateUrl(), {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateMeRequest),
+  });
+};
+
+export const getUsersUpdateMutationKey = () => ['usersUpdate'] as const;
+
+export const getUsersUpdateMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof usersUpdate>>,
+    TError,
+    UsersUpdateMutationVariables,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof usersUpdate>>,
+  TError,
+  UsersUpdateMutationVariables,
+  TContext
+> => {
+  const mutationKey = getUsersUpdateMutationKey();
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof usersUpdate>>,
+    UsersUpdateMutationVariables
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return usersUpdate(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UsersUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof usersUpdate>>>;
+export type UsersUpdateMutationBody = UpdateMeRequest;
+export type UsersUpdateMutationError = ErrorType<ErrorResponse>;
+export type UsersUpdateMutationVariables = { data: UpdateMeRequest };
+
+/**
+ * @summary Cambiar mi cuenta
+ */
+export const useUsersUpdate = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof usersUpdate>>,
+      TError,
+      UsersUpdateMutationVariables,
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof usersUpdate>>,
+  TError,
+  UsersUpdateMutationVariables,
+  TContext
+> => {
+  return useMutation(getUsersUpdateMutationOptions(options), queryClient);
+};

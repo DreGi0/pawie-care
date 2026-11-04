@@ -122,6 +122,14 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 
 **Referencia visual:** la dirección elegida en la etapa D. Esta etapa no necesita mockups en HTML.
 
+**Avance:** se hace en dos PR, API y app. **API (hecha):**
+
+- Endpoints `caregivers/me` (con `level`, `prices` y `prices/quote`), `courses/welcome` (con `attempts`) y `mode` en `/v1/users/me`, que guarda el último modo en la cuenta.
+- El DUI se sube por los dos lados (`ID_DOCUMENT_FRONT` y `ID_DOCUMENT_BACK`), y los documentos quedan fijos al aprobarse el alta.
+- `isActive` pasó a `isPaused` (RN-CUI-20), porque "activo" se confundía con "aprobado". La migración conserva el estado de cada cuidador, y los que ya estaban aprobados quedan con el curso aprobado.
+- `caregivers:approve` exige los documentos, pero no el curso.
+- El curso tiene 4 módulos con 3 preguntas cada uno, marcados `TODO(contenido)`, y su nota mínima es `certifications.minExamScoreBp`.
+
 **Reglas:** RN-CTA-06, RN-CUI-01 a RN-CUI-04, RN-CUI-16 a RN-CUI-20, RN-NIV-05, RN-PRE-04.
 
 **API:**

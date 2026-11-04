@@ -92,9 +92,10 @@ Las fotos y los documentos van en un bucket privado (arquitectura §4.11). La ap
 
 1. `POST /v1/files` con `purpose`, `contentType` y `sizeBytes` exacto. Devuelve `uploadUrl` y `uploadHeaders`.
 2. `PUT` del archivo a `uploadUrl` con esos headers. El tipo y el tamaño van firmados: si no coinciden, el bucket responde 403.
-3. `POST /v1/files/:id/complete`. A partir de ahí el archivo se puede asignar a una mascota, una vacuna o unas indicaciones.
+3. `POST /v1/files/:id/complete`. A partir de ahí el archivo se puede asignar a una mascota, una vacuna, unas indicaciones o el perfil del cuidador.
 
-- **Límites:** las fotos (`PET_PHOTO`) aceptan JPEG, PNG, WebP o HEIC de hasta 10 MB. Las recetas (`VET_INSTRUCTION`) y los carnés de vacunas (`VACCINATION_RECORD`) aceptan además PDF, hasta 15 MB.
+- **Límites:** las fotos (`PET_PHOTO`, `CAREGIVER_PHOTO`) y la selfie (`SELFIE`) aceptan JPEG, PNG, WebP o HEIC de hasta 10 MB. Las recetas (`VET_INSTRUCTION`), los carnés de vacunas (`VACCINATION_RECORD`), el DUI (`ID_DOCUMENT`) y los antecedentes (`BACKGROUND_CHECK`) aceptan además PDF, hasta 15 MB.
+- **Documentos del cuidador (RN-CUI-01):** solo los ve quien los subió. El administrador los revisa en el bucket antes de aprobar el alta.
 - **Descargas:** las URLs que devuelve la API vencen en 10 minutos. `GET /v1/files/:id` da una nueva.
 - **Emulador de Android:** pon `S3_PUBLIC_ENDPOINT=http://10.0.2.2:8333`. Si no, las URLs apuntan a `localhost`, que dentro del emulador es el propio emulador.
 
@@ -121,7 +122,7 @@ Las fotos y los documentos van en un bucket privado (arquitectura §4.11). La ap
 
 La respuesta trae el nivel de la reserva, los tramos y los cuidadores disponibles. Un cuidador aparece si:
 
-- está aprobado, activo y sin suspensión;
+- está aprobado, aprobó el curso de bienvenida y no está en pausa ni suspendido (RN-CUI-03, RN-CUI-20);
 - cubre el distrito;
 - ofrece cada servicio en ese nivel, y si la reserva es Especial, tiene la ⭐ vigente hasta el último día;
 - tiene ventanas en su horario semanal para todos los tramos y no tiene otro tramo que se cruce.
@@ -136,6 +137,24 @@ Los resultados van ordenados por calificación y después por servicios completa
   - `UNKNOWN_DISTRICT`.
 - **Precios:** son por una mascota. Si el cuidador no fijó uno, se usa el sugerido, y siempre se ajustan al rango vigente (RN-CUI-17). El recargo por mascota adicional y la tarifa de servicio se calculan al reservar.
 - **Perfil:** `GET /v1/caregivers/:id` (RN-RES-02) muestra la ⭐, la insignia de estudiante, la calificación, los distritos y los precios. Los de nivel Especial solo aparecen si el cuidador tiene la ⭐.
+
+## Alta del cuidador
+
+Etapa 9a. Toda cuenta empieza como dueño (RN-CTA-06). `POST /v1/caregivers/me` activa el modo cuidador:
+
+- crea el perfil en `PENDING_APPROVAL`, con visita y pernocta al precio sugerido (RN-CUI-17);
+- agrega el rol `CAREGIVER`;
+- y deja la cuenta en modo cuidador. La cuenta recuerda el último modo: `mode` en `GET` y `PATCH /v1/users/me`.
+
+Cada ruta del cuidador pide el perfil y responde 404 `CAREGIVER_PROFILE_NOT_FOUND` sin él (arquitectura §4.19).
+
+- **Perfil:** `GET /v1/caregivers/me` lo devuelve con los documentos, el curso y `pendingSteps`, lo que le falta para aparecer en búsquedas, en orden ([src/caregivers/setup-steps.ts](src/caregivers/setup-steps.ts)). `PATCH` cambia cada campo que se manda: foto, descripción, habilidades, distritos, horario semanal, precios, Reserva inmediata, pausa (`isPaused`, RN-CUI-20) y documentos.
+- **Documentos (RN-CUI-01):** el DUI por los dos lados, la selfie y los antecedentes, cada uno con su archivo. Se pueden cambiar hasta que el alta se aprueba (`DOCUMENTS_LOCKED`).
+- **Curso de bienvenida (RN-CUI-02):** `GET /v1/courses/welcome` devuelve los módulos y las preguntas sin las respuestas. `POST /v1/courses/welcome/attempts` lo califica en la API con `certifications.minExamScoreBp` y guarda el intento. Se puede repetir; cuenta el primer aprobado.
+- **Aprobación (RN-CUI-03):** `pnpm caregivers:approve <correo>` la hace un administrador, después de revisar los documentos. Exige los cuatro, pero no el curso, que la búsqueda pide por su cuenta. Con la aprobación salen las insignias Identidad verificada y Antecedentes verificados.
+- **Nivel (RN-NIV-05):** `GET /v1/caregivers/me/level` devuelve el nivel y cada requisito del siguiente, cumplido o no.
+- **Precios (RN-CUI-17, RN-PRE-04):** `GET /v1/caregivers/me/prices` da, por servicio, el precio, lo que recibe con él, el rango y el sugerido de su nivel, y el sugerido del siguiente nivel (null para un Súper Cuidador). `POST /v1/caregivers/me/prices/quote` dice lo que recibiría con otro precio, para la calculadora de la app. Un precio fuera del rango responde 422 `PRICE_OUT_OF_RANGE`, con el rango en `details`.
+- **Horario (RN-CUI-04):** ventanas en minutos desde la medianoche; las de un mismo día no se pueden cruzar (`INVALID_AVAILABILITY`).
 
 ## Direcciones
 
@@ -345,9 +364,10 @@ Otros comandos:
 
 `pnpm db:seed` compila la API y corre `prisma db seed`, que ejecuta `dist/seed/seed.js`. Node no puede correr el cliente generado directamente desde TypeScript. Carga:
 
-- los 14 distritos del AMSS, perro y gato, los dos servicios y el tipo de certificación ⭐;
+- los 14 distritos del AMSS, perro y gato, los dos servicios y los tipos de certificación;
+- el curso de bienvenida, con contenido de ejemplo marcado `TODO(contenido)` en [src/seed/welcome-course.ts](src/seed/welcome-course.ts) hasta que el equipo escriba el final;
 - todos los parámetros de la sección 15 que falten, con su valor inicial;
-- 10 cuidadores aprobados y con Reserva inmediata. Hay de los cuatro tipos (⭐, estudiantes, ambos y ninguno), y Gabriela, Diego y Sofía no hacen pernoctas. Sus correos son de `example.com` y no tienen contraseña, así que no pueden iniciar sesión. Todos tienen el teléfono de `DEMO_CAREGIVER_PHONE`, que el dueño ve cuando la reserva está confirmada (RN-CTA-04). Usa un número del equipo: el repositorio no inventa números, porque podrían ser de alguien. Sin esa variable, no tienen teléfono;
+- 10 cuidadores aprobados, con el curso de bienvenida y con Reserva inmediata. Hay de los cuatro tipos (⭐, estudiantes, ambos y ninguno), y Gabriela, Diego y Sofía no hacen pernoctas. Sus correos son de `example.com` y no tienen contraseña, así que no pueden iniciar sesión. Todos tienen el teléfono de `DEMO_CAREGIVER_PHONE`, que el dueño ve cuando la reserva está confirmada (RN-CTA-04). Usa un número del equipo: el repositorio no inventa números, porque podrían ser de alguien. Sin esa variable, no tienen teléfono;
 - el dueño de demo, `demo@example.com`, con una dirección en San Salvador. Su contraseña es la de `DEMO_OWNER_PASSWORD`, que en local es `pawie-demo-local`. Sin esa variable, el seed no lo crea. En la demo desplegada, que tiene URL pública, usa otra contraseña. Tiene tres mascotas, una por cada caso de la demo: Toby es Normal; Nala es Especial porque necesita ayuda para moverse; y Rocky necesita insulina, así que no se puede reservar (RN-MAS-09);
 - las fotos que haya en [seed-media/](seed-media/README.md), que se suben al bucket. La carpeta explica cómo nombrarlas.
 
@@ -392,21 +412,22 @@ Para agregar un parámetro, súmalo al registro y a la tabla de la sección 15. 
 
 ## Comandos
 
-| Comando                 | Qué hace                                                                 |
-| ----------------------- | ------------------------------------------------------------------------ |
-| `pnpm dev`              | Servidor de desarrollo con recarga automática                            |
-| `pnpm build`            | Compila a `dist/`                                                        |
-| `pnpm start:prod`       | Corre la versión compilada                                               |
-| `pnpm generate`         | Genera el cliente de Prisma                                              |
-| `pnpm db:migrate`       | Crea una migración desde el esquema y la aplica a la base local          |
-| `pnpm db:deploy`        | Aplica las migraciones pendientes                                        |
-| `pnpm db:seed`          | Carga el catálogo, los parámetros y los cuidadores de demo               |
-| `pnpm settings:set`     | Cambia un parámetro y lo registra en el historial                        |
-| `pnpm openapi:generate` | Vuelve a generar `openapi.json`                                          |
-| `pnpm lint`             | oxlint con reglas que usan los tipos                                     |
-| `pnpm typecheck`        | Revisión de tipos                                                        |
-| `pnpm test`             | Pruebas unitarias y de integración (las de integración necesitan Docker) |
-| `pnpm test:unit`        | Solo las unitarias                                                       |
-| `pnpm test:integration` | Solo las de integración                                                  |
-| `pnpm test:watch`       | Unitarias en modo watch                                                  |
-| `pnpm test:cov`         | Cobertura                                                                |
+| Comando                   | Qué hace                                                                 |
+| ------------------------- | ------------------------------------------------------------------------ |
+| `pnpm dev`                | Servidor de desarrollo con recarga automática                            |
+| `pnpm build`              | Compila a `dist/`                                                        |
+| `pnpm start:prod`         | Corre la versión compilada                                               |
+| `pnpm generate`           | Genera el cliente de Prisma                                              |
+| `pnpm db:migrate`         | Crea una migración desde el esquema y la aplica a la base local          |
+| `pnpm db:deploy`          | Aplica las migraciones pendientes                                        |
+| `pnpm db:seed`            | Carga el catálogo, los parámetros y los cuidadores de demo               |
+| `pnpm settings:set`       | Cambia un parámetro y lo registra en el historial                        |
+| `pnpm caregivers:approve` | Aprueba el alta de un cuidador (RN-CUI-03)                               |
+| `pnpm openapi:generate`   | Vuelve a generar `openapi.json`                                          |
+| `pnpm lint`               | oxlint con reglas que usan los tipos                                     |
+| `pnpm typecheck`          | Revisión de tipos                                                        |
+| `pnpm test`               | Pruebas unitarias y de integración (las de integración necesitan Docker) |
+| `pnpm test:unit`          | Solo las unitarias                                                       |
+| `pnpm test:integration`   | Solo las de integración                                                  |
+| `pnpm test:watch`         | Unitarias en modo watch                                                  |
+| `pnpm test:cov`           | Cobertura                                                                |

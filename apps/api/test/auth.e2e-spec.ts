@@ -109,6 +109,8 @@ describe('auth', () => {
           birthDate: '1992-05-20',
           phone: '7000 0000',
           roles: ['OWNER'],
+          // RN-CTA-06: every account starts as an owner.
+          mode: 'OWNER',
         },
       });
       const stored = await db.prisma.user.findUniqueOrThrow({
@@ -252,6 +254,7 @@ describe('auth', () => {
         birthDate: '1988-01-15',
         phone: null,
         roles: ['OWNER'],
+        mode: 'OWNER',
         // RN-PRE-09: 15 days from registering.
         firstServiceFeeWaiverEndsAt: new Date(
           owner.createdAt.getTime() + 15 * 86_400_000,

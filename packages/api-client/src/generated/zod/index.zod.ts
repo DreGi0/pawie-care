@@ -3,6 +3,7 @@ export * from './auth/auth.zod';
 export * from './bookings/bookings.zod';
 export * from './caregivers/caregivers.zod';
 export * from './catalog/catalog.zod';
+export * from './courses/courses.zod';
 export * from './files/files.zod';
 export * from './health/health.zod';
 export * from './payments/payments.zod';

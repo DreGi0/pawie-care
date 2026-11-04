@@ -99,11 +99,27 @@ describe('files', () => {
     });
   });
 
-  it('does not let owners upload caregiver photos', async () => {
+  it('takes the caregiver documents as a photo or a PDF, and the selfie only as a photo (RN-CUI-01)', async () => {
+    const { token } = await owner();
+    const upload = (purpose: string, contentType: string) =>
+      requestUpload(token, { purpose, contentType, sizeBytes: 1000 });
+
+    await upload('ID_DOCUMENT', 'application/pdf').expect(201);
+    await upload('BACKGROUND_CHECK', 'image/jpeg').expect(201);
+    await upload('CAREGIVER_PHOTO', 'image/jpeg').expect(201);
+    const selfie = await upload('SELFIE', 'application/pdf').expect(422);
+
+    expect(selfie.body).toMatchObject({
+      errorCode: 'UNSUPPORTED_FILE_TYPE',
+      message: 'Ese formato no se puede subir. Usa una foto (JPEG, PNG, WebP o HEIC).',
+    });
+  });
+
+  it('refuses a purpose the app does not upload', async () => {
     const { token } = await owner();
 
     const response = await requestUpload(token, {
-      purpose: 'CAREGIVER_PHOTO',
+      purpose: 'CARE_LOG_PHOTO',
       contentType: 'image/jpeg',
       sizeBytes: 1000,
     }).expect(400);

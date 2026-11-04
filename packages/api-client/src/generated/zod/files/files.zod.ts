@@ -14,12 +14,20 @@ import * as zod from 'zod';
 export const filesCreateUploadBodyContentTypeMax = 100;
 
 export const FilesCreateUploadBody = zod.object({
-  purpose: zod.enum(['PET_PHOTO', 'VET_INSTRUCTION', 'VACCINATION_RECORD']),
+  purpose: zod.enum([
+    'PET_PHOTO',
+    'VET_INSTRUCTION',
+    'VACCINATION_RECORD',
+    'CAREGIVER_PHOTO',
+    'ID_DOCUMENT',
+    'SELFIE',
+    'BACKGROUND_CHECK',
+  ]),
   contentType: zod
     .string()
     .max(filesCreateUploadBodyContentTypeMax)
     .describe(
-      'Fotos: JPEG, PNG, WebP o HEIC, hasta 10 MB. Recetas y carnés de vacunas: también PDF, hasta 15 MB.',
+      'Fotos y selfie: JPEG, PNG, WebP o HEIC, hasta 10 MB. Recetas, carnés de vacunas, DUI y antecedentes: también PDF, hasta 15 MB.',
     ),
   sizeBytes: zod
     .int()
@@ -30,7 +38,15 @@ export const FilesCreateUploadBody = zod.object({
 export const FilesCreateUploadResponse = zod.object({
   file: zod.object({
     id: zod.uuid(),
-    purpose: zod.enum(['PET_PHOTO', 'CAREGIVER_PHOTO', 'VET_INSTRUCTION', 'VACCINATION_RECORD']),
+    purpose: zod.enum([
+      'PET_PHOTO',
+      'CAREGIVER_PHOTO',
+      'VET_INSTRUCTION',
+      'VACCINATION_RECORD',
+      'ID_DOCUMENT',
+      'SELFIE',
+      'BACKGROUND_CHECK',
+    ]),
     contentType: zod.string(),
     sizeBytes: zod.int().nullable().describe('Null hasta que se sube.'),
     uploadedAt: zod.iso.datetime({ offset: true }).nullable(),
@@ -59,7 +75,15 @@ export const FilesCompleteParams = zod.object({
 
 export const FilesCompleteResponse = zod.object({
   id: zod.uuid(),
-  purpose: zod.enum(['PET_PHOTO', 'CAREGIVER_PHOTO', 'VET_INSTRUCTION', 'VACCINATION_RECORD']),
+  purpose: zod.enum([
+    'PET_PHOTO',
+    'CAREGIVER_PHOTO',
+    'VET_INSTRUCTION',
+    'VACCINATION_RECORD',
+    'ID_DOCUMENT',
+    'SELFIE',
+    'BACKGROUND_CHECK',
+  ]),
   contentType: zod.string(),
   sizeBytes: zod.int().nullable().describe('Null hasta que se sube.'),
   uploadedAt: zod.iso.datetime({ offset: true }).nullable(),
@@ -79,7 +103,15 @@ export const FilesGetParams = zod.object({
 
 export const FilesGetResponse = zod.object({
   id: zod.uuid(),
-  purpose: zod.enum(['PET_PHOTO', 'CAREGIVER_PHOTO', 'VET_INSTRUCTION', 'VACCINATION_RECORD']),
+  purpose: zod.enum([
+    'PET_PHOTO',
+    'CAREGIVER_PHOTO',
+    'VET_INSTRUCTION',
+    'VACCINATION_RECORD',
+    'ID_DOCUMENT',
+    'SELFIE',
+    'BACKGROUND_CHECK',
+  ]),
   contentType: zod.string(),
   sizeBytes: zod.int().nullable().describe('Null hasta que se sube.'),
   uploadedAt: zod.iso.datetime({ offset: true }).nullable(),
