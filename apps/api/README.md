@@ -156,6 +156,14 @@ Cada ruta del cuidador pide el perfil y responde 404 `CAREGIVER_PROFILE_NOT_FOUN
 - **Precios (RN-CUI-17, RN-PRE-04):** `GET /v1/caregivers/me/prices` da, por servicio, el precio, lo que recibe con él, el rango y el sugerido de su nivel, y el sugerido del siguiente nivel (null para un Súper Cuidador). `POST /v1/caregivers/me/prices/quote` dice lo que recibiría con otro precio, para la calculadora de la app. Un precio fuera del rango responde 422 `PRICE_OUT_OF_RANGE`, con el rango en `details`.
 - **Horario (RN-CUI-04):** ventanas en minutos desde la medianoche; las de un mismo día no se pueden cruzar (`INVALID_AVAILABILITY`).
 
+## Métricas del piloto
+
+`pnpm metrics:report [--from AAAA-MM-DD] [--to AAAA-MM-DD]` imprime en la consola el reporte del piloto (RN-MET-01 a RN-MET-07): el número crítico, el embudo de alta y las hipótesis con su meta. Solo lee la base. Las metas son constantes de [src/metrics/pilot-targets.ts](src/metrics/pilot-targets.ts), no settings.
+
+- Las fechas son días en El Salvador, con los dos extremos incluidos. Filtran cada grupo por cuándo entró: el embudo y Oferta por la creación del perfil de cuidador, Valor por el registro y Retención por el primer pago. El número crítico es siempre el de hoy.
+- Una reserva pagada tiene su estado en `CONFIRMED_STATUSES` ([src/bookings/booking-status.ts](src/bookings/booking-status.ts)), y su fecha de pago es cuando llegó a `CONFIRMED`.
+- Las cuentas del seed (`@example.com`) no cuentan, así que con solo el seed de demo todo sale en 0.
+
 ## Direcciones
 
 `/v1/addresses` lista, crea, reemplaza (`PUT`) y borra las direcciones del dueño. Cada una tiene un nombre (`label`, como "Casa"), la calle, indicaciones opcionales y el distrito. Una reserva copia la dirección que usa (RN-CTA-04), así que editarla o borrarla después no cambia la reserva. Para las de otro dueño responde 404 `ADDRESS_NOT_FOUND`.
@@ -423,6 +431,7 @@ Para agregar un parámetro, súmalo al registro y a la tabla de la sección 15. 
 | `pnpm db:seed`            | Carga el catálogo, los parámetros y los cuidadores de demo               |
 | `pnpm settings:set`       | Cambia un parámetro y lo registra en el historial                        |
 | `pnpm caregivers:approve` | Aprueba el alta de un cuidador (RN-CUI-03)                               |
+| `pnpm metrics:report`     | Imprime el reporte del piloto (RN-MET), con `--from` y `--to` opcionales |
 | `pnpm openapi:generate`   | Vuelve a generar `openapi.json`                                          |
 | `pnpm lint`               | oxlint con reglas que usan los tipos                                     |
 | `pnpm typecheck`          | Revisión de tipos                                                        |

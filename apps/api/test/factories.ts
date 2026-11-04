@@ -45,22 +45,39 @@ export async function createCatalog(prisma: PrismaClient): Promise<Catalog> {
   };
 }
 
-export function createUser(prisma: PrismaClient, roles: Role[] = [Role.OWNER]) {
+/**
+ * The email uses example.com, like the seed's, unless the options say otherwise. The
+ * pilot report doesn't count those accounts (RN-MET-01).
+ */
+export function createUser(
+  prisma: PrismaClient,
+  roles: Role[] = [Role.OWNER],
+  { email = `${randomUUID()}@example.com`, createdAt }: { email?: string; createdAt?: Date } = {},
+) {
   return prisma.user.create({
     data: {
-      email: `${randomUUID()}@example.com`,
+      email,
       firstName: 'Ana',
       lastName: 'Prueba',
       birthDate: new Date('1990-05-20'),
       roles,
+      createdAt,
     },
   });
 }
 
-export async function createCaregiver(prisma: PrismaClient) {
-  const user = await createUser(prisma, [Role.CAREGIVER]);
+/** An approved caregiver who passed the welcome course, unless the options say otherwise. */
+export async function createCaregiver(
+  prisma: PrismaClient,
+  {
+    email,
+    isPaused,
+    welcomeCoursePassedAt = new Date(),
+  }: { email?: string; isPaused?: boolean; welcomeCoursePassedAt?: Date | null } = {},
+) {
+  const user = await createUser(prisma, [Role.CAREGIVER], { email });
   return prisma.caregiverProfile.create({
-    data: { userId: user.id, status: CaregiverStatus.APPROVED, welcomeCoursePassedAt: new Date() },
+    data: { userId: user.id, status: CaregiverStatus.APPROVED, isPaused, welcomeCoursePassedAt },
   });
 }
 
@@ -101,7 +118,11 @@ export interface SlotTimes {
 
 const UNIT_PRICE_CENTS = 1200;
 
-/** A standard home visit booking with one owner and the given slots. */
+/**
+ * A standard home visit booking with the given slots, for a new owner unless `ownerId`
+ * says otherwise. With `confirmedAt`, it records reaching CONFIRMED at that instant,
+ * which the pilot report takes as the payment (RN-MET-01).
+ */
 export async function createBooking(
   prisma: PrismaClient,
   catalog: Catalog,
@@ -109,9 +130,17 @@ export async function createBooking(
     caregiverId,
     slots,
     status = BookingStatus.CONFIRMED,
-  }: { caregiverId: string; slots: SlotTimes[]; status?: BookingStatus },
+    ownerId,
+    confirmedAt,
+  }: {
+    caregiverId: string;
+    slots: SlotTimes[];
+    status?: BookingStatus;
+    ownerId?: string;
+    confirmedAt?: Date;
+  },
 ) {
-  const owner = await createUser(prisma);
+  const owner = ownerId === undefined ? await createUser(prisma) : { id: ownerId };
   const subtotalCents = UNIT_PRICE_CENTS * slots.length;
   const ownerServiceFeeCents = (subtotalCents * 15) / 100;
   const caregiverCommissionCents = 0;
@@ -148,6 +177,9 @@ export async function createBooking(
       vatBp: 1300,
       gatewayFeeBp: 350,
       pricingSnapshot: {},
+      statusChanges: confirmedAt && {
+        create: { toStatus: BookingStatus.CONFIRMED, createdAt: confirmedAt },
+      },
       slots: {
         create: slots.map(({ startsAt, endsAt }) => ({
           serviceId: catalog.homeVisitId,
