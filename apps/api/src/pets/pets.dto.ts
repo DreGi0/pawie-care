@@ -16,7 +16,7 @@ import {
 import { SpeciesOption } from '../catalog/catalog.dto.js';
 import { IsDateOnly } from '../common/validation/is-date-only.js';
 import { trimmed } from '../common/validation/trimmed.js';
-import { CareTask, PetScheduleKind, PetSex } from '../generated/prisma/enums.js';
+import { CareLevel, CareTask, PetScheduleKind, PetSex } from '../generated/prisma/enums.js';
 import type { CareTaskGroup } from './care-tasks.js';
 
 /** RN-MAS-02. Creating and editing take the whole pet: an optional field left out is cleared. */
@@ -498,4 +498,40 @@ export class PetDetail extends PetResponse {
     description: 'Comidas y medicinas, ordenadas por hora.',
   })
   scheduleItems: ScheduleItemResponse[];
+}
+
+/**
+ * RN-RES-11: a pet as the caregiver of a booking sees it, for the booking's dates. Only
+ * what the caregiver has to do on those dates comes as tasks and doses; `medications`
+ * stays as data (RN-MAS-02).
+ */
+export class BookingPetProfile extends PetResponse {
+  @ApiProperty({
+    enum: CareLevel,
+    enumName: 'CareLevel',
+    description: 'RN-MAS-05: su nivel en las fechas de la reserva, guardado al reservar.',
+  })
+  careLevel: CareLevel;
+
+  @ApiProperty({ description: 'RN-MAS-11: el celo cae en alguna fecha de la reserva.' })
+  inHeat: boolean;
+
+  @ApiProperty({
+    type: [CareNeedResponse],
+    description: 'Las tareas de cuidado activas en las fechas de la reserva (RN-MAS-05).',
+  })
+  careNeeds: CareNeedResponse[];
+
+  @ApiProperty({
+    type: [ScheduleItemResponse],
+    description:
+      'Las comidas y las dosis de las tareas de Medicación activas en esas fechas, ordenadas por hora (RN-CUI-12).',
+  })
+  scheduleItems: ScheduleItemResponse[];
+
+  @ApiProperty({
+    type: [VetInstructionResponse],
+    description: 'RN-RES-03: las indicaciones del veterinario que se adjuntaron a la reserva.',
+  })
+  vetInstructions: VetInstructionResponse[];
 }

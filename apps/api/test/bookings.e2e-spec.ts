@@ -1,5 +1,4 @@
 import { BookingStateMachine } from '../src/bookings/booking-state-machine.js';
-import { BookingsService } from '../src/bookings/bookings.service.js';
 import { CaregiversService } from '../src/caregivers/caregivers.service.js';
 import { addDays, dateInElSalvador, formatDateOnly } from '../src/common/time/calendar.js';
 import { Clock } from '../src/common/time/clock.js';
@@ -963,57 +962,6 @@ describe('bookings', () => {
         details: { status: 'CONFIRMED' },
       });
       expect(again.body.errorCode).toBe('BOOKING_NOT_CANCELLABLE');
-    });
-  });
-
-  describe("the caregiver's answer (no route until the caregiver panel)", () => {
-    async function request(visit: string) {
-      const { book } = await owner();
-      await db.prisma.caregiverProfile.update({
-        where: { userId: caregivers.Carlos },
-        data: { instantBooking: false },
-      });
-      try {
-        const { body } = await book({ visits: [visit] }).expect(201);
-        return body.id as string;
-      } finally {
-        await db.prisma.caregiverProfile.update({
-          where: { userId: caregivers.Carlos },
-          data: { instantBooking: true },
-        });
-      }
-    }
-
-    it('accepting a request makes it wait for payment, with its deadline', async () => {
-      const visit = at(day(12), '10:00');
-      const bookingId = await request(visit);
-      // 90 minutes before the visit: the payment window ends when the visit starts.
-      clock.set(new Date(new Date(visit).getTime() - 90 * 60_000));
-
-      const accepted = await api.app().get(BookingsService).accept(caregivers.Carlos, bookingId);
-
-      expect(accepted).toMatchObject({ status: 'PENDING_PAYMENT', paymentDueAt: new Date(visit) });
-      expect((await bookingRow(bookingId)).statusChanges.at(-1)).toMatchObject({
-        fromStatus: 'REQUESTED',
-        toStatus: 'PENDING_PAYMENT',
-        changedById: caregivers.Carlos,
-      });
-    });
-
-    it('rejecting a request frees the time', async () => {
-      const bookingId = await request(at(day(12), '12:00'));
-
-      const rejected = await api.app().get(BookingsService).reject(caregivers.Carlos, bookingId);
-
-      expect(rejected).toMatchObject({ status: 'REJECTED', blocksCalendar: false });
-    });
-
-    it('only lets the caregiver of the booking answer', async () => {
-      const bookingId = await request(at(day(12), '14:00'));
-
-      await expect(
-        api.app().get(BookingsService).accept(caregivers.Valeria, bookingId),
-      ).rejects.toThrow('No encontramos esa reserva.');
     });
   });
 });

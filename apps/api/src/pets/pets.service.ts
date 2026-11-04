@@ -7,6 +7,7 @@ import {
 import { dateInElSalvador, formatDateOnly, parseDateOnly } from '../common/time/calendar.js';
 import { FilesService } from '../files/files.service.js';
 import {
+  type CareLevel,
   CareTask,
   FilePurpose,
   type File,
@@ -19,8 +20,10 @@ import {
   type Species,
 } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { activeOn } from './care-level.js';
 import { CARE_TASK_GROUPS, CARE_TASK_LABELS, canBeOpenEnded } from './care-tasks.js';
 import type {
+  BookingPetProfile,
   CareNeedRequest,
   CareNeedResponse,
   PetDetail,
@@ -266,6 +269,49 @@ export class PetsService {
       throw petNotFound();
     }
     return pets;
+  }
+
+  /**
+   * RN-RES-11: the profile of each pet of a booking as its caregiver sees it, for the
+   * booking's dates (both inclusive): the care needs active then and their doses, the
+   * meals, the vet instructions attached to the booking (RN-RES-03) and whether the pet
+   * is in heat (RN-MAS-11). The free-text `medications` stays as data only (RN-MAS-02).
+   */
+  async bookingProfiles(
+    dates: { from: Date; to: Date },
+    pets: readonly { petId: string; careLevel: CareLevel; vetInstructionIds: string[] }[],
+  ): Promise<BookingPetProfile[]> {
+    const rows = await this.prisma.pet.findMany({
+      where: { id: { in: pets.map(({ petId }) => petId) } },
+      include: DETAIL_INCLUDE,
+    });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    return Promise.all(
+      pets.map(async ({ petId, careLevel, vetInstructionIds }) => {
+        const pet = byId.get(petId)!;
+        const careNeeds = activeOn(pet.careNeeds, dates.from, dates.to);
+        const activeIds = new Set(careNeeds.map(({ id }) => id));
+        const attached = new Set(vetInstructionIds);
+        return Object.assign(await this.toResponse(pet), {
+          careLevel,
+          inHeat:
+            pet.heatStartsOn !== null &&
+            pet.heatEndsOn !== null &&
+            pet.heatStartsOn <= dates.to &&
+            pet.heatEndsOn >= dates.from,
+          careNeeds: careNeeds.map(toCareNeed),
+          // A dose is only for the dates of its MEDICATION task (RN-CUI-12).
+          scheduleItems: pet.scheduleItems
+            .filter(({ careNeedId }) => careNeedId === null || activeIds.has(careNeedId))
+            .map(toScheduleItem),
+          vetInstructions: await Promise.all(
+            pet.vetInstructions
+              .filter(({ id }) => attached.has(id))
+              .map((item) => this.toVetInstruction(item)),
+          ),
+        });
+      }),
+    );
   }
 
   private async petData(ownerId: string, body: PetRequest) {
