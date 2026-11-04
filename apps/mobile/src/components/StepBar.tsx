@@ -5,10 +5,10 @@ import { colors, fontFamily, radius, space } from '@/theme/tokens';
 import { Text } from './Text';
 
 export type StepBarProps =
-  /** "Paso 1 de 2" and a single bar, as in onboarding. */
-  | { current: number; total: number; steps?: never }
+  /** "Paso 1 de 2" and a single bar, as in onboarding. `noun` replaces "Paso", as in "Pregunta 3 de 12". */
+  | { current: number; total: number; noun?: string; steps?: never }
   /** One labeled segment per step, as in the booking flow. */
-  | { current: number; steps: readonly string[]; total?: never };
+  | { current: number; steps: readonly string[]; total?: never; noun?: never };
 
 /** `current` starts at 1. */
 export function StepBar(props: StepBarProps) {
@@ -21,10 +21,11 @@ export function StepBar(props: StepBarProps) {
   } as const;
 
   if (!steps) {
+    const noun = props.noun ?? 'Paso';
     return (
-      <View style={styles.bar} {...a11y} accessibilityLabel={`Paso ${current} de ${count}`}>
+      <View style={styles.bar} {...a11y} accessibilityLabel={`${noun} ${current} de ${count}`}>
         <Text variant="caption" color="inkMuted">
-          Paso {current} de {count}
+          {noun} {current} de {count}
         </Text>
         <View style={styles.track}>
           <View style={[styles.fill, { width: `${(current / count) * 100}%` }]} />

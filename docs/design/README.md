@@ -98,9 +98,11 @@ Están en `apps/mobile/src/components/`. `/catalogo` los muestra todos (solo en 
   - Opción (con `selected`): blanca con borde `line`; la elegida, en `tint` con borde `ink`.
 - **Botones (`Button`, `IconButton`):** el primario mide 56 px, en `primary` con texto blanco. El secundario mide 48 px, con borde `ink` de 2 px. Los dos con radio 16. `IconButton` es un círculo de 48 px con borde `ink`.
 - **Estado de una reserva (`Status`):** texto con ícono, sin color propio. No es una placa.
+- **Marca de paso (`StepMark`):** círculo `primary` con check si el requisito o el paso está cumplido, o círculo punteado si falta. Va en los requisitos del nivel y en los pasos del alta de `CuiInicio`.
 - **Aviso (`Banner`):** `info` y `success` en `tint`, cada uno con su ícono; `warning` en blanco con borde `ink`; `error` en `dangerTint` con texto `danger`.
 - **Superficie (`Card`):** blanca, con borde `line`. Solo para agrupar campos o un desglose, como el precio de Reservar. Las listas son filas.
-- **Barras:** `TabBar` y `BottomBar` van pegadas al borde inferior, sobre `bg` y con borde superior `line`. La pestaña activa lleva el ícono y el texto en `primary` sobre una pastilla `tint`.
+- **Barras:** `TabBar` y `BottomBar` van pegadas al borde inferior, sobre `bg` y con borde superior `line`. La pestaña activa lleva el ícono y el texto en `primary` sobre una pastilla `tint`. `BottomBar` sin monto deja el botón a todo el ancho.
+- **Pantalla de formulario (`FormScreen`):** scroll, título y, con `footer`, una barra fija abajo. Se encarga del margen de la zona segura inferior: sin `footer` lo deja bajo el contenido, y con `footer` lo pone la barra.
 
 ### Reglas
 
@@ -153,7 +155,7 @@ Main, Perfil, Reservar, Visitas y Mis mascotas tienen el layout de Placas. Las d
 - **Galería de 3 fotos:** el backend solo tiene `photoUrl`. Falta agregar `photos: [{ fileId, caption }]` (máximo 3) a `CaregiverProfile`.
 - **Recuperar contraseña:** el enlace aparece en el login, pero el endpoint no existe. La app todavía no lo muestra.
 - **Términos y Aviso de privacidad:** Registro los nombra como texto, sin enlace, porque esas páginas no existen.
-- **Mis mascotas y Cuenta no tienen mockup**, aunque están en la barra de pestañas. Mis mascotas es una lista de filas (foto en círculo, especie, raza y edad), con un estado vacío y "Agregar mascota". Cuenta solo muestra el nombre, el correo y "Cerrar sesión".
+- **Mis mascotas y Cuenta no tienen mockup**, aunque están en la barra de pestañas. Mis mascotas es una lista de filas (foto en círculo, especie, raza y edad), con un estado vacío y "Agregar mascota". Cuenta muestra el nombre y el correo, la entrada al modo cuidador o el cambio de modo, las pantallas del cuidador en modo cuidador y "Cerrar sesión".
 - **Perfil de la mascota:** OnbMascota dice "Agrégalo luego en su perfil", pero la app todavía no tiene la pantalla de la mascota con sus tareas de cuidado, vacunas e indicaciones del veterinario.
 - **Género en la ⭐:** el mockup dice "⭐ Certificada", pero la API no dice si el cuidador es hombre o mujer. La app dice "Con certificación de cuidado especial" y muestra el nombre de la certificación que da la API.
 - **Avisos:** Esperando y Confirmada dicen "Te avisamos", pero la app no tiene notificaciones push. Esperando dice que la pantalla cambia sola, porque vuelve a preguntar mientras está abierta.
@@ -194,14 +196,14 @@ Las pestañas del modo cuidador son **Inicio**, **Agenda**, **Ganancias** y **Cu
 
 | Pantalla        | Qué muestra                                                                                                                                                            | Reglas                          | Etapa            |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ---------------- |
-| `CuiActivar`    | Desde Cuenta: qué pide Pawie para ser cuidador y botón para empezar                                                                                                    | RN-CTA-06                       | 9a               |
-| `CuiDocumentos` | Subir DUI, selfie y antecedentes, con el estado de la revisión                                                                                                         | RN-CUI-01, RN-CUI-03            | 9a               |
-| `CuiCurso`      | Módulos del curso de bienvenida y examen, con el resultado y la opción de repetir                                                                                      | RN-CUI-02                       | 9a               |
-| `CuiInicio`     | Lo que falta del alta; ya aprobado, nivel actual, lo que falta para el siguiente, el sugerido del siguiente nivel y las solicitudes pendientes, la más urgente primero | RN-NIV-05, RN-CUI-17, RN-RES-11 | 9a, 9b           |
+| `CuiActivar`    | Desde Cuenta: qué pide Pawie para ser cuidador y botón para empezar                                                                                                    | RN-CTA-06                       | 9a (hecha)       |
+| `CuiDocumentos` | Subir DUI, selfie y antecedentes, con el estado de la revisión                                                                                                         | RN-CUI-01, RN-CUI-03            | 9a (hecha)       |
+| `CuiCurso`      | Módulos del curso de bienvenida y examen, con el resultado y la opción de repetir                                                                                      | RN-CUI-02                       | 9a (hecha)       |
+| `CuiInicio`     | Lo que falta del alta; ya aprobado, nivel actual, lo que falta para el siguiente, el sugerido del siguiente nivel y las solicitudes pendientes, la más urgente primero | RN-NIV-05, RN-CUI-17, RN-RES-11 | 9a (hecha), 9b   |
 | `CuiSolicitud`  | Mascotas con su ficha, celo o Especial, servicio, fechas, distrito y **lo que va a ganar**. Aceptar o rechazar                                                         | RN-RES-11, RN-CTA-04            | 9b               |
 | `CuiAgenda`     | Próximos servicios por día, con "Agregar al calendario"                                                                                                                | RN-CAL-01                       | 9b, 11 (eventos) |
-| `CuiPerfil`     | Editar foto, descripción, habilidades, distritos, horario semanal, Reserva inmediata y pausa                                                                           | RN-CUI-18, RN-CUI-20            | 9a               |
-| `CuiPrecios`    | La calculadora: precio por servicio con el rango y el sugerido de su nivel, el sugerido del siguiente nivel y lo que recibe según la API                               | RN-CUI-17, RN-PRE-01, RN-PRE-04 | 9a               |
+| `CuiPerfil`     | Editar foto, descripción, habilidades, distritos, horario semanal, Reserva inmediata y pausa                                                                           | RN-CUI-18, RN-CUI-20            | 9a (hecha)       |
+| `CuiPrecios`    | La calculadora: precio por servicio con el rango y el sugerido de su nivel, el sugerido del siguiente nivel y lo que recibe según la API                               | RN-CUI-17, RN-PRE-01, RN-PRE-04 | 9a (hecha)       |
 | `CuiServicio`   | Servicio en curso: check-in, ficha, tareas del tramo, fotos, ruta del paseo y check-out                                                                                | §11                             | 10               |
 | `CuiGanancias`  | Por cobrar, pagado (simulado en la demo) y total del mes                                                                                                               | RN-PAG-03, RN-PAG-10            | 9b               |
 | `CuiCompartir`  | Vista previa del texto, con su código de referido, y botón para compartir el perfil                                                                                    | RN-CUI-22, RN-REF-02            | 11 (eventos)     |
@@ -212,4 +214,9 @@ Reglas para las pantallas del cuidador:
 - **Cuánto gana se muestra grande**, antes que los detalles. Es lo que decide si acepta en segundos.
 - **Lo que gana o recibe es el monto de la API.** Ningún texto dice "recibes el 100%" (RN-PRE-04).
 - **La ⭐ solo marca el cuidado especial.** El nivel es su placa (`LevelTag` en Inicio, `Tag` de nivel en las listas), y las demás certificaciones son placas `certification`.
-- **Nimbus aparece** en `CuiInicio`, en el estado vacío de solicitudes, y en `CuiCurso` al aprobar. No aparece en `CuiServicio`, que tiene que ser rápida de leer.
+- **Nimbus aparece** en `CuiActivar`, que es la bienvenida al modo cuidador, en `CuiInicio`, en el estado vacío de solicitudes y en `CuiCurso` al aprobar. No aparece en `CuiServicio`, que tiene que ser rápida de leer.
+- **Las pestañas siguen el modo de la cuenta** (RN-CTA-06): el dueño ve Buscar, Visitas, Mascotas y Cuenta, y el cuidador ve Inicio y Cuenta. Cuenta cambia de modo, y la app abre en el último que se usó.
+- **El horario semanal se edita por franjas** en `CuiPerfil`: cada día tiene mañana (7:00 a 12:00), tarde (hasta que empieza la pernocta) y noche (la de la pernocta, que sale de `GET /v1/catalog`). La API acepta cualquier ventana; las franjas son solo el editor de la app.
+- **`CuiInicio` antes de aparecer en búsquedas** muestra los pasos del alta (`pendingSteps` de la API), cada uno con `StepMark`, y un solo botón primario para el siguiente paso que puede hacer el cuidador. La revisión de Pawie no tiene botón.
+- **`CuiPrecios`** cambia el precio con −/+ de $0.50 dentro del rango, y pide "Recibes" a la API 400 ms después del último toque.
+- **`CuiDocumentos`** guarda cada documento apenas se sube. La selfie se toma con la cámara frontal; los antecedentes también aceptan PDF. Con los cuatro subidos, la revisión empieza sola y "Listo" va en una `BottomBar` sin monto, para que se vea sin bajar en cualquier teléfono.

@@ -8,6 +8,7 @@ import {
   daysUntil,
   formatDay,
   formatDeadline,
+  formatLongDay,
   formatLongDayTime,
   formatMoney,
   formatRange,
@@ -28,6 +29,7 @@ test('shows dates in San Salvador time', () => {
     'Lun 19 oct, de 9:00 a 10:00',
   );
   assert.equal(formatLongDayTime('2026-10-19T15:00:00Z'), 'el lunes 19 de octubre a las 9:00');
+  assert.equal(formatLongDay('2026-11-03T03:00:00Z'), 'Lunes 2 de noviembre');
 });
 
 test('builds moments in San Salvador time', () => {
