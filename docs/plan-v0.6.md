@@ -17,7 +17,7 @@ Este plan lleva el código a las [reglas v0.6](reglas-de-negocio.md). Cada etapa
 
 ## 1. Brecha entre el código y la v0.6
 
-Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las certificaciones ya siguen las reglas (etapa 6), el cuidador se da de alta desde la app (etapa 9a), el reporte del piloto sale con un script (métricas) y la ficha de la mascota está completa (etapa 7).
+Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las certificaciones ya siguen las reglas (etapa 6), el cuidador se da de alta desde la app (etapa 9a), el reporte del piloto sale con un script (métricas), la ficha de la mascota está completa (etapa 7) y el paseo es el tercer servicio (etapa 8).
 
 | Área                     | Hoy en el código                                                           | Falta para la v0.6                                                                   | Etapa            |
 | ------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------- |
@@ -25,7 +25,7 @@ Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las 
 | Alta del cuidador        | Modo cuidador, documentos, curso, aprobación, perfil y precios (9a, hecha) | Nada                                                                                 | 9a               |
 | Métricas del piloto      | Script `metrics:report` (métricas, hecha)                                  | Crecimiento (RN-MET-06), que necesita los referidos                                  | Eventos de la 11 |
 | Ficha                    | Ficha completa y MascotaPerfil (7, hecha)                                  | Nada                                                                                 | 7                |
-| Servicios                | Visita y pernocta                                                          | Paseo                                                                                | 8                |
+| Servicios                | Paseo, visita y pernocta (8, hecha)                                        | Nada                                                                                 | 8                |
 | Solicitudes del cuidador | La máquina de estados permite aceptar y rechazar, pero no hay endpoints    | Solicitudes, aceptar o rechazar, agenda y ganancias                                  | 9b               |
 | Ejecución                | Estados `IN_PROGRESS` a `CLOSED` sin transiciones                          | Check-in, tareas, fotos, ruta, check-out, cierre a las 48 h, pago simulado y reseñas | 10               |
 | Avisos e integraciones   | Nada                                                                       | Push (base y eventos), agregar al calendario y compartir el perfil                   | 11               |
@@ -238,7 +238,7 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 - Un horario de comida a las 7:00 aparece en la ficha.
 - Una mascota en celo no cambia su `careLevel`.
 
-### Etapa 8: servicio de paseo
+### Etapa 8: servicio de paseo (hecha)
 
 **Reglas:** RN-SER-05, RN-RES-01, RN-RES-03, RN-PRE-01.
 
@@ -251,6 +251,15 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 - Precios del cuidador: el paseo sale solo, y un cuidador nuevo empieza ofreciéndolo al sugerido, como los otros servicios.
 - El seed le da paseo a 7 de los 10 cuidadores. Andrea, María José y Sofía no pasean perros.
 - El ejemplo de RN-PRE (paseo con un cuidador Confiable) ya es un test con `WALK`.
+
+**App (hecha):**
+
+- Main tiene el bloque Paseo primero, "Solo perros", como en `directions/placas/main.html`. Abre en Paseo si la primera mascota es perro, y en Visita si no.
+- Con un gato elegido, o más de 2 perros, tocar Paseo abre una hoja que explica por qué y no quita a nadie sin que el dueño lo elija. Con Paseo, "¿Para quién?" muestra solo los perros.
+- Reservar, Pagar, el detalle de la reserva, el perfil del cuidador, CuiPrecios y CuiInicio nombran el paseo. Los servicios van siempre en el orden paseo, visita y pernocta.
+- La app pide un paseo por reserva, como la visita. Varios en un día ya funcionan en la API.
+
+**La etapa 8 está hecha.**
 
 **Diseño original:**
 
