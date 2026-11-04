@@ -283,6 +283,15 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 
 **Reglas:** RN-RES-06, RN-RES-11, RN-CTA-04, RN-PAG-10.
 
+**Avance:** se hace en dos PR, API y app. **API (hecha):**
+
+- `GET /v1/caregivers/me/bookings?status=&upcoming=` y `GET /v1/caregivers/me/bookings/:id` devuelven la reserva como la ve el cuidador. Primero van las solicitudes, la que vence primero arriba (RN-RES-06), y después el resto, por inicio. `upcoming=true` deja fuera lo que ya terminó, para la agenda.
+- Cada mascota trae su ficha para las fechas de la reserva: las tareas activas, las comidas, las dosis de las tareas de Medicación activas, las indicaciones adjuntas, `inHeat` y el nivel de cuidado guardado al reservar. "Medicamentos que toma" viene solo como dato (RN-MAS-02).
+- `earnings` trae lo que va a ganar, guardado al reservar (RN-PRE-07): subtotal, comisión y `payoutCents`. La app muestra `payoutCents`.
+- La dirección exacta y los datos de emergencia vienen desde `CONFIRMED` (RN-CTA-04, que ahora nombra también los datos de emergencia).
+- `POST /v1/bookings/:id/accept` y `/reject` responden 404 si la reserva es de otro cuidador, y 409 `BOOKING_NOT_REQUESTED` si ya no está `REQUESTED` o si su plazo pasó, aunque todavía no haya vencido.
+- `GET /v1/caregivers/me/earnings`: por cobrar (reservas confirmadas o en retención), pagado (0 hasta la etapa 10) y el total del mes en curso, hora de El Salvador, según el inicio de cada servicio.
+
 **API:**
 
 - **Solicitudes:**

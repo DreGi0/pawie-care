@@ -99,7 +99,7 @@ La demo es una **app móvil** (iOS y Android) con dos modos en la misma app: **d
 - **RN-CTA-01** Hay tres roles: **dueño**, **cuidador** y **administrador**. Una misma cuenta puede ser dueño y cuidador a la vez.
 - **RN-CTA-02** Solo pueden registrarse mayores de 18 años.
 - **RN-CTA-03** El dueño debe verificar su identidad (DUI) antes de su primera **pernocta**, para proteger al cuidador que entra a su casa. `Fase 2`
-- **RN-CTA-04** El teléfono del cuidador y la dirección del dueño quedan ocultos hasta que existe una reserva confirmada entre los dos.
+- **RN-CTA-04** El teléfono del cuidador, y la dirección y los datos de emergencia del dueño (RN-RES-04), quedan ocultos hasta que existe una reserva confirmada entre los dos.
 - **RN-CTA-05** El administrador aprueba cuidadores, resuelve reclamos y edita los parámetros. En la demo lo hace con scripts.
 - **RN-CTA-06** Toda cuenta empieza como dueño. Desde **Cuenta** puede activar el **modo cuidador**, lo que crea su perfil de cuidador en `PENDING_APPROVAL`. La app cambia de pestañas según el modo, y la cuenta recuerda el último que usó.
 
