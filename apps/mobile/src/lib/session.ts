@@ -1,4 +1,4 @@
-import { ApiError, authLogout, type AuthSession } from '@pawie/api-client';
+import { ApiError, authLogout, type AppMode, type AuthSession } from '@pawie/api-client';
 import * as SecureStore from 'expo-secure-store';
 import { useSyncExternalStore } from 'react';
 
@@ -20,6 +20,9 @@ let refreshToken: string | null = null;
 let renewal: Promise<string | null> | null = null;
 // A new account registers its first pet and address before reaching the tabs.
 let onboarding = false;
+// RN-CTA-06: owner or caregiver tabs. The account remembers it, and every sign-in and renewal
+// brings it, so the app opens in the right mode without waiting for another request.
+let mode: AppMode = 'OWNER';
 const listeners = new Set<() => void>();
 
 export function getSessionStatus(): SessionStatus {
@@ -42,6 +45,16 @@ function setStatus(next: SessionStatus) {
 
 export function useOnboarding(): boolean {
   return useSyncExternalStore(subscribeSession, () => onboarding);
+}
+
+export function useMode(): AppMode {
+  return useSyncExternalStore(subscribeSession, () => mode);
+}
+
+/** After the API saved the new mode (PATCH /v1/users/me or POST /v1/caregivers/me). */
+export function setMode(next: AppMode): void {
+  mode = next;
+  setStatus(status);
 }
 
 /** Keeps the session that a sign-in or a sign-up returned. A sign-up goes to onboarding. */
@@ -121,6 +134,7 @@ async function keep(session: AuthSession) {
   accessToken = session.accessToken;
   accessTokenExpiresAt = Date.now() + session.expiresIn * 1000;
   refreshToken = session.refreshToken;
+  mode = session.user.mode;
   await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, session.refreshToken);
 }
 
@@ -128,6 +142,7 @@ async function forget() {
   accessToken = null;
   accessTokenExpiresAt = 0;
   refreshToken = null;
+  mode = 'OWNER';
   await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
   setStatus('signedOut');
 }

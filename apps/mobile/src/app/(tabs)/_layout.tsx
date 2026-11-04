@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router/tabs';
 
 import { Icon, type IconName } from '@/components/Icon';
 import { TabBar } from '@/components/TabBar';
+import { useMode } from '@/lib/session';
 import { colors } from '@/theme/tokens';
 
 /** The current tab's icon goes in `primary`, like its label. */
@@ -12,8 +13,11 @@ function tabIcon(name: IconName) {
   };
 }
 
+// RN-CTA-06: the tabs follow the account's mode. Cuenta is in both; Agenda and Ganancias join
+// the caregiver's tabs in stage 9b.
 export default function TabsLayout() {
-  const bookings = useBookingsList();
+  const mode = useMode();
+  const bookings = useBookingsList({ query: { enabled: mode === 'OWNER' } });
   const toPay = (bookings.data ?? []).filter((b) => b.status === 'PENDING_PAYMENT').length;
 
   return (
@@ -21,21 +25,26 @@ export default function TabsLayout() {
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bg } }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Buscar', tabBarIcon: tabIcon('search') }} />
-      <Tabs.Screen
-        name="visitas"
-        options={{
-          title: 'Visitas',
-          tabBarIcon: tabIcon('calendar'),
-          tabBarBadge: toPay > 0 ? toPay : undefined,
-          tabBarAccessibilityLabel:
-            toPay > 0 ? `Visitas, ${toPay} pendiente${toPay > 1 ? 's' : ''} de pago` : undefined,
-        }}
-      />
-      <Tabs.Screen
-        name="mascotas"
-        options={{ title: 'Mascotas', tabBarIcon: tabIcon('paw-print') }}
-      />
+      <Tabs.Protected guard={mode === 'OWNER'}>
+        <Tabs.Screen name="index" options={{ title: 'Buscar', tabBarIcon: tabIcon('search') }} />
+        <Tabs.Screen
+          name="visitas"
+          options={{
+            title: 'Visitas',
+            tabBarIcon: tabIcon('calendar'),
+            tabBarBadge: toPay > 0 ? toPay : undefined,
+            tabBarAccessibilityLabel:
+              toPay > 0 ? `Visitas, ${toPay} pendiente${toPay > 1 ? 's' : ''} de pago` : undefined,
+          }}
+        />
+        <Tabs.Screen
+          name="mascotas"
+          options={{ title: 'Mascotas', tabBarIcon: tabIcon('paw-print') }}
+        />
+      </Tabs.Protected>
+      <Tabs.Protected guard={mode === 'CAREGIVER'}>
+        <Tabs.Screen name="inicio" options={{ title: 'Inicio', tabBarIcon: tabIcon('house') }} />
+      </Tabs.Protected>
       <Tabs.Screen name="cuenta" options={{ title: 'Cuenta', tabBarIcon: tabIcon('user') }} />
     </Tabs>
   );

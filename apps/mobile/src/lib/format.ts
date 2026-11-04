@@ -57,6 +57,13 @@ export function formatLongDayTime(date: Date | string): string {
   return `el ${DAYS_LONG[d.getUTCDay()]} ${d.getUTCDate()} de ${MONTHS_LONG[d.getUTCMonth()]} ${hour} ${formatTime(date)}`;
 }
 
+/** "Lunes 2 de noviembre". */
+export function formatLongDay(date: Date | string): string {
+  const d = wallClock(date);
+  const day = DAYS_LONG[d.getUTCDay()];
+  return `${day.charAt(0).toUpperCase()}${day.slice(1)} ${d.getUTCDate()} de ${MONTHS_LONG[d.getUTCMonth()]}`;
+}
+
 /** "antes de las 17:30" if it's today in San Salvador, "antes del Mar 20 oct, 17:30" if not. */
 export function formatDeadline(date: Date | string, now = new Date()): string {
   return localDate(date) === localDate(now)
