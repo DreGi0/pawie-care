@@ -132,20 +132,29 @@ describe('seed', () => {
     expect(new Set(phones)).toEqual(new Set([DEMO_CAREGIVER_PHONE]));
   });
 
-  it('skips the demo owner and the caregivers phone when their variables are not set', async () => {
-    const empty = await createTestDatabase();
-    try {
-      const summary = await seedDatabase(empty.prisma, new SettingsService(empty.prisma), {
-        now: NOW,
-      });
+  // Unlike the others, this test seeds a database inside the test, not in beforeAll, so the
+  // default 5 s applies to it. Cloning the database and seeding it takes about 0.7 s alone,
+  // but up to 6 s while the other test files keep the shared PostgreSQL busy: the seed runs
+  // some 320 queries one after another (the settings with their history, ten caregivers,
+  // the catalog and the course), and each one waits longer.
+  it(
+    'skips the demo owner and the caregivers phone when their variables are not set',
+    { timeout: 30_000 },
+    async () => {
+      const empty = await createTestDatabase();
+      try {
+        const summary = await seedDatabase(empty.prisma, new SettingsService(empty.prisma), {
+          now: NOW,
+        });
 
-      expect(summary).toMatchObject({ demoOwner: null, caregiverPhone: null });
-      expect(await empty.prisma.user.count({ where: { email: 'demo@example.com' } })).toBe(0);
-      expect(await empty.prisma.user.count({ where: { phone: { not: null } } })).toBe(0);
-    } finally {
-      await empty.close();
-    }
-  });
+        expect(summary).toMatchObject({ demoOwner: null, caregiverPhone: null });
+        expect(await empty.prisma.user.count({ where: { email: 'demo@example.com' } })).toBe(0);
+        expect(await empty.prisma.user.count({ where: { phone: { not: null } } })).toBe(0);
+      } finally {
+        await empty.close();
+      }
+    },
+  );
 
   it('uploads the photos it finds in the media directory, and only those', async () => {
     const withPhoto = await db.prisma.caregiverProfile.findMany({
