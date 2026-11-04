@@ -27,11 +27,20 @@ export const PetsListResponseItem = zod.object({
   isSterilized: zod.boolean().nullable(),
   temperament: zod.string().nullable(),
   handlingNotes: zod.string().nullable(),
+  foodDescription: zod.string().nullable(),
+  foodPortion: zod.string().nullable(),
+  allowedTreats: zod.string().nullable(),
+  dailyRoutine: zod.string().nullable(),
   vetName: zod.string().nullable(),
   vetClinic: zod.string().nullable(),
   vetPhone: zod.string().nullable(),
   healthConditions: zod.string().nullable(),
-  medications: zod.string().nullable(),
+  medications: zod
+    .string()
+    .nullable()
+    .describe('Solo informa: nunca se muestra como instrucción ni como tarea del cuidador.'),
+  heatStartsOn: zod.iso.date().nullable().describe('RN-MAS-11'),
+  heatEndsOn: zod.iso.date().nullable(),
   photoFileId: zod.uuid().nullable(),
   photoUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
 });
@@ -50,6 +59,14 @@ export const petsCreateBodyWeightGramsMax = 150000;
 export const petsCreateBodyTemperamentMax = 500;
 
 export const petsCreateBodyHandlingNotesMax = 1000;
+
+export const petsCreateBodyFoodDescriptionMax = 200;
+
+export const petsCreateBodyFoodPortionMax = 120;
+
+export const petsCreateBodyAllowedTreatsMax = 500;
+
+export const petsCreateBodyDailyRoutineMax = 1000;
 
 export const petsCreateBodyVetNameMax = 120;
 
@@ -78,6 +95,18 @@ export const PetsCreateBody = zod.object({
   isSterilized: zod.boolean().optional(),
   temperament: zod.string().max(petsCreateBodyTemperamentMax).optional(),
   handlingNotes: zod.string().max(petsCreateBodyHandlingNotesMax).optional(),
+  foodDescription: zod
+    .string()
+    .max(petsCreateBodyFoodDescriptionMax)
+    .optional()
+    .describe('RN-MAS-02: marca o tipo de alimento.'),
+  foodPortion: zod
+    .string()
+    .max(petsCreateBodyFoodPortionMax)
+    .optional()
+    .describe('La porción de siempre. Una comida del horario puede tener la suya.'),
+  allowedTreats: zod.string().max(petsCreateBodyAllowedTreatsMax).optional(),
+  dailyRoutine: zod.string().max(petsCreateBodyDailyRoutineMax).optional(),
   vetName: zod
     .string()
     .max(petsCreateBodyVetNameMax)
@@ -92,7 +121,20 @@ export const PetsCreateBody = zod.object({
     .describe(
       'Texto libre para el perfil. Lo que el cuidador tiene que hacer va en las tareas de cuidado.',
     ),
-  medications: zod.string().max(petsCreateBodyMedicationsMax).optional(),
+  medications: zod
+    .string()
+    .max(petsCreateBodyMedicationsMax)
+    .optional()
+    .describe(
+      'Los medicamentos que toma, solo para informar: nunca es una instrucción para el cuidador. Si el cuidador tiene que dárselos, van como tarea MEDICATION con sus horarios (RN-CUI-12).',
+    ),
+  heatStartsOn: zod.iso
+    .date()
+    .optional()
+    .describe(
+      'RN-MAS-11: primer día del celo. Solo para hembras, y junto con heatEndsOn. No la hace Especial ni cambia el precio.',
+    ),
+  heatEndsOn: zod.iso.date().optional().describe('Último día del celo, incluido.'),
   photoFileId: zod.uuid().optional().describe('Un archivo PET_PHOTO ya subido (POST /v1/files).'),
 });
 
@@ -112,11 +154,20 @@ export const PetsCreateResponse = zod.object({
   isSterilized: zod.boolean().nullable(),
   temperament: zod.string().nullable(),
   handlingNotes: zod.string().nullable(),
+  foodDescription: zod.string().nullable(),
+  foodPortion: zod.string().nullable(),
+  allowedTreats: zod.string().nullable(),
+  dailyRoutine: zod.string().nullable(),
   vetName: zod.string().nullable(),
   vetClinic: zod.string().nullable(),
   vetPhone: zod.string().nullable(),
   healthConditions: zod.string().nullable(),
-  medications: zod.string().nullable(),
+  medications: zod
+    .string()
+    .nullable()
+    .describe('Solo informa: nunca se muestra como instrucción ni como tarea del cuidador.'),
+  heatStartsOn: zod.iso.date().nullable().describe('RN-MAS-11'),
+  heatEndsOn: zod.iso.date().nullable(),
   photoFileId: zod.uuid().nullable(),
   photoUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
   vaccinations: zod.array(
@@ -160,17 +211,33 @@ export const PetsCreateResponse = zod.object({
         'DOSE_CHANGE',
         'DIAGNOSIS_OR_PRESCRIPTION',
       ]),
-      group: zod.enum(['CLINICAL', 'ASSISTANCE', 'PROHIBITED']),
+      group: zod
+        .enum(['CLINICAL', 'ASSISTANCE', 'PROHIBITED'])
+        .describe(
+          'CLINICAL pide las indicaciones del veterinario y ASSISTANCE las del dueño; las dos hacen Especial a la mascota. Con una PROHIBITED activa no se puede reservar.',
+        ),
       startsOn: zod.iso.date(),
       endsOn: zod.iso.date().nullable(),
       vetInstructionId: zod.uuid().nullable(),
       ownerInstructions: zod.string().nullable(),
     }),
   ),
+  scheduleItems: zod
+    .array(
+      zod.object({
+        id: zod.uuid().describe('Editar el horario conserva el id.'),
+        kind: zod.enum(['MEAL', 'MEDICATION']),
+        minuteOfDay: zod.int().describe('Minutos desde la medianoche.'),
+        label: zod.string(),
+        dose: zod.string().nullable(),
+        careNeedId: zod.uuid().nullable(),
+      }),
+    )
+    .describe('Comidas y medicinas, ordenadas por hora.'),
 });
 
 /**
- * Con sus vacunas, indicaciones del veterinario y tareas de cuidado.
+ * La ficha completa (RN-MAS-02): sus vacunas, indicaciones del veterinario, tareas de cuidado y horarios.
  * @summary Ver una mascota
  */
 export const PetsGetParams = zod.object({
@@ -193,11 +260,20 @@ export const PetsGetResponse = zod.object({
   isSterilized: zod.boolean().nullable(),
   temperament: zod.string().nullable(),
   handlingNotes: zod.string().nullable(),
+  foodDescription: zod.string().nullable(),
+  foodPortion: zod.string().nullable(),
+  allowedTreats: zod.string().nullable(),
+  dailyRoutine: zod.string().nullable(),
   vetName: zod.string().nullable(),
   vetClinic: zod.string().nullable(),
   vetPhone: zod.string().nullable(),
   healthConditions: zod.string().nullable(),
-  medications: zod.string().nullable(),
+  medications: zod
+    .string()
+    .nullable()
+    .describe('Solo informa: nunca se muestra como instrucción ni como tarea del cuidador.'),
+  heatStartsOn: zod.iso.date().nullable().describe('RN-MAS-11'),
+  heatEndsOn: zod.iso.date().nullable(),
   photoFileId: zod.uuid().nullable(),
   photoUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
   vaccinations: zod.array(
@@ -241,13 +317,29 @@ export const PetsGetResponse = zod.object({
         'DOSE_CHANGE',
         'DIAGNOSIS_OR_PRESCRIPTION',
       ]),
-      group: zod.enum(['CLINICAL', 'ASSISTANCE', 'PROHIBITED']),
+      group: zod
+        .enum(['CLINICAL', 'ASSISTANCE', 'PROHIBITED'])
+        .describe(
+          'CLINICAL pide las indicaciones del veterinario y ASSISTANCE las del dueño; las dos hacen Especial a la mascota. Con una PROHIBITED activa no se puede reservar.',
+        ),
       startsOn: zod.iso.date(),
       endsOn: zod.iso.date().nullable(),
       vetInstructionId: zod.uuid().nullable(),
       ownerInstructions: zod.string().nullable(),
     }),
   ),
+  scheduleItems: zod
+    .array(
+      zod.object({
+        id: zod.uuid().describe('Editar el horario conserva el id.'),
+        kind: zod.enum(['MEAL', 'MEDICATION']),
+        minuteOfDay: zod.int().describe('Minutos desde la medianoche.'),
+        label: zod.string(),
+        dose: zod.string().nullable(),
+        careNeedId: zod.uuid().nullable(),
+      }),
+    )
+    .describe('Comidas y medicinas, ordenadas por hora.'),
 });
 
 /**
@@ -268,6 +360,14 @@ export const petsReplaceBodyWeightGramsMax = 150000;
 export const petsReplaceBodyTemperamentMax = 500;
 
 export const petsReplaceBodyHandlingNotesMax = 1000;
+
+export const petsReplaceBodyFoodDescriptionMax = 200;
+
+export const petsReplaceBodyFoodPortionMax = 120;
+
+export const petsReplaceBodyAllowedTreatsMax = 500;
+
+export const petsReplaceBodyDailyRoutineMax = 1000;
 
 export const petsReplaceBodyVetNameMax = 120;
 
@@ -296,6 +396,18 @@ export const PetsReplaceBody = zod.object({
   isSterilized: zod.boolean().optional(),
   temperament: zod.string().max(petsReplaceBodyTemperamentMax).optional(),
   handlingNotes: zod.string().max(petsReplaceBodyHandlingNotesMax).optional(),
+  foodDescription: zod
+    .string()
+    .max(petsReplaceBodyFoodDescriptionMax)
+    .optional()
+    .describe('RN-MAS-02: marca o tipo de alimento.'),
+  foodPortion: zod
+    .string()
+    .max(petsReplaceBodyFoodPortionMax)
+    .optional()
+    .describe('La porción de siempre. Una comida del horario puede tener la suya.'),
+  allowedTreats: zod.string().max(petsReplaceBodyAllowedTreatsMax).optional(),
+  dailyRoutine: zod.string().max(petsReplaceBodyDailyRoutineMax).optional(),
   vetName: zod
     .string()
     .max(petsReplaceBodyVetNameMax)
@@ -310,7 +422,20 @@ export const PetsReplaceBody = zod.object({
     .describe(
       'Texto libre para el perfil. Lo que el cuidador tiene que hacer va en las tareas de cuidado.',
     ),
-  medications: zod.string().max(petsReplaceBodyMedicationsMax).optional(),
+  medications: zod
+    .string()
+    .max(petsReplaceBodyMedicationsMax)
+    .optional()
+    .describe(
+      'Los medicamentos que toma, solo para informar: nunca es una instrucción para el cuidador. Si el cuidador tiene que dárselos, van como tarea MEDICATION con sus horarios (RN-CUI-12).',
+    ),
+  heatStartsOn: zod.iso
+    .date()
+    .optional()
+    .describe(
+      'RN-MAS-11: primer día del celo. Solo para hembras, y junto con heatEndsOn. No la hace Especial ni cambia el precio.',
+    ),
+  heatEndsOn: zod.iso.date().optional().describe('Último día del celo, incluido.'),
   photoFileId: zod.uuid().optional().describe('Un archivo PET_PHOTO ya subido (POST /v1/files).'),
 });
 
@@ -330,11 +455,20 @@ export const PetsReplaceResponse = zod.object({
   isSterilized: zod.boolean().nullable(),
   temperament: zod.string().nullable(),
   handlingNotes: zod.string().nullable(),
+  foodDescription: zod.string().nullable(),
+  foodPortion: zod.string().nullable(),
+  allowedTreats: zod.string().nullable(),
+  dailyRoutine: zod.string().nullable(),
   vetName: zod.string().nullable(),
   vetClinic: zod.string().nullable(),
   vetPhone: zod.string().nullable(),
   healthConditions: zod.string().nullable(),
-  medications: zod.string().nullable(),
+  medications: zod
+    .string()
+    .nullable()
+    .describe('Solo informa: nunca se muestra como instrucción ni como tarea del cuidador.'),
+  heatStartsOn: zod.iso.date().nullable().describe('RN-MAS-11'),
+  heatEndsOn: zod.iso.date().nullable(),
   photoFileId: zod.uuid().nullable(),
   photoUrl: zod.string().nullable().describe('URL firmada que vence en 10 minutos.'),
   vaccinations: zod.array(
@@ -378,13 +512,29 @@ export const PetsReplaceResponse = zod.object({
         'DOSE_CHANGE',
         'DIAGNOSIS_OR_PRESCRIPTION',
       ]),
-      group: zod.enum(['CLINICAL', 'ASSISTANCE', 'PROHIBITED']),
+      group: zod
+        .enum(['CLINICAL', 'ASSISTANCE', 'PROHIBITED'])
+        .describe(
+          'CLINICAL pide las indicaciones del veterinario y ASSISTANCE las del dueño; las dos hacen Especial a la mascota. Con una PROHIBITED activa no se puede reservar.',
+        ),
       startsOn: zod.iso.date(),
       endsOn: zod.iso.date().nullable(),
       vetInstructionId: zod.uuid().nullable(),
       ownerInstructions: zod.string().nullable(),
     }),
   ),
+  scheduleItems: zod
+    .array(
+      zod.object({
+        id: zod.uuid().describe('Editar el horario conserva el id.'),
+        kind: zod.enum(['MEAL', 'MEDICATION']),
+        minuteOfDay: zod.int().describe('Minutos desde la medianoche.'),
+        label: zod.string(),
+        dose: zod.string().nullable(),
+        careNeedId: zod.uuid().nullable(),
+      }),
+    )
+    .describe('Comidas y medicinas, ordenadas por hora.'),
 });
 
 /**
@@ -528,7 +678,11 @@ export const PetsAddCareNeedResponse = zod.object({
     'DOSE_CHANGE',
     'DIAGNOSIS_OR_PRESCRIPTION',
   ]),
-  group: zod.enum(['CLINICAL', 'ASSISTANCE', 'PROHIBITED']),
+  group: zod
+    .enum(['CLINICAL', 'ASSISTANCE', 'PROHIBITED'])
+    .describe(
+      'CLINICAL pide las indicaciones del veterinario y ASSISTANCE las del dueño; las dos hacen Especial a la mascota. Con una PROHIBITED activa no se puede reservar.',
+    ),
   startsOn: zod.iso.date(),
   endsOn: zod.iso.date().nullable(),
   vetInstructionId: zod.uuid().nullable(),
@@ -593,7 +747,11 @@ export const PetsReplaceCareNeedResponse = zod.object({
     'DOSE_CHANGE',
     'DIAGNOSIS_OR_PRESCRIPTION',
   ]),
-  group: zod.enum(['CLINICAL', 'ASSISTANCE', 'PROHIBITED']),
+  group: zod
+    .enum(['CLINICAL', 'ASSISTANCE', 'PROHIBITED'])
+    .describe(
+      'CLINICAL pide las indicaciones del veterinario y ASSISTANCE las del dueño; las dos hacen Especial a la mascota. Con una PROHIBITED activa no se puede reservar.',
+    ),
   startsOn: zod.iso.date(),
   endsOn: zod.iso.date().nullable(),
   vetInstructionId: zod.uuid().nullable(),
@@ -601,6 +759,7 @@ export const PetsReplaceCareNeedResponse = zod.object({
 });
 
 /**
+ * Borrar una Medicación también borra sus horarios.
  * @summary Borrar una tarea de cuidado
  */
 export const PetsRemoveCareNeedParams = zod.object({
@@ -609,3 +768,106 @@ export const PetsRemoveCareNeedParams = zod.object({
 });
 
 export const PetsRemoveCareNeedResponse = zod.void();
+
+/**
+ * RN-MAS-02 y RN-CUI-12. Una medicina va con su tarea de cuidado Medicación (`MEDICATION_TASK_REQUIRED`); una comida, sin ninguna (`CARE_NEED_NOT_ALLOWED`).
+ * @summary Agregar un horario de comida o de medicina
+ */
+export const PetsAddScheduleItemParams = zod.object({
+  petId: zod.string(),
+});
+
+export const petsAddScheduleItemBodyMinuteOfDayMin = 0;
+export const petsAddScheduleItemBodyMinuteOfDayMax = 1439;
+
+export const petsAddScheduleItemBodyLabelMax = 80;
+
+export const petsAddScheduleItemBodyDoseMax = 80;
+
+export const PetsAddScheduleItemBody = zod.object({
+  kind: zod.enum(['MEAL', 'MEDICATION']),
+  minuteOfDay: zod
+    .int()
+    .min(petsAddScheduleItemBodyMinuteOfDayMin)
+    .max(petsAddScheduleItemBodyMinuteOfDayMax)
+    .describe('Minutos desde la medianoche, hora de El Salvador: 420 son las 7:00.'),
+  label: zod
+    .string()
+    .max(petsAddScheduleItemBodyLabelMax)
+    .describe('La comida o el nombre de la medicina.'),
+  dose: zod
+    .string()
+    .max(petsAddScheduleItemBodyDoseMax)
+    .optional()
+    .describe('Cuánto. En una comida sin porción se usa foodPortion.'),
+  careNeedId: zod
+    .uuid()
+    .optional()
+    .describe('Obligatorio en una medicina: su tarea de cuidado MEDICATION. Una comida no lleva.'),
+});
+
+export const PetsAddScheduleItemResponse = zod.object({
+  id: zod.uuid().describe('Editar el horario conserva el id.'),
+  kind: zod.enum(['MEAL', 'MEDICATION']),
+  minuteOfDay: zod.int().describe('Minutos desde la medianoche.'),
+  label: zod.string(),
+  dose: zod.string().nullable(),
+  careNeedId: zod.uuid().nullable(),
+});
+
+/**
+ * Conserva su id.
+ * @summary Editar un horario
+ */
+export const PetsReplaceScheduleItemParams = zod.object({
+  petId: zod.string(),
+  scheduleItemId: zod.string(),
+});
+
+export const petsReplaceScheduleItemBodyMinuteOfDayMin = 0;
+export const petsReplaceScheduleItemBodyMinuteOfDayMax = 1439;
+
+export const petsReplaceScheduleItemBodyLabelMax = 80;
+
+export const petsReplaceScheduleItemBodyDoseMax = 80;
+
+export const PetsReplaceScheduleItemBody = zod.object({
+  kind: zod.enum(['MEAL', 'MEDICATION']),
+  minuteOfDay: zod
+    .int()
+    .min(petsReplaceScheduleItemBodyMinuteOfDayMin)
+    .max(petsReplaceScheduleItemBodyMinuteOfDayMax)
+    .describe('Minutos desde la medianoche, hora de El Salvador: 420 son las 7:00.'),
+  label: zod
+    .string()
+    .max(petsReplaceScheduleItemBodyLabelMax)
+    .describe('La comida o el nombre de la medicina.'),
+  dose: zod
+    .string()
+    .max(petsReplaceScheduleItemBodyDoseMax)
+    .optional()
+    .describe('Cuánto. En una comida sin porción se usa foodPortion.'),
+  careNeedId: zod
+    .uuid()
+    .optional()
+    .describe('Obligatorio en una medicina: su tarea de cuidado MEDICATION. Una comida no lleva.'),
+});
+
+export const PetsReplaceScheduleItemResponse = zod.object({
+  id: zod.uuid().describe('Editar el horario conserva el id.'),
+  kind: zod.enum(['MEAL', 'MEDICATION']),
+  minuteOfDay: zod.int().describe('Minutos desde la medianoche.'),
+  label: zod.string(),
+  dose: zod.string().nullable(),
+  careNeedId: zod.uuid().nullable(),
+});
+
+/**
+ * @summary Borrar un horario
+ */
+export const PetsRemoveScheduleItemParams = zod.object({
+  petId: zod.string(),
+  scheduleItemId: zod.string(),
+});
+
+export const PetsRemoveScheduleItemResponse = zod.void();

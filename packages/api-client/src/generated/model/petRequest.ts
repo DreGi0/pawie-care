@@ -30,6 +30,20 @@ export interface PetRequest {
   /** @maxLength 1000 */
   handlingNotes?: string;
   /**
+   * RN-MAS-02: marca o tipo de alimento.
+   * @maxLength 200
+   */
+  foodDescription?: string;
+  /**
+   * La porción de siempre. Una comida del horario puede tener la suya.
+   * @maxLength 120
+   */
+  foodPortion?: string;
+  /** @maxLength 500 */
+  allowedTreats?: string;
+  /** @maxLength 1000 */
+  dailyRoutine?: string;
+  /**
    * Veterinario de cabecera.
    * @maxLength 120
    */
@@ -42,8 +56,15 @@ export interface PetRequest {
    * @maxLength 1000
    */
   healthConditions?: string;
-  /** @maxLength 1000 */
+  /**
+   * Los medicamentos que toma, solo para informar: nunca es una instrucción para el cuidador. Si el cuidador tiene que dárselos, van como tarea MEDICATION con sus horarios (RN-CUI-12).
+   * @maxLength 1000
+   */
   medications?: string;
+  /** RN-MAS-11: primer día del celo. Solo para hembras, y junto con heatEndsOn. No la hace Especial ni cambia el precio. */
+  heatStartsOn?: string;
+  /** Último día del celo, incluido. */
+  heatEndsOn?: string;
   /** Un archivo PET_PHOTO ya subido (POST /v1/files). */
   photoFileId?: string;
 }

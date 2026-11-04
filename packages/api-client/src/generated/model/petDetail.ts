@@ -7,6 +7,7 @@
  */
 import type { CareNeedResponse } from './careNeedResponse';
 import type { PetSex } from './petSex';
+import type { ScheduleItemResponse } from './scheduleItemResponse';
 import type { SpeciesOption } from './speciesOption';
 import type { VaccinationResponse } from './vaccinationResponse';
 import type { VetInstructionResponse } from './vetInstructionResponse';
@@ -29,6 +30,14 @@ export interface PetDetail {
   /** @nullable */
   handlingNotes: string | null;
   /** @nullable */
+  foodDescription: string | null;
+  /** @nullable */
+  foodPortion: string | null;
+  /** @nullable */
+  allowedTreats: string | null;
+  /** @nullable */
+  dailyRoutine: string | null;
+  /** @nullable */
   vetName: string | null;
   /** @nullable */
   vetClinic: string | null;
@@ -36,8 +45,18 @@ export interface PetDetail {
   vetPhone: string | null;
   /** @nullable */
   healthConditions: string | null;
-  /** @nullable */
+  /**
+   * Solo informa: nunca se muestra como instrucción ni como tarea del cuidador.
+   * @nullable
+   */
   medications: string | null;
+  /**
+   * RN-MAS-11
+   * @nullable
+   */
+  heatStartsOn: string | null;
+  /** @nullable */
+  heatEndsOn: string | null;
   /** @nullable */
   photoFileId: string | null;
   /**
@@ -48,4 +67,6 @@ export interface PetDetail {
   vaccinations: VaccinationResponse[];
   vetInstructions: VetInstructionResponse[];
   careNeeds: CareNeedResponse[];
+  /** Comidas y medicinas, ordenadas por hora. */
+  scheduleItems: ScheduleItemResponse[];
 }

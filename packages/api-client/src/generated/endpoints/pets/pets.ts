@@ -28,6 +28,8 @@ import type {
   PetDetail,
   PetRequest,
   PetResponse,
+  ScheduleItemRequest,
+  ScheduleItemResponse,
   VaccinationRequest,
   VaccinationResponse,
   VetInstructionRequest,
@@ -276,7 +278,7 @@ export const getPetsGetUrl = (petId: string) => {
 };
 
 /**
- * Con sus vacunas, indicaciones del veterinario y tareas de cuidado.
+ * La ficha completa (RN-MAS-02): sus vacunas, indicaciones del veterinario, tareas de cuidado y horarios.
  * @summary Ver una mascota
  */
 export const petsGet = async (
@@ -1191,6 +1193,7 @@ export const getPetsRemoveCareNeedUrl = (petId: string, careNeedId: string) => {
 };
 
 /**
+ * Borrar una Medicación también borra sus horarios.
  * @summary Borrar una tarea de cuidado
  */
 export const petsRemoveCareNeed = async (
@@ -1270,4 +1273,308 @@ export const usePetsRemoveCareNeed = <TError = ErrorType<ErrorResponse>, TContex
   TContext
 > => {
   return useMutation(getPetsRemoveCareNeedMutationOptions(options), queryClient);
+};
+export const getPetsAddScheduleItemUrl = (petId: string) => {
+  return `/v1/pets/${petId}/schedule-items`;
+};
+
+/**
+ * RN-MAS-02 y RN-CUI-12. Una medicina va con su tarea de cuidado Medicación (`MEDICATION_TASK_REQUIRED`); una comida, sin ninguna (`CARE_NEED_NOT_ALLOWED`).
+ * @summary Agregar un horario de comida o de medicina
+ */
+export const petsAddScheduleItem = async (
+  petId: string,
+  scheduleItemRequest: ScheduleItemRequest,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<ScheduleItemResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<ScheduleItemResponse>(getPetsAddScheduleItemUrl(petId), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(scheduleItemRequest),
+  });
+};
+
+export const getPetsAddScheduleItemMutationKey = () => ['petsAddScheduleItem'] as const;
+
+export const getPetsAddScheduleItemMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof petsAddScheduleItem>>,
+    TError,
+    PetsAddScheduleItemMutationVariables,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof petsAddScheduleItem>>,
+  TError,
+  PetsAddScheduleItemMutationVariables,
+  TContext
+> => {
+  const mutationKey = getPetsAddScheduleItemMutationKey();
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof petsAddScheduleItem>>,
+    PetsAddScheduleItemMutationVariables
+  > = (props) => {
+    const { petId, data } = props ?? {};
+
+    return petsAddScheduleItem(petId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PetsAddScheduleItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof petsAddScheduleItem>>
+>;
+export type PetsAddScheduleItemMutationBody = ScheduleItemRequest;
+export type PetsAddScheduleItemMutationError = ErrorType<ErrorResponse>;
+export type PetsAddScheduleItemMutationVariables = { petId: string; data: ScheduleItemRequest };
+
+/**
+ * @summary Agregar un horario de comida o de medicina
+ */
+export const usePetsAddScheduleItem = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof petsAddScheduleItem>>,
+      TError,
+      PetsAddScheduleItemMutationVariables,
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof petsAddScheduleItem>>,
+  TError,
+  PetsAddScheduleItemMutationVariables,
+  TContext
+> => {
+  return useMutation(getPetsAddScheduleItemMutationOptions(options), queryClient);
+};
+export const getPetsReplaceScheduleItemUrl = (petId: string, scheduleItemId: string) => {
+  return `/v1/pets/${petId}/schedule-items/${scheduleItemId}`;
+};
+
+/**
+ * Conserva su id.
+ * @summary Editar un horario
+ */
+export const petsReplaceScheduleItem = async (
+  petId: string,
+  scheduleItemId: string,
+  scheduleItemRequest: ScheduleItemRequest,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<ScheduleItemResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit['headers']>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  return customFetch<ScheduleItemResponse>(getPetsReplaceScheduleItemUrl(petId, scheduleItemId), {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(scheduleItemRequest),
+  });
+};
+
+export const getPetsReplaceScheduleItemMutationKey = () => ['petsReplaceScheduleItem'] as const;
+
+export const getPetsReplaceScheduleItemMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof petsReplaceScheduleItem>>,
+    TError,
+    PetsReplaceScheduleItemMutationVariables,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof petsReplaceScheduleItem>>,
+  TError,
+  PetsReplaceScheduleItemMutationVariables,
+  TContext
+> => {
+  const mutationKey = getPetsReplaceScheduleItemMutationKey();
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof petsReplaceScheduleItem>>,
+    PetsReplaceScheduleItemMutationVariables
+  > = (props) => {
+    const { petId, scheduleItemId, data } = props ?? {};
+
+    return petsReplaceScheduleItem(petId, scheduleItemId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PetsReplaceScheduleItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof petsReplaceScheduleItem>>
+>;
+export type PetsReplaceScheduleItemMutationBody = ScheduleItemRequest;
+export type PetsReplaceScheduleItemMutationError = ErrorType<ErrorResponse>;
+export type PetsReplaceScheduleItemMutationVariables = {
+  petId: string;
+  scheduleItemId: string;
+  data: ScheduleItemRequest;
+};
+
+/**
+ * @summary Editar un horario
+ */
+export const usePetsReplaceScheduleItem = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof petsReplaceScheduleItem>>,
+      TError,
+      PetsReplaceScheduleItemMutationVariables,
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof petsReplaceScheduleItem>>,
+  TError,
+  PetsReplaceScheduleItemMutationVariables,
+  TContext
+> => {
+  return useMutation(getPetsReplaceScheduleItemMutationOptions(options), queryClient);
+};
+export const getPetsRemoveScheduleItemUrl = (petId: string, scheduleItemId: string) => {
+  return `/v1/pets/${petId}/schedule-items/${scheduleItemId}`;
+};
+
+/**
+ * @summary Borrar un horario
+ */
+export const petsRemoveScheduleItem = async (
+  petId: string,
+  scheduleItemId: string,
+  options?: Parameters<typeof customFetch>[1],
+): Promise<void> => {
+  return customFetch<void>(getPetsRemoveScheduleItemUrl(petId, scheduleItemId), {
+    ...options,
+    method: 'DELETE',
+  });
+};
+
+export const getPetsRemoveScheduleItemMutationKey = () => ['petsRemoveScheduleItem'] as const;
+
+export const getPetsRemoveScheduleItemMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof petsRemoveScheduleItem>>,
+    TError,
+    PetsRemoveScheduleItemMutationVariables,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof petsRemoveScheduleItem>>,
+  TError,
+  PetsRemoveScheduleItemMutationVariables,
+  TContext
+> => {
+  const mutationKey = getPetsRemoveScheduleItemMutationKey();
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof petsRemoveScheduleItem>>,
+    PetsRemoveScheduleItemMutationVariables
+  > = (props) => {
+    const { petId, scheduleItemId } = props ?? {};
+
+    return petsRemoveScheduleItem(petId, scheduleItemId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PetsRemoveScheduleItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof petsRemoveScheduleItem>>
+>;
+
+export type PetsRemoveScheduleItemMutationError = ErrorType<ErrorResponse>;
+export type PetsRemoveScheduleItemMutationVariables = { petId: string; scheduleItemId: string };
+
+/**
+ * @summary Borrar un horario
+ */
+export const usePetsRemoveScheduleItem = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof petsRemoveScheduleItem>>,
+      TError,
+      PetsRemoveScheduleItemMutationVariables,
+      TContext
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof petsRemoveScheduleItem>>,
+  TError,
+  PetsRemoveScheduleItemMutationVariables,
+  TContext
+> => {
+  return useMutation(getPetsRemoveScheduleItemMutationOptions(options), queryClient);
 };
