@@ -334,7 +334,7 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 
 **Alcance:**
 
-1. **App web** con el mismo código de Expo (`expo export -p web`), sin tocar el comportamiento en iOS y Android. Las diferencias van en archivos por plataforma (`session.web.ts`, `files.web.ts`), no en `if` repartidos.
+1. **App web** con el mismo código de Expo (`expo export -p web`), sin tocar el comportamiento en iOS y Android. Las diferencias van en archivos por plataforma (`session-storage.web.ts`, `files.web.ts`, `checkout.web.ts`, `Frame.web.tsx`), no en `if` repartidos.
 2. **Backend gratis:** API, PostgreSQL, Redis y almacenamiento compatible con S3.
 3. **Seed** con el dueño de demo y una cuenta de cuidador lista.
 4. **Publicación automática** solo desde `main` y con el CI en verde.
@@ -342,8 +342,8 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 
 **App web:**
 
-- **Sesión (decisión confirmada el 2026-11-04):** `session.web.ts` guarda el refresh token en `localStorage`, porque `expo-secure-store` no existe en web. Es una excepción a arquitectura §4.4, documentada ahí con su motivo: la API (Render) y la web (Pages) están en dominios distintos, así que las cookies `httpOnly` serían de terceros y los navegadores las bloquean. Condiciones:
-  - La rama de `localStorage` solo existe en el build web de la demo. Se exige con `EXPO_PUBLIC_DEMO=true`: sin esa variable, `session.web.ts` se niega a guardar el token. No toca el móvil ni una web de producción.
+- **Sesión (decisión confirmada el 2026-11-04):** `session-storage.web.ts` guarda el refresh token (`session.ts` conserva la lógica de la sesión y solo cambia dónde se guarda) en `localStorage`, porque `expo-secure-store` no existe en web. Es una excepción a arquitectura §4.4, documentada ahí con su motivo: la API (Render) y la web (Pages) están en dominios distintos, así que las cookies `httpOnly` serían de terceros y los navegadores las bloquean. Condiciones:
+  - La rama de `localStorage` solo existe en el build web de la demo. Se exige con `EXPO_PUBLIC_DEMO=true`: sin esa variable, `session-storage.web.ts` se niega a guardar el token. No toca el móvil ni una web de producción.
   - Vida corta: el access token ya dura 15 minutos y la demo pone `REFRESH_TOKEN_TTL_DAYS=1`.
   - La base de la demo no guarda datos ni secretos reales.
 - **Subida de archivos:** `files.web.ts` usa `fetch(uri).blob()`, porque la clase `File` de `expo-file-system` no existe en web. Los límites siguen firmados en la URL (arquitectura §4.11).
@@ -357,7 +357,7 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 
 | Función                                              | Web                                                                           | Propuesta                                                                                |
 | ---------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `expo-secure-store`                                  | No existe                                                                     | `localStorage` en `session.web.ts` (hecho en esta etapa)                                 |
+| `expo-secure-store`                                  | No existe                                                                     | `localStorage` en `session-storage.web.ts` (hecho en esta etapa)                         |
 | `File` de `expo-file-system` (subidas)               | No existe                                                                     | `files.web.ts` (esta etapa)                                                              |
 | `Alert.alert` con botones                            | No hace nada                                                                  | Componente de confirmación propio (esta etapa)                                           |
 | Volver a la app desde Wompi (`pawie://`)             | No aplica                                                                     | `client=web` (esta etapa)                                                                |
