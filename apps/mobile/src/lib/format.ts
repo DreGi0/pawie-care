@@ -64,6 +64,12 @@ export function formatLongDay(date: Date | string): string {
   return `${day.charAt(0).toUpperCase()}${day.slice(1)} ${d.getUTCDate()} de ${MONTHS_LONG[d.getUTCMonth()]}`;
 }
 
+/** "2026-11" is "Noviembre". */
+export function formatMonth(month: string): string {
+  const name = MONTHS_LONG[Number(month.slice(5, 7)) - 1] ?? month;
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+}
+
 /** "antes de las 17:30" if it's today in San Salvador, "antes del Mar 20 oct, 17:30" if not. */
 export function formatDeadline(date: Date | string, now = new Date()): string {
   return localDate(date) === localDate(now)

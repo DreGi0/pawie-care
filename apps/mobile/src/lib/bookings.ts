@@ -1,6 +1,6 @@
 import type { BookingResponse, BookingStatus, ServiceCode } from '@pawie/api-client';
 
-import { formatDeadline } from './format';
+import { formatDay, formatDeadline, formatRange } from './format';
 
 const NAMES: Record<ServiceCode, { name: string; short: string; unit: string }> = {
   WALK: { name: 'Paseo', short: 'Paseo', unit: 'por paseo' },
@@ -91,7 +91,16 @@ export function statusTag(booking: BookingResponse, now = new Date()): StatusTag
 }
 
 /** "Paseo", "Visita a domicilio" or "Pernocta", or "Paseo especial", "Visita especial"... */
-export function serviceKind(booking: BookingResponse): string {
+export function serviceKind(booking: Pick<BookingResponse, 'serviceCode' | 'careLevel'>): string {
   if (booking.careLevel !== 'SPECIAL') return serviceName(booking.serviceCode);
   return `${serviceShortName(booking.serviceCode)} especial`;
+}
+
+/** "Lun 19 oct, de 9:00 a 10:00", or "Noche del Lun 19 oct" for an overnight stay. */
+export function formatWhen(
+  booking: Pick<BookingResponse, 'serviceCode' | 'startsAt' | 'endsAt'>,
+): string {
+  return booking.serviceCode === 'OVERNIGHT_STAY'
+    ? `Noche del ${formatDay(booking.startsAt)}`
+    : formatRange(booking.startsAt, booking.endsAt);
 }

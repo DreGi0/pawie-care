@@ -47,6 +47,7 @@ const names = [
   'star',
   'user',
   'utensils',
+  'wallet',
   'x',
 ];
 

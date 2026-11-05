@@ -1,10 +1,12 @@
 import {
   getCaregiverMeGetQueryKey,
+  useCaregiverBookingsList,
   useCaregiverMeGet,
   useCaregiverMeLevel,
   useCaregiverMePrices,
   useCaregiverMeUpdate,
   useUsersMe,
+  type CaregiverBookingResponse,
   type CaregiverLevelResponse,
   type CaregiverMeResponse,
   type CaregiverPricesResponse,
@@ -17,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Banner } from '@/components/Banner';
 import { Button } from '@/components/Button';
+import { CaregiverBookingRow } from '@/components/CaregiverBookingRow';
 import { Icon } from '@/components/Icon';
 import { LevelTag } from '@/components/LevelTag';
 import { Nimbus } from '@/components/Nimbus';
@@ -24,7 +27,8 @@ import { Row } from '@/components/Row';
 import { StepMark } from '@/components/StepMark';
 import { Text } from '@/components/Text';
 import { errorMessage, queryClient } from '@/lib/api';
-import { serviceShortName } from '@/lib/bookings';
+import { formatWhen, serviceShortName } from '@/lib/bookings';
+import { REQUESTS } from '@/lib/caregiver-bookings';
 import { LEVEL_NAMES, requirementText, SETUP_ORDER, SETUP_STEPS } from '@/lib/caregivers';
 import { formatLongDay, formatMoney } from '@/lib/format';
 import { byServiceOrder, services } from '@/theme/services';
@@ -32,14 +36,18 @@ import { colors, gutter, radius, space } from '@/theme/tokens';
 
 // CuiInicio, after docs/design/directions/placas/cui-inicio.html. Before the caregiver shows up
 // in searches, it lists what the sign-up still needs; once approved, their level, what they
-// need for the next one and how much the suggested prices go up there (RN-NIV-05, RN-CUI-17).
-// The new requests join in stage 9b.
+// need for the next one and how much the suggested prices go up there (RN-NIV-05, RN-CUI-17),
+// after the requests that wait for an answer, the most urgent first (RN-RES-11).
 export default function CaregiverHomeScreen() {
   const me = useUsersMe();
   const profile = useCaregiverMeGet();
   const approved = profile.data?.status === 'APPROVED';
   const level = useCaregiverMeLevel({ query: { enabled: approved } });
   const prices = useCaregiverMePrices({ query: { enabled: approved } });
+  // Push notices come in stage 11; until then, the list asks again while it's open.
+  const requests = useCaregiverBookingsList(REQUESTS, {
+    query: { enabled: approved, refetchInterval: REQUESTS_POLL_MS },
+  });
   const [refreshing, setRefreshing] = useState(false);
 
   const refresh = async () => {
@@ -48,6 +56,7 @@ export default function CaregiverHomeScreen() {
       profile.refetch(),
       approved && level.refetch(),
       approved && prices.refetch(),
+      approved && requests.refetch(),
     ]);
     setRefreshing(false);
   };
@@ -86,6 +95,12 @@ export default function CaregiverHomeScreen() {
         ) : (
           <>
             <SignUp profile={profile.data} />
+            {approved && (
+              <Requests
+                requests={requests.data}
+                error={requests.isError ? errorMessage(requests.error) : null}
+              />
+            )}
             {approved && level.data && <LevelProgress progress={level.data} />}
             {approved && level.data?.next && prices.data && (
               <NextLevelPrices nextLevel={level.data.next.level} prices={prices.data} />
@@ -94,6 +109,43 @@ export default function CaregiverHomeScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+/** RN-RES-11: the requests to answer, as the API sorts them: the one due first on top. */
+function Requests({
+  requests,
+  error,
+}: {
+  requests: CaregiverBookingResponse[] | undefined;
+  error: string | null;
+}) {
+  return (
+    <View style={styles.section}>
+      <Text variant="heading" accessibilityRole="header">
+        {requests?.length ? `Solicitudes (${requests.length})` : 'Solicitudes'}
+      </Text>
+      {error ? (
+        <Banner tone="error" message={error} />
+      ) : !requests ? (
+        <ActivityIndicator color={colors.primary} />
+      ) : requests.length === 0 ? (
+        <Text color="inkMuted">
+          No tienes solicitudes por responder. Cuando un dueño te pida un servicio, aparece aquí.
+        </Text>
+      ) : (
+        <View>
+          {requests.map((booking, index) => (
+            <CaregiverBookingRow
+              key={booking.id}
+              booking={booking}
+              when={formatWhen(booking)}
+              divider={index > 0}
+            />
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -273,6 +325,8 @@ function NextLevelPrices({
     </Animated.View>
   );
 }
+
+const REQUESTS_POLL_MS = 30_000;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
