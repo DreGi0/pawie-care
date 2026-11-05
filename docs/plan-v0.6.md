@@ -4,7 +4,7 @@
 
 Este plan lleva el código a las [reglas v0.6](reglas-de-negocio.md). Cada etapa es un PR que deja el CI en verde. La etapa 6 ya está hecha; su detalle queda en §3 como referencia.
 
-**Orden:** D → 9a → métricas → 7 → 8 → 9b → base de la 11 → 10 → eventos de la 11 → 12a → 12b.
+**Orden:** D → 9a → métricas → 7 → 8 → 9b → Demo pública → base de la 11 → 10 → eventos de la 11 → 12a → 12b.
 
 **Dependencias:**
 
@@ -27,6 +27,7 @@ Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las 
 | Ficha                    | Ficha completa y MascotaPerfil (7, hecha)                                  | Nada                                                                                 | 7                |
 | Servicios                | Paseo, visita y pernocta (8, hecha)                                        | Nada                                                                                 | 8                |
 | Solicitudes del cuidador | Solicitudes, aceptar o rechazar, agenda y ganancias (9b, hecha)            | Nada                                                                                 | 9b               |
+| Demo pública             | Solo local; la app corre en iOS y Android                                  | App web, backend gratis publicado, seed del cuidador y publicación desde `main`      | Demo pública     |
 | Ejecución                | Estados `IN_PROGRESS` a `CLOSED` sin transiciones                          | Check-in, tareas, fotos, ruta, check-out, cierre a las 48 h, pago simulado y reseñas | 10               |
 | Avisos e integraciones   | Nada                                                                       | Push (base y eventos), agregar al calendario y compartir el perfil                   | 11               |
 | Referidos                | Nada                                                                       | Código de cada cuidador, campo en el registro y quién refirió a cada dueño           | Eventos de la 11 |
@@ -327,6 +328,99 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 - Un cuidador dado de alta en la 9a acepta una solicitud hecha desde otro emulador.
 - Lo que va a ganar es el monto que devuelve la API.
 
+### Etapa Demo pública: la app en la web y el backend publicado
+
+**Reglas:** ninguna cambia. Es infraestructura y adaptación de la app; no agrega funciones de negocio. **No depende de nada** y va antes de la base de la 11, para que el equipo y quienes prueben vean la demo desde un navegador.
+
+**Alcance:**
+
+1. **App web** con el mismo código de Expo (`expo export -p web`), sin tocar el comportamiento en iOS y Android. Las diferencias van en archivos por plataforma (`session.web.ts`, `files.web.ts`), no en `if` repartidos.
+2. **Backend gratis:** API, PostgreSQL, Redis y almacenamiento compatible con S3.
+3. **Seed** con el dueño de demo y una cuenta de cuidador lista.
+4. **Publicación automática** solo desde `main` y con el CI en verde.
+5. **Docs:** arquitectura §3.5, §4.4 y §7, y el README con la URL, cómo se publica y las cuentas de demo.
+
+**App web:**
+
+- **Sesión (decisión confirmada el 2026-11-04):** `session.web.ts` guarda el refresh token en `localStorage`, porque `expo-secure-store` no existe en web. Es una excepción a arquitectura §4.4, documentada ahí con su motivo: la API (Render) y la web (Pages) están en dominios distintos, así que las cookies `httpOnly` serían de terceros y los navegadores las bloquean. Condiciones:
+  - La rama de `localStorage` solo existe en el build web de la demo. Se exige con `EXPO_PUBLIC_DEMO=true`: sin esa variable, `session.web.ts` se niega a guardar el token. No toca el móvil ni una web de producción.
+  - Vida corta: el access token ya dura 15 minutos y la demo pone `REFRESH_TOKEN_TTL_DAYS=1`.
+  - La base de la demo no guarda datos ni secretos reales.
+- **Subida de archivos:** `files.web.ts` usa `fetch(uri).blob()`, porque la clase `File` de `expo-file-system` no existe en web. Los límites siguen firmados en la URL (arquitectura §4.11).
+- **Marco:** en pantallas de más de 430 px, la app se centra en una columna de 430 px sobre un fondo neutro. Los modales y las hojas (`Sheet`) se dibujan fuera de esa columna en web, así que hay que acotarlos también.
+- **Confirmaciones:** `Alert.alert` con botones no hace nada en `react-native-web`. Hoy lo usan cancelar la reserva, rechazar la solicitud y borrar un horario, una vacuna o una tarea. Se reemplaza por un componente propio de confirmación, el mismo en las tres plataformas.
+- **Pago con Wompi de prueba:** en web no hay `openAuthSessionAsync` con retorno a `pawie://`. La app navega en la misma pestaña al enlace de pago, y `GET /v1/payments/return` redirige a `<web>/payment/result` cuando el pago se pidió desde la web (parámetro `client=web` en el enlace; cambia el contrato, hay que regenerarlo). El móvil sigue igual.
+- **Alta del cuidador con archivos:** `expo-document-picker` y `expo-image-picker` funcionan en web con un selector de archivos. "Tomar foto" se oculta en web (ver la tabla de abajo). La pantalla de documentos avisa en la demo: "No subas documentos reales" (decisión confirmada el 2026-11-04). El aviso sale solo con `EXPO_PUBLIC_DEMO=true`. Además, el bucket de R2 borra lo que se sube a los 7 días (ver "Backend gratis").
+- **Revisión de punta a punta** en Chrome de escritorio y en un celular: registro, login, búsqueda, ficha del cuidador, reserva, pago, y el alta del cuidador con sus documentos.
+
+**Qué no funciona en web:**
+
+| Función                                              | Web                                                                           | Propuesta                                                                                |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `expo-secure-store`                                  | No existe                                                                     | `localStorage` en `session.web.ts` (hecho en esta etapa)                                 |
+| `File` de `expo-file-system` (subidas)               | No existe                                                                     | `files.web.ts` (esta etapa)                                                              |
+| `Alert.alert` con botones                            | No hace nada                                                                  | Componente de confirmación propio (esta etapa)                                           |
+| Volver a la app desde Wompi (`pawie://`)             | No aplica                                                                     | `client=web` (esta etapa)                                                                |
+| Cámara (`launchCameraAsync`, en documentos del alta) | En escritorio abre el selector de archivos; el permiso de cámara no es fiable | Ocultar "Tomar foto" en web; queda "Elegir archivo"                                      |
+| Mapa de la ruta del paseo (etapa 10)                 | `react-native-maps` no tiene web                                              | En web, resumen sin mapa: distancia, duración y hora de inicio y fin. Lo decide la 10    |
+| Check-in y check-out con ubicación (etapa 10)        | El navegador pide permiso y en escritorio la ubicación es imprecisa           | Solo se hacen desde el móvil; la web del cuidador los muestra deshabilitados             |
+| Push (base de la 11)                                 | El Expo Push Service no entrega en web                                        | Sin push en web; la app ya consulta cada 30 s (9b). Pedir el permiso solo en iOS/Android |
+| Calendario (`expo-calendar`, eventos de la 11)       | No existe                                                                     | En web, descargar un archivo `.ics`                                                      |
+| Compartir el perfil (`Share`)                        | `navigator.share` no está en todos los navegadores                            | Copiar el enlace como alternativa                                                        |
+
+Lo de la etapa 10 y la 11 se decide al llegar a ellas; aquí solo queda anotado para que no sorprenda.
+
+**Backend gratis (elección, con los planes vigentes al 2026-11-04):**
+
+| Pieza              | Elección                      | Se duerme                                | Vence                                 | Tarjeta                    |
+| ------------------ | ----------------------------- | ---------------------------------------- | ------------------------------------- | -------------------------- |
+| API                | Render, servicio web gratis   | Sí, a los 15 min; despierta en ~1 min    | No                                    | Por confirmar al crearlo   |
+| PostgreSQL         | Neon, plan gratis             | Sí, escala a cero; despierta en segundos | No                                    | No, según las fuentes      |
+| Redis              | Render Key Value, plan gratis | No                                       | No, pero no guarda datos al reiniciar | Por confirmar al crearlo   |
+| Archivos (S3)      | Cloudflare R2                 | No                                       | No                                    | Las fuentes se contradicen |
+| App web (estática) | Cloudflare Pages              | No                                       | No                                    | No                         |
+
+- **Por qué no la base de Render:** la gratis vence a los 30 días y a los 14 más se borra.
+- **Por qué no Railway ni Fly.io:** Railway da un crédito de $5 por 30 días y después $1 al mes; Fly.io no tiene plan gratis para cuentas nuevas. Ninguno alcanza para una demo que no se apaga.
+- **Por qué no Upstash:** su plan gratis cuenta comandos (unos 500 mil al mes) y BullMQ consulta Redis aunque no haya trabajo. Con Render Key Value no hay cuota de comandos. Si Redis se reinicia, las tareas diferidas se pierden, pero la tarea periódica de cada 5 minutos vence las reservas igual (arquitectura §4.10).
+- **Dormir:** un ping externo cada 10 minutos mantiene despierta la API; 750 horas al mes alcanzan para un solo servicio encendido. Es opcional. Sin el ping, la app muestra "Despertando el servidor…" en la primera petición.
+- **Spike de Neon (va primero y bloquea la etapa):** que Neon tenga PostgreSQL 18 (la API usa `uuidv7()`, nativo de la 18) y la extensión `btree_gist`, y que las migraciones de Prisma corran completas, con sus `CHECK`, exclusiones e índices parciales. Si algo falla, no se improvisa otra base: se documenta aquí y se decide. El resultado va en "Resultado del spike de Neon".
+- **Dos URLs de Neon:** la API en producción usa la del pooler (`DATABASE_URL`). Las migraciones (`prisma migrate deploy`, en el job `deploy`) y el seed usan la directa, sin `-pooler` (`DIRECT_URL`), porque el pooler no sirve para migrar. `DIRECT_URL` se agrega a las variables de la demo y a los secretos del Environment `demo` de GitHub.
+- **Arranque en frío de Neon:** tras un rato sin uso, la base se apaga y la primera conexión tarda. Se pone `connect_timeout=15` en las dos URLs para que esa primera conexión espere en vez de fallar. Si aun así falla, la API reintenta en la siguiente petición.
+- **Archivos de la demo:** el bucket de R2 tiene una regla de ciclo de vida que borra los objetos a los 7 días, uno por prefijo de subida de usuarios (`pet-photos/`, `caregiver-photos/`, `vet-instructions/`, `vaccination-records/` y `caregiver-documents/`). El seed guarda sus archivos en `seed/`, que ninguna regla toca, y no siembra documentos reales. Efecto aceptado: una foto o un documento subido por quien prueba deja de abrirse a la semana.
+- **CORS:** `CORS_ORIGINS` con la URL de Pages, solo la de producción. El bucket de R2 necesita su propio CORS: origen de Pages, métodos `PUT` y `GET`, header `Content-Type`; sin eso, el navegador bloquea la subida directa.
+- **`wompi_hash`:** el header lleva guion bajo y algunos proxies lo descartan (arquitectura §6). Después del primer despliegue se envía a la URL pública un webhook firmado de prueba; debe responder 200 y no 401. Si el proxy de Render lo descarta, se pone un Worker de Cloudflare delante de `/v1/payments/webhook`.
+
+**Seed:**
+
+- El dueño de demo, `demo@example.com`, con `DEMO_OWNER_PASSWORD` (en la demo pública, una contraseña distinta de la local).
+- Una cuenta de cuidador con inicio de sesión (hoy los cuidadores del seed no tienen contraseña): aprobada, con el curso de bienvenida hecho, perfil, precios, distritos, horario y servicios. Su contraseña sale de `DEMO_CAREGIVER_PASSWORD`; sin ella, el seed la omite, como hace con el dueño.
+- Un workflow manual de GitHub (`workflow_dispatch`) corre `caregivers:approve <correo>` contra la base de la demo, para aprobar a quien pruebe el alta con sus documentos (RN-CUI-03).
+
+**Publicación:**
+
+- Un job `deploy` en `.github/workflows/ci.yml` con `needs: checks` y `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`. Un PR nunca publica, y un `main` con el CI en rojo tampoco.
+- Orden: migrar (`prisma migrate deploy`) y sembrar contra Neon con `DIRECT_URL` desde el job; llamar al deploy hook de Render, con el despliegue automático de Render apagado; construir la web con `EXPO_PUBLIC_API_URL` y subirla a Cloudflare Pages con `wrangler`.
+- Los secretos van en un Environment `demo` de GitHub, no en el repositorio. `render.yaml` describe el servicio y sus variables sin valores.
+
+**Docs:** arquitectura §3.2 (sesión en web), §3.5 (backend de la demo), §4.4 (excepción de `localStorage`) y §7 (entornos), y el README con la URL, cómo se publica y las cuentas de demo.
+
+**Se hace en dos PR:**
+
+1. **App web:** sesión, archivos, marco, confirmaciones, retorno del pago (con el contrato regenerado) y la revisión de las pantallas.
+2. **Publicación:** `render.yaml`, el job de deploy, el seed del cuidador, el workflow de aprobación y los docs.
+
+**Resultado del spike de Neon:** pendiente (2026-11-04). No se corrió porque falta la variable de entorno `NEON_DIRECT_URL` en el shell de desarrollo (la URL directa de Neon, sin `-pooler`). Para correrlo: `docker run --rm postgres:18 psql "$NEON_DIRECT_URL" -c "CREATE EXTENSION IF NOT EXISTS btree_gist; SELECT version(), uuidv7();"` y después `prisma migrate deploy` con esa URL como `DATABASE_URL`, sin guardarla en ningún archivo.
+
+**Terminado cuando:**
+
+- Desde una URL pública, el dueño de demo busca, reserva y paga con Wompi de prueba, y vuelve a la app en la misma pestaña.
+- Una cuenta nueva de cuidador sube sus documentos desde el navegador, y la aprobación manual la deja visible en la búsqueda.
+- El cuidador de demo inicia sesión y ve sus solicitudes.
+- Un PR no publica; un push a `main` con el CI en verde, sí.
+- El webhook firmado de prueba responde 200 en la URL pública.
+- En iOS y Android nada cambió: `session.ts` y `files.ts` siguen siendo los mismos.
+
 ### Base de la etapa 11: push y correo al equipo
 
 **Reglas:** RN-NOT-03. No depende de nada; la 10 y la 12a la reutilizan.
@@ -470,5 +564,8 @@ Las que bloquean una etapa están marcadas.
 | Contenido del curso de bienvenida     | 9a                                  | 4 módulos de ejemplo marcados `TODO(contenido)`; el texto final lo escribe el equipo |
 | URL para compartir el perfil          | Eventos de la 11                    | `https://pawieapp.com`                                                               |
 | Clave de Google Maps para Android     | 10 (**bloquea** el mapa en Android) | Ninguno                                                                              |
+| Base de la demo: Neon con PG 18       | Demo pública (**bloquea**)          | Neon, si el spike confirma PostgreSQL 18 y `btree_gist`                              |
+| Tarjeta para R2 y Render              | Demo pública                        | Se confirma al crear las cuentas                                                     |
+| Mantener despierta la API con un ping | Demo pública                        | Sí, cada 10 minutos (opcional)                                                       |
 | Número de WhatsApp Business           | 12a                                 | Un número de prueba en el seed                                                       |
 | Contenido del asistente               | 12a (**bloquea**)                   | Ninguno: lo escribe el equipo                                                        |
