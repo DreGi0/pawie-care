@@ -10,12 +10,13 @@ import { PetsAddScheduleItemBody } from '@pawie/api-client/zod';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, type ReactNode } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { z } from 'zod';
 
 import { Banner } from '@/components/Banner';
 import { BottomBar } from '@/components/BottomBar';
 import { Button } from '@/components/Button';
+import { useDialogs } from '@/components/ConfirmDialog';
 import { Chip } from '@/components/Chip';
 import { FormInput } from '@/components/FormInput';
 import { FormScreen } from '@/components/FormScreen';
@@ -56,6 +57,7 @@ export default function PetScheduleScreen() {
 function ScheduleForm({ pet, itemId }: { pet: PetDetail; itemId?: string }) {
   const add = usePetsAddScheduleItem();
   const replace = usePetsReplaceScheduleItem();
+  const { confirm, notice } = useDialogs();
   const remove = usePetsRemoveScheduleItem();
   const save = itemId ? replace : add;
   const item = pet.scheduleItems.find(({ id }) => id === itemId);
@@ -97,22 +99,23 @@ function ScheduleForm({ pet, itemId }: { pet: PetDetail; itemId?: string }) {
       replace.mutate({ petId: pet.id, scheduleItemId: itemId, data }, { onSuccess: done });
     else add.mutate({ petId: pet.id, data }, { onSuccess: done });
   });
-  const confirmRemove = () =>
-    Alert.alert('¿Borrar este horario?', item?.label, [
-      { text: 'Cancelar', style: 'cancel' },
+  const confirmRemove = async () => {
+    const confirmed = await confirm({
+      title: '¿Borrar este horario?',
+      message: item?.label,
+      cancelLabel: 'Cancelar',
+      confirmLabel: 'Borrar',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    remove.mutate(
+      { petId: pet.id, scheduleItemId: itemId! },
       {
-        text: 'Borrar',
-        style: 'destructive',
-        onPress: () =>
-          remove.mutate(
-            { petId: pet.id, scheduleItemId: itemId! },
-            {
-              onSuccess: done,
-              onError: (error) => Alert.alert('No pudimos borrarlo', errorMessage(error)),
-            },
-          ),
+        onSuccess: done,
+        onError: (error) => void notice('No pudimos borrarlo', errorMessage(error)),
       },
-    ]);
+    );
+  };
 
   return (
     <FormScreen

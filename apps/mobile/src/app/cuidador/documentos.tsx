@@ -24,6 +24,7 @@ import { Status } from '@/components/Status';
 import { Text } from '@/components/Text';
 import { errorMessage, queryClient } from '@/lib/api';
 import { DOCUMENTS } from '@/lib/caregivers';
+import { isDemo, isWeb } from '@/lib/config';
 import { uploadFile } from '@/lib/files';
 import { colors, radius, space } from '@/theme/tokens';
 
@@ -32,12 +33,18 @@ type Source = 'camera' | 'library' | 'pdf';
 
 const SOURCES: Record<Source, { label: string; icon: IconName }> = {
   camera: { label: 'Tomar foto', icon: 'camera' },
-  library: { label: 'Elegir de la galería', icon: 'image' },
-  pdf: { label: 'Elegir un PDF', icon: 'file-text' },
+  // In a browser both are the same file chooser.
+  library: { label: isWeb ? 'Elegir archivo' : 'Elegir de la galería', icon: 'image' },
+  pdf: { label: isWeb ? 'Elegir archivo' : 'Elegir un PDF', icon: 'file-text' },
 };
 
-/** Where each document can come from. The selfie is taken at the moment, with the front camera. */
+/**
+ * Where each document can come from. The selfie is taken at the moment, with the front camera.
+ * The browser has no reliable camera permission, so there it's always "Elegir archivo": the
+ * chooser of PDFs and photos for the background check, and the one of images for the rest.
+ */
 function sourcesOf(kind: CaregiverDocumentKind): Source[] {
+  if (isWeb) return [kind === 'BACKGROUND_CHECK' ? 'pdf' : 'library'];
   if (kind === 'SELFIE') return ['camera'];
   if (kind === 'BACKGROUND_CHECK') return ['camera', 'library', 'pdf'];
   return ['camera', 'library'];
@@ -143,6 +150,12 @@ export default function DocumentsScreen() {
         <Banner tone="error" message={errorMessage(profile.error)} />
       ) : (
         <>
+          {isDemo && (
+            <Banner
+              tone="warning"
+              message="No subas documentos reales. Esto es una demo: usa fotos o archivos de prueba."
+            />
+          )}
           {verified ? (
             <Banner
               tone="success"

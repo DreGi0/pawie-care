@@ -4,6 +4,8 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
+import { DialogsProvider } from '@/components/ConfirmDialog';
+import { Frame } from '@/components/Frame';
 import { queryClient } from '@/lib/api';
 import { restoreSession, useOnboarding, useSessionStatus } from '@/lib/session';
 import { configureZod } from '@/lib/zod';
@@ -32,55 +34,59 @@ export default function RootLayout() {
   if (!ready) return null;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.bg },
-          animation: 'slide_from_right',
-        }}
-      >
-        {/* When a guard closes the current screen, the stack goes to its group's redirectTo:
+    <Frame>
+      <QueryClientProvider client={queryClient}>
+        <DialogsProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.bg },
+              animation: 'slide_from_right',
+            }}
+          >
+            {/* When a guard closes the current screen, the stack goes to its group's redirectTo:
             signing out goes to Bienvenida, and signing up to the onboarding. */}
-        <Stack.Protected guard={session === 'signedIn' && onboarding} redirectTo="/">
-          <Stack.Screen name="onboarding/mascota" />
-          <Stack.Screen name="onboarding/direccion" />
-        </Stack.Protected>
-        <Stack.Protected guard={session === 'signedIn'} redirectTo="/bienvenida">
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="mascotas/nueva" />
-          <Stack.Screen name="mascotas/[id]/index" />
-          <Stack.Screen name="mascotas/[id]/datos" />
-          <Stack.Screen name="mascotas/[id]/rutina" />
-          <Stack.Screen name="mascotas/[id]/horario" />
-          <Stack.Screen name="mascotas/[id]/salud" />
-          <Stack.Screen name="mascotas/[id]/vacuna" />
-          <Stack.Screen name="mascotas/[id]/tarea" />
-          <Stack.Screen name="mascotas/[id]/celo" />
-          <Stack.Screen name="direcciones/nueva" />
-          <Stack.Screen name="cuidadores/[id]" />
-          <Stack.Screen name="reservar" />
-          <Stack.Screen name="reservas/[id]" />
-          <Stack.Screen name="payment/result" />
-          <Stack.Screen name="cuidador/activar" />
-          <Stack.Screen name="cuidador/documentos" />
-          <Stack.Screen name="cuidador/curso" />
-          <Stack.Screen name="cuidador/perfil" />
-          <Stack.Screen name="cuidador/precios" />
-          <Stack.Screen name="cuidador/reservas/[id]" />
-        </Stack.Protected>
-        <Stack.Protected
-          guard={session === 'signedOut'}
-          redirectTo={onboarding ? '/onboarding/mascota' : '/'}
-        >
-          <Stack.Screen name="bienvenida" />
-          <Stack.Screen name="login" />
-          <Stack.Screen name="registro" />
-        </Stack.Protected>
-        <Stack.Protected guard={__DEV__}>
-          <Stack.Screen name="catalogo" />
-        </Stack.Protected>
-      </Stack>
-    </QueryClientProvider>
+            <Stack.Protected guard={session === 'signedIn' && onboarding} redirectTo="/">
+              <Stack.Screen name="onboarding/mascota" />
+              <Stack.Screen name="onboarding/direccion" />
+            </Stack.Protected>
+            <Stack.Protected guard={session === 'signedIn'} redirectTo="/bienvenida">
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="mascotas/nueva" />
+              <Stack.Screen name="mascotas/[id]/index" />
+              <Stack.Screen name="mascotas/[id]/datos" />
+              <Stack.Screen name="mascotas/[id]/rutina" />
+              <Stack.Screen name="mascotas/[id]/horario" />
+              <Stack.Screen name="mascotas/[id]/salud" />
+              <Stack.Screen name="mascotas/[id]/vacuna" />
+              <Stack.Screen name="mascotas/[id]/tarea" />
+              <Stack.Screen name="mascotas/[id]/celo" />
+              <Stack.Screen name="direcciones/nueva" />
+              <Stack.Screen name="cuidadores/[id]" />
+              <Stack.Screen name="reservar" />
+              <Stack.Screen name="reservas/[id]" />
+              <Stack.Screen name="payment/result" />
+              <Stack.Screen name="cuidador/activar" />
+              <Stack.Screen name="cuidador/documentos" />
+              <Stack.Screen name="cuidador/curso" />
+              <Stack.Screen name="cuidador/perfil" />
+              <Stack.Screen name="cuidador/precios" />
+              <Stack.Screen name="cuidador/reservas/[id]" />
+            </Stack.Protected>
+            <Stack.Protected
+              guard={session === 'signedOut'}
+              redirectTo={onboarding ? '/onboarding/mascota' : '/'}
+            >
+              <Stack.Screen name="bienvenida" />
+              <Stack.Screen name="login" />
+              <Stack.Screen name="registro" />
+            </Stack.Protected>
+            <Stack.Protected guard={__DEV__}>
+              <Stack.Screen name="catalogo" />
+            </Stack.Protected>
+          </Stack>
+        </DialogsProvider>
+      </QueryClientProvider>
+    </Frame>
   );
 }

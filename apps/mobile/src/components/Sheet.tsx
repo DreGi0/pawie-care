@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, gutter, radius, space } from '@/theme/tokens';
 
+import { columnStyle } from './Frame';
 import { IconButton } from './IconButton';
 import { Text } from './Text';
 
@@ -40,6 +41,7 @@ export function Sheet({ visible, onClose, title, children, footer }: SheetProps)
         <Animated.View
           style={[
             styles.sheet,
+            columnStyle,
             { paddingBottom: Math.max(insets.bottom, space[4]) },
             animations.slideUp,
           ]}
