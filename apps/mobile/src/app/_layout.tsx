@@ -6,8 +6,15 @@ import { useEffect } from 'react';
 
 import { DialogsProvider } from '@/components/ConfirmDialog';
 import { Frame } from '@/components/Frame';
+import { ServerWaking } from '@/components/ServerWaking';
 import { queryClient } from '@/lib/api';
-import { restoreSession, useOnboarding, useSessionStatus } from '@/lib/session';
+import {
+  restoreSession,
+  retryStartup,
+  useOnboarding,
+  useSessionStatus,
+  useWake,
+} from '@/lib/session';
 import { configureZod } from '@/lib/zod';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/tokens';
@@ -20,7 +27,10 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(fonts);
   const session = useSessionStatus();
   const onboarding = useOnboarding();
-  const ready = (fontsLoaded || fontError !== null) && session !== 'loading';
+  const wake = useWake();
+  const fontsReady = fontsLoaded || fontError !== null;
+  const ready = fontsReady && session !== 'loading';
+  const waiting = fontsReady && wake !== 'none';
 
   useEffect(() => {
     if (fontError)
@@ -28,9 +38,16 @@ export default function RootLayout() {
   }, [fontError]);
 
   useEffect(() => {
-    if (ready) SplashScreen.hide();
-  }, [ready]);
+    if (ready || waiting) SplashScreen.hide();
+  }, [ready, waiting]);
 
+  if (waiting) {
+    return (
+      <Frame>
+        <ServerWaking state={wake} onRetry={retryStartup} />
+      </Frame>
+    );
+  }
   if (!ready) return null;
 
   return (
