@@ -112,6 +112,18 @@ Si las fotos de las mascotas no cargan en el emulador, configura `S3_PUBLIC_ENDP
 
 En el simulador de iOS, la app accede a la API y al almacenamiento local usando `localhost`; no configures `10.0.2.2`, que es exclusivo del emulador Android. Para iniciar sesión con datos de demo, usa `demo@example.com` y la contraseña local `pawie-demo-local` (o la definida en `DEMO_OWNER_PASSWORD` dentro de `apps/api/.env`).
 
+## Demo pública
+
+La demo corre en la web y se publica sola:
+
+- **URL:** la de Cloudflare Pages (`https://<proyecto>.pages.dev`), que se anota aquí cuando exista el proyecto. La API vive en Render, así que la primera petición tras un rato sin uso tarda cerca de un minuto en despertar.
+- **Cómo se publica:** un push a `main` con el CI en verde corre el job `deploy` de [.github/workflows/ci.yml](.github/workflows/ci.yml): migra y siembra la base de Neon, llama al deploy hook de Render y sube la web a Cloudflare Pages. Un PR nunca publica. Los secretos están en el Environment `demo` de GitHub. Qué crear a mano y con qué valores, en [docs/plan-v0.6.md](docs/plan-v0.6.md) (etapa Demo pública).
+- **Cuentas de demo:**
+  - Dueño: `demo@example.com`, con la contraseña de `DEMO_OWNER_PASSWORD`.
+  - Cuidador: `valeria.martinez@example.com`, aprobada y con el curso hecho, con la contraseña de `DEMO_CAREGIVER_PASSWORD`.
+  - Las contraseñas de la demo se piden al equipo; no son las de local.
+- **Probar el alta del cuidador:** crea una cuenta nueva, activa el modo cuidador y sube los documentos. No subas documentos reales: el bucket los borra a los 7 días. Después, el equipo corre el workflow _Approve demo caregiver_ (Actions) con el correo de la cuenta.
+
 ## Comandos
 
 | Comando                             | Qué hace                                         |

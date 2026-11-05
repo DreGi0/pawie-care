@@ -405,6 +405,57 @@ Lo de la etapa 10 y la 11 se decide al llegar a ellas; aquí solo queda anotado 
 
 **Docs:** arquitectura §3.2 (sesión en web), §3.5 (backend de la demo), §4.4 (excepción de `localStorage`) y §7 (entornos), y el README con la URL, cómo se publica y las cuentas de demo.
 
+**Publicación, paso a paso (PR 2).** `render.yaml` describe el servicio y el Key Value; `.github/workflows/ci.yml` (job `deploy`) y `approve-caregiver.yml` hacen el resto.
+
+**Variables y secretos de la demo.** Nada de esto va en el repositorio. Los valores de conexión llevan contraseñas: se pegan solo en los paneles de cada servicio.
+
+| Nombre                                               | Dónde                                    | Qué es                                                                                                                                                           |
+| ---------------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DIRECT_URL`                                         | Secreto del Environment `demo`           | URL **directa** de Neon (sin `-pooler`), con `sslmode=verify-full&connect_timeout=15`. La usan el job `deploy` y el workflow de aprobación para migrar y sembrar |
+| `DATABASE_URL`                                       | Render                                   | URL del **pooler** de Neon (la que lleva `-pooler`), con `sslmode=verify-full&connect_timeout=15`. Ver "Pendiente de revisar al desplegar" en el spike           |
+| `CORS_ORIGINS`                                       | Render                                   | Solo la URL de Pages, sin barra final (por ejemplo `https://pawie-care.pages.dev`)                                                                               |
+| `PUBLIC_WEB_URL`                                     | Render                                   | La misma URL de Pages: a donde vuelve el dueño que pagó con Wompi desde la web (`/payment/result`)                                                               |
+| `PUBLIC_API_URL`, `WOMPI_APP_ID`, `WOMPI_API_SECRET` | Render                                   | La URL pública del servicio de Render y las credenciales de Wompi en desarrollo. Van juntas (arquitectura §6)                                                    |
+| `S3_ENDPOINT`                                        | Render y secreto del Environment         | `https://<ID de cuenta>.r2.cloudflarestorage.com`                                                                                                                |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`           | Render y secretos del Environment        | Token de R2 limitado al bucket                                                                                                                                   |
+| `S3_BUCKET`                                          | `render.yaml` y variable del Environment | `pawie-demo-uploads`                                                                                                                                             |
+| `EXPO_PUBLIC_API_URL`                                | Variable del Environment                 | URL pública de la API en Render. Se incrusta en la web al construirla                                                                                            |
+| `EXPO_PUBLIC_DEMO=true`                              | El job `deploy`                          | Ya está escrito en el paso de construcción de la web. Solo existe en ese build (arquitectura §4.4); no lo pongas en ningún otro lado                             |
+| `DEMO_OWNER_PASSWORD`, `DEMO_CAREGIVER_PASSWORD`     | Secretos del Environment                 | Contraseñas del dueño y del cuidador de demo. Mínimo 8 caracteres y distintas de las de local                                                                    |
+| `DEMO_CAREGIVER_PHONE`                               | Secreto del Environment (opcional)       | Un número del equipo (+503 …). Sin él, los cuidadores no tienen teléfono                                                                                         |
+| `RENDER_DEPLOY_HOOK_URL`                             | Secreto del Environment                  | El deploy hook del servicio de Render                                                                                                                            |
+| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`      | Secretos del Environment                 | Token de Cloudflare con el permiso _Cloudflare Pages: Edit_, y el ID de la cuenta                                                                                |
+| `CLOUDFLARE_PAGES_PROJECT`                           | Variable del Environment                 | Nombre del proyecto de Pages                                                                                                                                     |
+
+`JWT_ACCESS_SECRET` lo genera Render solo (`generateValue` en `render.yaml`). `REDIS_URL` también viene de `render.yaml`, desde el Key Value.
+
+**Lo que se hace a mano, en este orden.** El código no crea ni toca nada en la nube.
+
+1. **Neon.** Ya existe la base del spike. Copia la URL directa y la del pooler (_Connect_ del proyecto, con y sin _Connection pooling_), y reemplaza lo que venga después del `?` por `sslmode=verify-full&connect_timeout=15`. Guarda las dos para los pasos 5 y 6.
+2. **Cloudflare R2.**
+   1. Crea el bucket `pawie-demo-uploads`.
+   2. En _Settings > Object lifecycle rules_, crea cinco reglas de borrado a los 7 días, una por prefijo: `pet-photos/`, `caregiver-photos/`, `vet-instructions/`, `vaccination-records/` y `caregiver-documents/`. No pongas ninguna sobre `seed/`.
+   3. _Manage R2 API Tokens > Create API token_: permiso _Object Read & Write_, aplicado solo al bucket `pawie-demo-uploads`. Guarda el _Access Key ID_, el _Secret Access Key_ y el endpoint S3 (`https://<ID de cuenta>.r2.cloudflarestorage.com`).
+3. **Cloudflare Pages.** _Workers & Pages > Create > Pages > Direct Upload_, con el nombre del proyecto (por ejemplo `pawie-care`) y sin subir nada. La URL es `https://<proyecto>.pages.dev`. Crea también un token de API (_My Profile > API Tokens_) con el permiso _Account > Cloudflare Pages > Edit_, y anota el ID de la cuenta.
+4. **CORS del bucket.** En R2, _Settings > CORS policy_ del bucket:
+
+   ```json
+   [
+     {
+       "AllowedOrigins": ["https://<proyecto>.pages.dev"],
+       "AllowedMethods": ["GET", "PUT"],
+       "AllowedHeaders": ["Content-Type"],
+       "MaxAgeSeconds": 3600
+     }
+   ]
+   ```
+
+5. **Render.** _New > Blueprint_, con este repositorio: lee `render.yaml` y crea el servicio web `pawie-api` (plan Free) y el Key Value `pawie-redis` (plan Free). Render pide los valores marcados `sync: false`: llénalos con la tabla de arriba (`PUBLIC_API_URL` puedes dejarla vacía y llenarla cuando conozcas la URL del servicio; hazlo antes del primer pago de prueba). Confirma que el servicio tenga el despliegue automático apagado (_Settings > Build & Deploy > Auto-Deploy: Off_) y copia su _Deploy Hook_ (en esa misma sección). Si Render pide tarjeta para alguno de los dos planes, anótalo en la tabla de "Backend gratis".
+6. **GitHub.** _Settings > Environments > New environment_: `demo`. Si quieres, activa _Required reviewers_ para que cada publicación pida tu aprobación. Carga ahí los secretos y las variables de la tabla de arriba.
+7. **Primera publicación.** Cuando este PR esté en `main`, el job `deploy` migra, siembra, llama al hook y sube la web. Después de la primera vez, revisa los criterios de "Terminado cuando", sobre todo el webhook firmado de prueba y la URL del pooler.
+8. **Aprobar a quien pruebe el alta.** _Actions > Approve demo caregiver > Run workflow_, con el correo de la cuenta. Solo aprueba si ya subió sus documentos (RN-CUI-01).
+9. **Ping opcional.** Un monitor externo (por ejemplo UptimeRobot) a `https://<servicio>.onrender.com/v1/health` cada 10 minutos mantiene despierta la API.
+
 **Se hace en dos PR:**
 
 1. **App web:** sesión, archivos, marco, confirmaciones, retorno del pago (con el contrato regenerado) y la revisión de las pantallas.

@@ -7,7 +7,9 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Only superseded PR runs are cancelled: a newer push to main must not cut a deploy in the
+  # middle of a migration.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   checks:
@@ -47,3 +49,74 @@ jobs:
             echo "::error file=packages/api-client::Out of date. Run 'pnpm --filter @pawie/api-client generate' and commit the result."
             exit 1
           fi
+
+  # Publishes the public demo (docs/plan-v0.6.md, etapa Demo pública). Never on a PR, and
+  # never when the checks fail. Secrets and variables live in the "demo" Environment.
+  deploy:
+    needs: checks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: demo
+    concurrency:
+      group: demo-deploy
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @pawie/api generate
+
+      # Migrations and seed go to Neon through the direct URL: the pooler can't migrate.
+      # The API validates its whole environment even for these scripts, so REDIS_URL and
+      # JWT_ACCESS_SECRET carry placeholders: they never connect to Redis or sign a token.
+      - name: Migrate the demo database
+        run: pnpm --filter @pawie/api db:deploy
+        env:
+          DATABASE_URL: ${{ secrets.DIRECT_URL }}
+
+      - name: Seed the demo database
+        run: pnpm --filter @pawie/api db:seed
+        env:
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DIRECT_URL }}
+          REDIS_URL: redis://localhost:6379
+          JWT_ACCESS_SECRET: placeholder-the-seed-never-signs-a-token
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+          S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          DEMO_OWNER_PASSWORD: ${{ secrets.DEMO_OWNER_PASSWORD }}
+          DEMO_CAREGIVER_PASSWORD: ${{ secrets.DEMO_CAREGIVER_PASSWORD }}
+          DEMO_CAREGIVER_PHONE: ${{ secrets.DEMO_CAREGIVER_PHONE }}
+
+      # Automatic deploys are off in Render, so this is the only thing that publishes the API.
+      - name: Deploy the API on Render
+        run: curl --fail --silent --show-error --output /dev/null --request POST "$RENDER_DEPLOY_HOOK_URL"
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+
+      - name: Build the web app
+        run: pnpm --filter @pawie/mobile exec expo export --platform web
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_DEMO: 'true'
+
+      # No 404.html in the build, so Pages serves index.html for every unknown path (SPA).
+      - name: Publish the web app on Cloudflare Pages
+        run: >-
+          pnpm dlx wrangler@4 pages deploy apps/mobile/dist
+          --project-name "$CLOUDFLARE_PAGES_PROJECT" --branch main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}

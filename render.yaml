@@ -1,0 +1,68 @@
+# Render Blueprint of the public demo (docs/plan-v0.6.md, etapa Demo pública). It has no
+# values for secrets: the ones marked `sync: false` are filled in the Render dashboard.
+# Automatic deploys are off: the `deploy` job of .github/workflows/ci.yml calls the deploy
+# hook after the checks pass and the database is migrated.
+services:
+  - type: web
+    name: pawie-api
+    runtime: node
+    plan: free
+    autoDeploy: false
+    # Node comes from .node-version. The dev dependencies (Nest CLI, Prisma) are needed to build.
+    buildCommand: >-
+      corepack enable &&
+      pnpm install --frozen-lockfile --prod=false --filter @pawie/api... &&
+      pnpm --filter @pawie/api generate &&
+      pnpm --filter @pawie/api build
+    startCommand: pnpm --filter @pawie/api start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: '1'
+      - key: LOG_LEVEL
+        value: info
+      - key: REFRESH_TOKEN_TTL_DAYS
+        value: '1'
+      - key: S3_REGION
+        value: auto
+      - key: S3_BUCKET
+        value: pawie-demo-uploads
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: pawie-redis
+          property: connectionString
+      # Neon, the pooler URL, with sslmode=verify-full and connect_timeout=15
+      - key: DATABASE_URL
+        sync: false
+      # Only the URL of Cloudflare Pages
+      - key: CORS_ORIGINS
+        sync: false
+      # The URL of Cloudflare Pages: where Wompi's return lands for the web (/payment/result)
+      - key: PUBLIC_WEB_URL
+        sync: false
+      # The URL of this service, https://<name>.onrender.com
+      - key: PUBLIC_API_URL
+        sync: false
+      # https://<account id>.r2.cloudflarestorage.com
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: WOMPI_APP_ID
+        sync: false
+      - key: WOMPI_API_SECRET
+        sync: false
+
+keyValue:
+  - name: pawie-redis
+    plan: free
+    # BullMQ needs Redis to never evict its keys
+    maxmemoryPolicy: noeviction
+    # Internal connections only: the API reaches it from inside Render
+    ipAllowList: []
