@@ -60,8 +60,8 @@ services:
       - key: WOMPI_API_SECRET
         sync: false
 
-keyValue:
-  - name: pawie-redis
+  - type: keyvalue
+    name: pawie-redis
     plan: free
     region: ohio
     # BullMQ needs Redis to never evict its keys
