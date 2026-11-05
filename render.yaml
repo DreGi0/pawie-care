@@ -35,7 +35,7 @@ services:
           type: keyvalue
           name: pawie-redis
           property: connectionString
-      # Neon, the pooler URL, with sslmode=verify-full and connect_timeout=15
+      # Neon, the direct URL (no -pooler), with sslmode=verify-full and connect_timeout=15
       - key: DATABASE_URL
         sync: false
       # Only the URL of Cloudflare Pages

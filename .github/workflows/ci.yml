@@ -76,7 +76,7 @@ jobs:
 
       - run: pnpm --filter @pawie/api generate
 
-      # Migrations and seed go to Neon through the direct URL: the pooler can't migrate.
+      # Migrations and seed go to Neon through the direct URL, the same one the API uses (docs/plan-v0.6.md, "Una URL de Neon").
       # The API validates its whole environment even for these scripts, so REDIS_URL and
       # JWT_ACCESS_SECRET carry placeholders: they never connect to Redis or sign a token.
       - name: Migrate the demo database

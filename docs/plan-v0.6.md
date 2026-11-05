@@ -372,20 +372,20 @@ Lo de la etapa 10 y la 11 se decide al llegar a ellas; aquí solo queda anotado 
 
 **Backend gratis (elección, con los planes vigentes al 2026-11-04):**
 
-| Pieza              | Elección                      | Se duerme                                | Vence                                 | Tarjeta                    |
-| ------------------ | ----------------------------- | ---------------------------------------- | ------------------------------------- | -------------------------- |
-| API                | Render, servicio web gratis   | Sí, a los 15 min; despierta en ~1 min    | No                                    | Por confirmar al crearlo   |
-| PostgreSQL         | Neon, plan gratis             | Sí, escala a cero; despierta en segundos | No                                    | No, según las fuentes      |
-| Redis              | Render Key Value, plan gratis | No                                       | No, pero no guarda datos al reiniciar | Por confirmar al crearlo   |
-| Archivos (S3)      | Cloudflare R2                 | No                                       | No                                    | Las fuentes se contradicen |
-| App web (estática) | Cloudflare Pages              | No                                       | No                                    | No                         |
+| Pieza              | Elección                      | Se duerme                                | Vence                                 | Tarjeta                                             |
+| ------------------ | ----------------------------- | ---------------------------------------- | ------------------------------------- | --------------------------------------------------- |
+| API                | Render, servicio web gratis   | Sí, a los 15 min; despierta en ~1 min    | No                                    | No hay tarjeta; el plan Free se confirma al crearlo |
+| PostgreSQL         | Neon, plan gratis             | Sí, escala a cero; despierta en segundos | No                                    | No, según las fuentes                               |
+| Redis              | Render Key Value, plan gratis | No                                       | No, pero no guarda datos al reiniciar | No hay tarjeta; el plan Free se confirma al crearlo |
+| Archivos (S3)      | Cloudflare R2                 | No                                       | No                                    | Sí, ya registrada                                   |
+| App web (estática) | Cloudflare Pages              | No                                       | No                                    | No                                                  |
 
 - **Por qué no la base de Render:** la gratis vence a los 30 días y a los 14 más se borra.
 - **Por qué no Railway ni Fly.io:** Railway da un crédito de $5 por 30 días y después $1 al mes; Fly.io no tiene plan gratis para cuentas nuevas. Ninguno alcanza para una demo que no se apaga.
 - **Por qué no Upstash:** su plan gratis cuenta comandos (unos 500 mil al mes) y BullMQ consulta Redis aunque no haya trabajo. Con Render Key Value no hay cuota de comandos. Si Redis se reinicia, las tareas diferidas se pierden, pero la tarea periódica de cada 5 minutos vence las reservas igual (arquitectura §4.10).
 - **Dormir:** un ping externo cada 10 minutos mantiene despierta la API; 750 horas al mes alcanzan para un solo servicio encendido. Es opcional. Sin el ping, la app muestra "Despertando el servidor…" en la primera petición.
 - **Spike de Neon (va primero y bloquea la etapa):** que Neon tenga PostgreSQL 18 (la API usa `uuidv7()`, nativo de la 18) y la extensión `btree_gist`, y que las migraciones de Prisma corran completas, con sus `CHECK`, exclusiones e índices parciales. Si algo falla, no se improvisa otra base: se documenta aquí y se decide. El resultado va en "Resultado del spike de Neon".
-- **Dos URLs de Neon:** la API en producción usa la del pooler (`DATABASE_URL`). Las migraciones (`prisma migrate deploy`, en el job `deploy`) y el seed usan la directa, sin `-pooler` (`DIRECT_URL`), porque el pooler no sirve para migrar. `DIRECT_URL` se agrega a las variables de la demo y a los secretos del Environment `demo` de GitHub.
+- **Una URL de Neon (decisión del 2026-11-05):** `DATABASE_URL` y `DIRECT_URL` llevan las dos la URL **directa** (sin `-pooler`). La API, las migraciones (`prisma migrate deploy`, en el job `deploy`) y el seed se conectan igual. `DIRECT_URL` va en los secretos del Environment `demo` de GitHub y `DATABASE_URL` en Render. **Mejora opcional posterior:** pasar la API a la URL del pooler, solo si hace falta; no se probó con el adaptador de Prisma, que con PgBouncer en modo transacción tiene límites.
 - **Arranque en frío de Neon:** tras un rato sin uso, la base se apaga y la primera conexión tarda. Se pone `connect_timeout=15` en las dos URLs para que esa primera conexión espere en vez de fallar. Si aun así falla, la API reintenta en la siguiente petición.
 - **Archivos de la demo:** el bucket de R2 tiene una regla de ciclo de vida que borra los objetos a los 7 días, uno por prefijo de subida de usuarios (`pet-photos/`, `caregiver-photos/`, `vet-instructions/`, `vaccination-records/` y `caregiver-documents/`). El seed guarda sus archivos en `seed/`, que ninguna regla toca, y no siembra documentos reales. Efecto aceptado: una foto o un documento subido por quien prueba deja de abrirse a la semana.
 - **CORS:** `CORS_ORIGINS` con la URL de Pages, solo la de producción. El bucket de R2 necesita su propio CORS: origen de Pages, métodos `PUT` y `GET`, header `Content-Type`; sin eso, el navegador bloquea la subida directa.
@@ -412,7 +412,7 @@ Lo de la etapa 10 y la 11 se decide al llegar a ellas; aquí solo queda anotado 
 | Nombre                                               | Dónde                                    | Qué es                                                                                                                                                           |
 | ---------------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DIRECT_URL`                                         | Secreto del Environment `demo`           | URL **directa** de Neon (sin `-pooler`), con `sslmode=verify-full&connect_timeout=15`. La usan el job `deploy` y el workflow de aprobación para migrar y sembrar |
-| `DATABASE_URL`                                       | Render                                   | URL del **pooler** de Neon (la que lleva `-pooler`), con `sslmode=verify-full&connect_timeout=15`. Ver "Pendiente de revisar al desplegar" en el spike           |
+| `DATABASE_URL`                                       | Render                                   | La misma URL **directa** de Neon que `DIRECT_URL`, con `sslmode=verify-full&connect_timeout=15`                                                                  |
 | `CORS_ORIGINS`                                       | Render                                   | Solo la URL de Pages, sin barra final (por ejemplo `https://pawie-care.pages.dev`)                                                                               |
 | `PUBLIC_WEB_URL`                                     | Render                                   | La misma URL de Pages: a donde vuelve el dueño que pagó con Wompi desde la web (`/payment/result`)                                                               |
 | `PUBLIC_API_URL`, `WOMPI_APP_ID`, `WOMPI_API_SECRET` | Render                                   | La URL pública del servicio de Render y las credenciales de Wompi en desarrollo. Van juntas (arquitectura §6)                                                    |
@@ -431,30 +431,24 @@ Lo de la etapa 10 y la 11 se decide al llegar a ellas; aquí solo queda anotado 
 
 **Lo que se hace a mano, en este orden.** El código no crea ni toca nada en la nube.
 
-1. **Neon.** Ya existe la base del spike. Copia la URL directa y la del pooler (_Connect_ del proyecto, con y sin _Connection pooling_), y reemplaza lo que venga después del `?` por `sslmode=verify-full&connect_timeout=15`. Guarda las dos para los pasos 5 y 6.
-2. **Cloudflare R2.**
-   1. Crea el bucket `pawie-demo-uploads`.
-   2. En _Settings > Object lifecycle rules_, crea cinco reglas de borrado a los 7 días, una por prefijo: `pet-photos/`, `caregiver-photos/`, `vet-instructions/`, `vaccination-records/` y `caregiver-documents/`. No pongas ninguna sobre `seed/`.
-   3. _Manage R2 API Tokens > Create API token_: permiso _Object Read & Write_, aplicado solo al bucket `pawie-demo-uploads`. Guarda el _Access Key ID_, el _Secret Access Key_ y el endpoint S3 (`https://<ID de cuenta>.r2.cloudflarestorage.com`).
-3. **Cloudflare Pages.** _Workers & Pages > Create > Pages > Direct Upload_, con el nombre del proyecto (por ejemplo `pawie-care`) y sin subir nada. La URL es `https://<proyecto>.pages.dev`. Crea también un token de API (_My Profile > API Tokens_) con el permiso _Account > Cloudflare Pages > Edit_, y anota el ID de la cuenta.
-4. **CORS del bucket.** En R2, _Settings > CORS policy_ del bucket:
+> **Aviso: fusionar a `main` dispara el job `deploy`** (migra y siembra la base, despliega la API y publica la web). Por eso la fusión va **al final**, cuando todo lo de abajo esté listo.
 
-   ```json
-   [
-     {
-       "AllowedOrigins": ["https://<proyecto>.pages.dev"],
-       "AllowedMethods": ["GET", "PUT"],
-       "AllowedHeaders": ["Content-Type"],
-       "MaxAgeSeconds": 3600
-     }
-   ]
-   ```
+**Ya hecho (2026-11-05):**
 
-5. **Render.** _New > Blueprint_, con este repositorio: lee `render.yaml` y crea el servicio web `pawie-api` (plan Free) y el Key Value `pawie-redis` (plan Free). Render pide los valores marcados `sync: false`: llénalos con la tabla de arriba (`PUBLIC_API_URL` puedes dejarla vacía y llenarla cuando conozcas la URL del servicio; hazlo antes del primer pago de prueba). Confirma que el servicio tenga el despliegue automático apagado (_Settings > Build & Deploy > Auto-Deploy: Off_) y copia su _Deploy Hook_ (en esa misma sección). Si Render pide tarjeta para alguno de los dos planes, anótalo en la tabla de "Backend gratis".
-6. **GitHub.** _Settings > Environments > New environment_: `demo`. Si quieres, activa _Required reviewers_ para que cada publicación pida tu aprobación. Carga ahí los secretos y las variables de la tabla de arriba.
-7. **Primera publicación.** Cuando este PR esté en `main`, el job `deploy` migra, siembra, llama al hook y sube la web. Después de la primera vez, revisa los criterios de "Terminado cuando", sobre todo el webhook firmado de prueba y la URL del pooler.
-8. **Aprobar a quien pruebe el alta.** _Actions > Approve demo caregiver > Run workflow_, con el correo de la cuenta. Solo aprueba si ya subió sus documentos (RN-CUI-01).
-9. **Ping opcional.** Un monitor externo (por ejemplo UptimeRobot) a `https://<servicio>.onrender.com/v1/health` cada 10 minutos mantiene despierta la API.
+- Neon: la base del spike existe, con el esquema aplicado. Neon Object storage se evaluó para los archivos y se descartó: sus reglas de expiración no se ejecutan.
+- Cloudflare R2: pide tarjeta y ya está registrada. El bucket `pawie-demo-uploads` existe, con las 5 reglas de borrado a los 7 días (`pet-photos/`, `caregiver-photos/`, `vet-instructions/`, `vaccination-records/`, `caregiver-documents/`; ninguna sobre `seed/`) y el CORS para `https://pawie-care.pages.dev` (`GET` y `PUT`, header `Content-Type`).
+- Los tokens de R2 (lectura y escritura, limitado al bucket) y de Cloudflare Pages (_Cloudflare Pages: Edit_) están creados.
+- Cloudflare Pages: el proyecto se llama `pawie-care` y su URL es `https://pawie-care.pages.dev`.
+
+**Pendiente:**
+
+1. **Cloudflare Pages.** Falta solo anotar el ID de la cuenta (`CLOUDFLARE_ACCOUNT_ID`) y confirmar que el proyecto `pawie-care` es de tipo Direct Upload, sin subir nada.
+2. **R2.** Falta solo tener a mano el _Access Key ID_, el _Secret Access Key_ y el endpoint (`https://<ID de cuenta>.r2.cloudflarestorage.com`) para Render y GitHub.
+3. **Render.** La cuenta no tiene tarjeta; el plan Free se confirma al crear. _New > Blueprint_, con este repositorio: lee `render.yaml` y crea el servicio web `pawie-api` y el Key Value `pawie-redis`, los dos en plan Free. Render pide los valores marcados `sync: false`: llénalos con la tabla de arriba. `DATABASE_URL` es la URL directa de Neon (la misma de `DIRECT_URL`); `CORS_ORIGINS` y `PUBLIC_WEB_URL`, `https://pawie-care.pages.dev`; `PUBLIC_API_URL` puedes llenarla cuando conozcas la URL del servicio, antes del primer pago de prueba. Confirma que el despliegue automático esté apagado (_Settings > Build & Deploy > Auto-Deploy: Off_) y copia el _Deploy Hook_. Si Render pide tarjeta, anótalo en la tabla de "Backend gratis".
+4. **GitHub.** _Settings > Environments > New environment_: `demo`. Si quieres, activa _Required reviewers_ para que cada publicación pida tu aprobación. Carga ahí los secretos y las variables de la tabla de arriba (`CLOUDFLARE_PAGES_PROJECT` = `pawie-care`, `S3_BUCKET` = `pawie-demo-uploads`, `EXPO_PUBLIC_API_URL` = la URL del servicio de Render).
+5. **Fusionar el PR a `main`, al final.** Dispara el job `deploy`. Después de la primera publicación, revisa los criterios de "Terminado cuando", sobre todo el webhook firmado de prueba.
+6. **Aprobar a quien pruebe el alta.** _Actions > Approve demo caregiver > Run workflow_, con el correo de la cuenta. Solo aprueba si ya subió sus documentos (RN-CUI-01).
+7. **Ping opcional.** Un monitor externo (por ejemplo UptimeRobot) a `https://<servicio>.onrender.com/v1/health` cada 10 minutos mantiene despierta la API.
 
 **Se hace en dos PR:**
 
@@ -468,7 +462,7 @@ Lo de la etapa 10 y la 11 se decide al llegar a ellas; aquí solo queda anotado 
 - **Driver de la API (`pg`):** conecta con la URL tal como la da Neon (`sslmode=require&channel_binding=require`) en ~1,1 s. `pg` avisa que `sslmode=require` hoy equivale a `verify-full` y que va a cambiar de significado en `pg` 9: en la URL de la demo se escribe `sslmode=verify-full` para que no cambie.
 - **Arranque en frío:** no se midió. La base ya estaba activa por las consultas anteriores del mismo spike, así que el 1,1 s no es el peor caso. Queda `connect_timeout=15` como se planeó.
 - **Estado:** la base de Neon queda con el esquema aplicado y sin datos. El seed lo corre el job `deploy` (o a mano) cuando se publique.
-- **Pendiente de revisar al desplegar:** que la URL del pooler (`DATABASE_URL`) funcione con el adaptador de Prisma, porque Prisma con PgBouncer en modo transacción tiene límites (no se probó aquí: el spike usó solo la directa).
+- **Pooler:** no se probó (el spike usó solo la directa). Queda como mejora opcional; ver "Una URL de Neon".
 
 **Terminado cuando:**
 
@@ -613,17 +607,17 @@ Lo de la etapa 10 y la 11 se decide al llegar a ellas; aquí solo queda anotado 
 
 Las que bloquean una etapa están marcadas.
 
-| Decisión                              | Etapa                               | Valor provisional                                                                      |
-| ------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------- |
-| Comisión al cuidador: 0% o 10%        | 9a y 9b                             | 0% (RN-PRE-04)                                                                         |
-| Rangos de visita y pernocta por nivel | 6                                   | Los de RN-PRE-01                                                                       |
-| Umbrales de los niveles               | 6                                   | Los de RN-NIV-02                                                                       |
-| Documentos exactos de antecedentes    | 9a                                  | DUI por los dos lados, selfie y antecedentes o solvencia                               |
-| Contenido del curso de bienvenida     | 9a                                  | 4 módulos de ejemplo marcados `TODO(contenido)`; el texto final lo escribe el equipo   |
-| URL para compartir el perfil          | Eventos de la 11                    | `https://pawieapp.com`                                                                 |
-| Clave de Google Maps para Android     | 10 (**bloquea** el mapa en Android) | Ninguno                                                                                |
-| Base de la demo: Neon con PG 18       | Demo pública                        | Neon. El spike del 2026-11-05 confirmó PostgreSQL 18.6, `btree_gist` y las migraciones |
-| Tarjeta para R2 y Render              | Demo pública                        | Se confirma al crear las cuentas                                                       |
-| Mantener despierta la API con un ping | Demo pública                        | Sí, cada 10 minutos (opcional)                                                         |
-| Número de WhatsApp Business           | 12a                                 | Un número de prueba en el seed                                                         |
-| Contenido del asistente               | 12a (**bloquea**)                   | Ninguno: lo escribe el equipo                                                          |
+| Decisión                              | Etapa                               | Valor provisional                                                                                       |
+| ------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Comisión al cuidador: 0% o 10%        | 9a y 9b                             | 0% (RN-PRE-04)                                                                                          |
+| Rangos de visita y pernocta por nivel | 6                                   | Los de RN-PRE-01                                                                                        |
+| Umbrales de los niveles               | 6                                   | Los de RN-NIV-02                                                                                        |
+| Documentos exactos de antecedentes    | 9a                                  | DUI por los dos lados, selfie y antecedentes o solvencia                                                |
+| Contenido del curso de bienvenida     | 9a                                  | 4 módulos de ejemplo marcados `TODO(contenido)`; el texto final lo escribe el equipo                    |
+| URL para compartir el perfil          | Eventos de la 11                    | `https://pawieapp.com`                                                                                  |
+| Clave de Google Maps para Android     | 10 (**bloquea** el mapa en Android) | Ninguno                                                                                                 |
+| Base de la demo: Neon con PG 18       | Demo pública                        | Neon. El spike del 2026-11-05 confirmó PostgreSQL 18.6, `btree_gist` y las migraciones                  |
+| Tarjeta para R2 y Render              | Demo pública                        | R2 la pide y ya está registrada. Render no tiene tarjeta: el plan Free se confirma al crear el servicio |
+| Mantener despierta la API con un ping | Demo pública                        | Sí, cada 10 minutos (opcional)                                                                          |
+| Número de WhatsApp Business           | 12a                                 | Un número de prueba en el seed                                                                          |
+| Contenido del asistente               | 12a (**bloquea**)                   | Ninguno: lo escribe el equipo                                                                           |

@@ -116,7 +116,7 @@ En el simulador de iOS, la app accede a la API y al almacenamiento local usando 
 
 La demo corre en la web y se publica sola:
 
-- **URL:** la de Cloudflare Pages (`https://<proyecto>.pages.dev`), que se anota aquí cuando exista el proyecto. La API vive en Render, así que la primera petición tras un rato sin uso tarda cerca de un minuto en despertar.
+- **URL:** https://pawie-care.pages.dev. La API vive en Render, así que la primera petición tras un rato sin uso tarda cerca de un minuto en despertar.
 - **Cómo se publica:** un push a `main` con el CI en verde corre el job `deploy` de [.github/workflows/ci.yml](.github/workflows/ci.yml): migra y siembra la base de Neon, llama al deploy hook de Render y sube la web a Cloudflare Pages. Un PR nunca publica. Los secretos están en el Environment `demo` de GitHub. Qué crear a mano y con qué valores, en [docs/plan-v0.6.md](docs/plan-v0.6.md) (etapa Demo pública).
 - **Cuentas de demo:**
   - Dueño: `demo@example.com`, con la contraseña de `DEMO_OWNER_PASSWORD`.
