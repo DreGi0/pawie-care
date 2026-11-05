@@ -177,7 +177,7 @@ Cada pantalla nueva se construye con [Placas](#design-system-placas), sin mockup
 | Pantalla    | Qué cambia                                                                              | Reglas    | Etapa        |
 | ----------- | --------------------------------------------------------------------------------------- | --------- | ------------ |
 | `Main`      | Paseo como servicio (los filtros, el nivel y el aviso de la etapa 6 ya están en la app) | RN-SER-05 | 8 (hecha)    |
-| `Esperando` | Ya no simula la aceptación: espera la respuesta real del cuidador                       | RN-RES-06 | 9b           |
+| `Esperando` | Ya no simula la aceptación: espera la respuesta real del cuidador                       | RN-RES-06 | 9b (hecha)   |
 | `Registro`  | Campo opcional "¿Te recomendó un cuidador?", con el mensaje de la API si no existe      | RN-REF-03 | 11 (eventos) |
 
 ### Del dueño: nuevas
@@ -219,13 +219,13 @@ Las pestañas del modo cuidador son **Inicio**, **Agenda**, **Ganancias** y **Cu
 | `CuiActivar`    | Desde Cuenta: qué pide Pawie para ser cuidador y botón para empezar                                                                                                    | RN-CTA-06                       | 9a (hecha)       |
 | `CuiDocumentos` | Subir DUI, selfie y antecedentes, con el estado de la revisión                                                                                                         | RN-CUI-01, RN-CUI-03            | 9a (hecha)       |
 | `CuiCurso`      | Módulos del curso de bienvenida y examen, con el resultado y la opción de repetir                                                                                      | RN-CUI-02                       | 9a (hecha)       |
-| `CuiInicio`     | Lo que falta del alta; ya aprobado, nivel actual, lo que falta para el siguiente, el sugerido del siguiente nivel y las solicitudes pendientes, la más urgente primero | RN-NIV-05, RN-CUI-17, RN-RES-11 | 9a (hecha), 9b   |
-| `CuiSolicitud`  | Mascotas con su ficha, celo o Especial, servicio, fechas, distrito y **lo que va a ganar**. Aceptar o rechazar                                                         | RN-RES-11, RN-CTA-04            | 9b               |
-| `CuiAgenda`     | Próximos servicios por día, con "Agregar al calendario"                                                                                                                | RN-CAL-01                       | 9b, 11 (eventos) |
+| `CuiInicio`     | Lo que falta del alta; ya aprobado, nivel actual, lo que falta para el siguiente, el sugerido del siguiente nivel y las solicitudes pendientes, la más urgente primero | RN-NIV-05, RN-CUI-17, RN-RES-11 | 9a y 9b (hechas) |
+| `CuiSolicitud`  | Mascotas con su ficha, celo o Especial, servicio, fechas, distrito y **lo que va a ganar**. Aceptar o rechazar                                                         | RN-RES-11, RN-CTA-04            | 9b (hecha)       |
+| `CuiAgenda`     | Próximos servicios por día, con "Agregar al calendario"                                                                                                                | RN-CAL-01                       | 9b (hecha), 11   |
 | `CuiPerfil`     | Editar foto, descripción, habilidades, distritos, horario semanal, Reserva inmediata y pausa                                                                           | RN-CUI-18, RN-CUI-20            | 9a (hecha)       |
 | `CuiPrecios`    | La calculadora: precio por servicio con el rango y el sugerido de su nivel, el sugerido del siguiente nivel y lo que recibe según la API                               | RN-CUI-17, RN-PRE-01, RN-PRE-04 | 9a (hecha)       |
 | `CuiServicio`   | Servicio en curso: check-in, ficha, tareas del tramo, fotos, ruta del paseo y check-out                                                                                | §11                             | 10               |
-| `CuiGanancias`  | Por cobrar, pagado (simulado en la demo) y total del mes                                                                                                               | RN-PAG-03, RN-PAG-10            | 9b               |
+| `CuiGanancias`  | Por cobrar, pagado (simulado en la demo) y total del mes                                                                                                               | RN-PAG-03, RN-PAG-10            | 9b (hecha)       |
 | `CuiCompartir`  | Vista previa del texto, con su código de referido, y botón para compartir el perfil                                                                                    | RN-CUI-22, RN-REF-02            | 11 (eventos)     |
 
 Reglas para las pantallas del cuidador:
