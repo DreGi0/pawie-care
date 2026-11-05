@@ -125,6 +125,16 @@ export class Environment {
   DEMO_OWNER_PASSWORD?: string;
 
   /**
+   * Password of the demo caregiver who signs in (Valeria Martínez). Without it, the seed
+   * leaves them without a password, like the other demo caregivers.
+   */
+  @Transform(({ value }: { value: unknown }) => (value === '' ? undefined : value))
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  DEMO_CAREGIVER_PASSWORD?: string;
+
+  /**
    * A phone of the team that the seed gives every demo caregiver, which the owner sees
    * once a booking is confirmed (RN-CTA-04). Without it, they have none.
    */

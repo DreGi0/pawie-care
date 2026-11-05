@@ -30,6 +30,11 @@ export interface SeedOptions {
   /** DEMO_OWNER_PASSWORD. Without it, the demo owner isn't created. */
   demoOwnerPassword?: string;
   /**
+   * DEMO_CAREGIVER_PASSWORD: the password of the demo caregiver who signs in (the one with
+   * `signsIn`). Without it, none can sign in, and a password already set is kept.
+   */
+  demoCaregiverPassword?: string;
+  /**
    * DEMO_CAREGIVER_PHONE: a number of the team that every demo caregiver shows once a
    * booking is confirmed (RN-CTA-04). Without it, they have no phone.
    */
@@ -47,6 +52,8 @@ export interface SeedSummary {
   caregivers: number;
   /** Email of the demo owner, or null when there was no password for it. */
   demoOwner: string | null;
+  /** Email of the demo caregiver who signs in, or null when there was no password for them. */
+  demoCaregiver: string | null;
   /** The phone the demo caregivers got, or null. */
   caregiverPhone: string | null;
   /** Photos found in the media directory and uploaded. */
@@ -75,7 +82,13 @@ interface CatalogIds {
 export async function seedDatabase(
   prisma: PrismaClient,
   settings: SettingsService,
-  { now = new Date(), demoOwnerPassword, demoCaregiverPhone, media }: SeedOptions = {},
+  {
+    now = new Date(),
+    demoOwnerPassword,
+    demoCaregiverPassword,
+    demoCaregiverPhone,
+    media,
+  }: SeedOptions = {},
 ): Promise<SeedSummary> {
   const catalog = await seedCatalog(prisma);
   await seedWelcomeCourse(prisma);
@@ -95,6 +108,7 @@ export async function seedDatabase(
       validityMonths,
       requirements,
       phone: demoCaregiverPhone ?? null,
+      password: caregiver.signsIn ? demoCaregiverPassword : undefined,
     });
     if (media) {
       const photoFileId = await seedPhoto(prisma, media, {
@@ -124,6 +138,10 @@ export async function seedDatabase(
     ),
     caregivers: DEMO_CAREGIVERS.length,
     demoOwner: demoOwnerPassword === undefined ? null : DEMO_OWNER.email,
+    demoCaregiver:
+      demoCaregiverPassword === undefined
+        ? null
+        : (DEMO_CAREGIVERS.find(({ signsIn }) => signsIn)?.email ?? null),
     caregiverPhone: demoCaregiverPhone ?? null,
     photos,
     createdSettings,
@@ -139,11 +157,7 @@ async function seedDemoOwner(
 ): Promise<number> {
   const { email, address, pets, ...owner } = DEMO_OWNER;
   const existing = await prisma.user.findUnique({ where: { email } });
-  // Keeps the hash while the password stays the same, so another run changes nothing.
-  const passwordHash =
-    existing?.passwordHash && (await verifyPassword(password, existing.passwordHash))
-      ? existing.passwordHash
-      : await hashPassword(password);
+  const passwordHash = await passwordHashFor(password, existing?.passwordHash);
   const account = {
     firstName: owner.firstName,
     lastName: owner.lastName,
@@ -285,20 +299,30 @@ async function seedCaregiver(
     validityMonths,
     requirements,
     phone,
+    password,
   }: {
     now: Date;
     today: Date;
     validityMonths: number;
     requirements: SettingValue<'levels.requirements'>;
     phone: string | null;
+    password: string | undefined;
   },
 ): Promise<string> {
+  const existing =
+    password === undefined
+      ? null
+      : await prisma.user.findUnique({ where: { email: caregiver.email } });
   const account = {
     firstName: caregiver.firstName,
     lastName: caregiver.lastName,
     birthDate: new Date(caregiver.birthDate),
     roles: [Role.CAREGIVER],
     phone,
+    // Only the caregiver who signs in has a password; without one, it is left as it is.
+    ...(password === undefined
+      ? {}
+      : { passwordHash: await passwordHashFor(password, existing?.passwordHash) }),
   };
   const profile = {
     status: CaregiverStatus.APPROVED,
@@ -321,7 +345,6 @@ async function seedCaregiver(
   };
 
   return prisma.$transaction(async (tx) => {
-    // Seeded caregivers can't sign in: passwordHash stays null.
     const user = await tx.user.upsert({
       where: { email: caregiver.email },
       create: { email: caregiver.email, ...account },
@@ -374,6 +397,13 @@ async function seedCaregiver(
     await recalculateLevel(tx, caregiverId, requirements, now);
     return caregiverId;
   });
+}
+
+/** Keeps the hash while the password stays the same, so another run changes nothing. */
+async function passwordHashFor(password: string, current: string | null | undefined) {
+  return current && (await verifyPassword(password, current))
+    ? current
+    : await hashPassword(password);
 }
 
 function required<T>(value: T | undefined, name: string): T {
