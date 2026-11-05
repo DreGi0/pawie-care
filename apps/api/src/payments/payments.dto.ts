@@ -1,5 +1,25 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsOptional } from 'class-validator';
 import { PaymentStatus } from '../generated/prisma/enums.js';
+
+/** Which client pays: it decides where Wompi's redirect sends the owner afterwards. */
+export enum PaymentClient {
+  APP = 'app',
+  WEB = 'web',
+}
+
+export class StartPaymentQuery {
+  @ApiPropertyOptional({
+    enum: PaymentClient,
+    enumName: 'PaymentClient',
+    default: PaymentClient.APP,
+    description:
+      '`app`: Wompi devuelve al dueño a la app móvil (`pawie://`). `web`: lo devuelve a la app web de la demo, cuya URL debe estar configurada en la API.',
+  })
+  @IsOptional()
+  @IsEnum(PaymentClient, { message: 'Ese cliente no existe.' })
+  client?: PaymentClient;
+}
 
 /** A payment attempt of a booking (RN-PAG). */
 export class BookingPayment {

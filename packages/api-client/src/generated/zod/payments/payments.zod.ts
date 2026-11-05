@@ -8,11 +8,20 @@
 import * as zod from 'zod';
 
 /**
- * RN-PAG-02: crea el enlace de pago de Wompi por el total de la reserva, que la app abre con expo-web-browser. Solo el dueño, mientras la reserva está PENDING_PAYMENT y antes de `paymentDueAt` (RN-RES-07). Si ya hay un enlace pendiente, devuelve el mismo: acepta un solo pago y vence con el plazo. La reserva se confirma cuando llega el aviso de Wompi, no cuando el dueño vuelve a la app.
+ * RN-PAG-02: crea el enlace de pago de Wompi por el total de la reserva, que la app abre con expo-web-browser (la web de la demo navega a él en la misma pestaña, con `client=web`). Solo el dueño, mientras la reserva está PENDING_PAYMENT y antes de `paymentDueAt` (RN-RES-07). Si ya hay un enlace pendiente, devuelve el mismo: acepta un solo pago y vence con el plazo. La reserva se confirma cuando llega el aviso de Wompi, no cuando el dueño vuelve a la app.
  * @summary Pagar una reserva
  */
 export const PaymentsStartParams = zod.object({
   bookingId: zod.string(),
+});
+
+export const PaymentsStartQueryParams = zod.object({
+  client: zod
+    .enum(['app', 'web'])
+    .optional()
+    .describe(
+      '`app`: Wompi devuelve al dueño a la app móvil (`pawie://`). `web`: lo devuelve a la app web de la demo, cuya URL debe estar configurada en la API.',
+    ),
 });
 
 export const PaymentsStartResponse = zod.object({

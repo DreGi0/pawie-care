@@ -83,6 +83,8 @@ export * from './loginRequest';
 export * from './meResponse';
 export * from './nextLevelPrice';
 export * from './nextLevelProgress';
+export * from './paymentClient';
+export * from './paymentsStartParams';
 export * from './paymentStatus';
 export * from './pendingEarning';
 export * from './petDetail';

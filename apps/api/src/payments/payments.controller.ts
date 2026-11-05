@@ -29,7 +29,7 @@ import { CurrentUser } from '../auth/current-user.decorator.js';
 import { Public } from '../auth/public.decorator.js';
 import { ErrorResponse } from '../common/errors/error-response.dto.js';
 import { PaymentWebhooks } from './payment-webhooks.js';
-import { BookingPayment } from './payments.dto.js';
+import { BookingPayment, StartPaymentQuery } from './payments.dto.js';
 import { PAYMENT_RETURN_PATH, PAYMENT_WEBHOOK_PATH, PaymentsService } from './payments.service.js';
 
 @ApiTags('payments')
@@ -57,8 +57,9 @@ export class PaymentsController {
 
   /**
    * Wompi sends the owner here after paying, and this sends them on to the app
-   * (pawie://payment/result). It changes nothing (RN-PAG-02). Wompi adds its own
-   * parameters; only identificadorEnlaceComercio is read.
+   * (pawie://payment/result), or to the web build when the link says `client=web`.
+   * It changes nothing (RN-PAG-02). Wompi adds its own parameters; only
+   * identificadorEnlaceComercio and client are read.
    */
   @Get(PAYMENT_RETURN_PATH)
   @Public()
@@ -66,8 +67,12 @@ export class PaymentsController {
   @ApiExcludeEndpoint()
   async returnToApp(
     @Query('identificadorEnlaceComercio') reference: string | undefined,
+    @Query('client') client: string | undefined,
   ): Promise<{ url: string; statusCode: number }> {
-    return { url: await this.payments.appReturnUrl(reference), statusCode: HttpStatus.FOUND };
+    return {
+      url: await this.payments.appReturnUrl(reference, client),
+      statusCode: HttpStatus.FOUND,
+    };
   }
 
   @Post('bookings/:bookingId/payments')
@@ -76,7 +81,7 @@ export class PaymentsController {
   @ApiOperation({
     summary: 'Pagar una reserva',
     description:
-      'RN-PAG-02: crea el enlace de pago de Wompi por el total de la reserva, que la app abre con expo-web-browser. Solo el dueño, mientras la reserva está PENDING_PAYMENT y antes de `paymentDueAt` (RN-RES-07). Si ya hay un enlace pendiente, devuelve el mismo: acepta un solo pago y vence con el plazo. La reserva se confirma cuando llega el aviso de Wompi, no cuando el dueño vuelve a la app.',
+      'RN-PAG-02: crea el enlace de pago de Wompi por el total de la reserva, que la app abre con expo-web-browser (la web de la demo navega a él en la misma pestaña, con `client=web`). Solo el dueño, mientras la reserva está PENDING_PAYMENT y antes de `paymentDueAt` (RN-RES-07). Si ya hay un enlace pendiente, devuelve el mismo: acepta un solo pago y vence con el plazo. La reserva se confirma cuando llega el aviso de Wompi, no cuando el dueño vuelve a la app.',
   })
   @ApiOkResponse({ type: BookingPayment })
   @ApiNotFoundResponse({ type: ErrorResponse, description: '`BOOKING_NOT_FOUND`.' })
@@ -91,12 +96,14 @@ export class PaymentsController {
   })
   @ApiServiceUnavailableResponse({
     type: ErrorResponse,
-    description: '`PAYMENTS_UNAVAILABLE`: la API no tiene configurado Wompi.',
+    description:
+      '`PAYMENTS_UNAVAILABLE`: la API no tiene configurado Wompi, o se pidió `client=web` y no tiene la URL de la web (`PUBLIC_WEB_URL`).',
   })
   start(
     @CurrentUser() user: AuthenticatedUser,
     @Param('bookingId', ParseUUIDPipe) bookingId: string,
+    @Query() query: StartPaymentQuery,
   ): Promise<BookingPayment> {
-    return this.payments.start(user.id, bookingId);
+    return this.payments.start(user.id, bookingId, query.client);
   }
 }

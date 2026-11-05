@@ -128,7 +128,23 @@ describe('validateEnvironment', () => {
         appId: 'app-id',
         apiSecret: 'api-secret',
         publicApiUrl: 'https://pawie.trycloudflare.com',
+        publicWebUrl: null,
       });
+    });
+
+    it('takes the web URL of the public demo, without its trailing slash', () => {
+      expect(
+        wompiSettings(
+          validateEnvironment({
+            ...REQUIRED,
+            ...WOMPI,
+            PUBLIC_WEB_URL: 'https://pawie.pages.dev/',
+          }),
+        )?.publicWebUrl,
+      ).toBe('https://pawie.pages.dev');
+      expect(() =>
+        validateEnvironment({ ...REQUIRED, ...WOMPI, PUBLIC_WEB_URL: 'pawie.pages.dev' }),
+      ).toThrow(/PUBLIC_WEB_URL/);
     });
 
     it('needs all three once one is set', () => {
