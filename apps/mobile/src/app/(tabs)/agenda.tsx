@@ -1,4 +1,8 @@
-import { useCaregiverBookingsList, type CaregiverBookingResponse } from '@pawie/api-client';
+import {
+  useCaregiverBookingsList,
+  type CaregiverBookingResponse,
+  type CaregiverBookingSlot,
+} from '@pawie/api-client';
 import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,7 +18,8 @@ import { colors, gutter, space } from '@/theme/tokens';
 
 // CuiAgenda: the services ahead, by day in San Salvador. It has the accepted requests that wait
 // for the owner's payment too, so the caregiver sees that time as taken; one the owner doesn't
-// pay in time expires and leaves the agenda. "Agregar al calendario" comes in stage 11.
+// pay in time expires and leaves the agenda. A booking with several walks, visits or nights
+// shows on the day of each one. "Agregar al calendario" comes in stage 11.
 export default function AgendaScreen() {
   const agenda = useCaregiverBookingsList(AGENDA);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,14 +62,14 @@ export default function AgendaScreen() {
           byDay(agenda.data).map(([day, bookings]) => (
             <View key={day} style={styles.day}>
               <Text variant="heading" accessibilityRole="header">
-                {dayTitle(day, bookings[0].startsAt)}
+                {dayTitle(day, bookings[0].slot.startsAt)}
               </Text>
               <View>
-                {bookings.map((booking, index) => (
+                {bookings.map(({ booking, slot }, index) => (
                   <CaregiverBookingRow
-                    key={booking.id}
+                    key={`${booking.id}-${slot.startsAt}`}
                     booking={booking}
-                    when={`De ${formatTime(booking.startsAt)} a ${formatTime(booking.endsAt)}`}
+                    when={`De ${formatTime(slot.startsAt)} a ${formatTime(slot.endsAt)}`}
                     divider={index > 0}
                   />
                 ))}
@@ -77,12 +82,19 @@ export default function AgendaScreen() {
   );
 }
 
-/** The bookings by the day they start in San Salvador, in order. */
-function byDay(bookings: CaregiverBookingResponse[]): [string, CaregiverBookingResponse[]][] {
-  const days = new Map<string, CaregiverBookingResponse[]>();
-  for (const booking of [...bookings].sort((a, b) => a.startsAt.localeCompare(b.startsAt))) {
-    const day = localDate(booking.startsAt);
-    days.set(day, [...(days.get(day) ?? []), booking]);
+type AgendaItem = { booking: CaregiverBookingResponse; slot: CaregiverBookingSlot };
+
+/** Each slot that hasn't ended, by the day it starts in San Salvador, in order. */
+function byDay(bookings: CaregiverBookingResponse[]): [string, AgendaItem[]][] {
+  const now = Date.now();
+  const items = bookings
+    .flatMap((booking) => booking.slots.map((slot) => ({ booking, slot })))
+    .filter(({ slot }) => new Date(slot.endsAt).getTime() > now)
+    .sort((a, b) => a.slot.startsAt.localeCompare(b.slot.startsAt));
+  const days = new Map<string, AgendaItem[]>();
+  for (const item of items) {
+    const day = localDate(item.slot.startsAt);
+    days.set(day, [...(days.get(day) ?? []), item]);
   }
   return [...days.entries()];
 }

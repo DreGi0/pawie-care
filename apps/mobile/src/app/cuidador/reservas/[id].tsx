@@ -35,7 +35,6 @@ import {
   formatMinute,
   formatMoney,
   formatPhone,
-  formatRange,
 } from '@/lib/format';
 import { describeBody, describePet } from '@/lib/pets';
 import { services } from '@/theme/services';
@@ -128,7 +127,12 @@ function BookingDetail({ booking }: { booking: CaregiverBookingResponse }) {
 
         <Summary booking={booking} owner={owner} />
 
-        {booking.emergency && <Emergency emergency={booking.emergency} />}
+        {booking.emergency && (
+          <Emergency
+            emergency={booking.emergency}
+            pets={joinNames(booking.pets.map(({ name }) => name))}
+          />
+        )}
 
         {booking.pets.map((pet) => (
           <PetProfile key={pet.id} pet={pet} />
@@ -210,10 +214,8 @@ function Summary({ booking, owner }: { booking: CaregiverBookingResponse; owner:
       </SummaryRow>
       <SummaryRow icon="calendar">
         <View style={styles.flex}>
-          {booking.slots.length > 1 && booking.serviceCode !== 'OVERNIGHT_STAY' ? (
-            booking.slots.map((slot) => (
-              <Text key={slot.startsAt}>{formatRange(slot.startsAt, slot.endsAt)}</Text>
-            ))
+          {booking.slots.length > 1 ? (
+            booking.slots.map((slot) => <Text key={slot.startsAt}>{formatWhen(slot)}</Text>)
           ) : (
             <Text>{formatWhen(booking)}</Text>
           )}
@@ -253,8 +255,10 @@ function Summary({ booking, owner }: { booking: CaregiverBookingResponse; owner:
 /** RN-RES-04: shown once the booking is confirmed (RN-CTA-04). */
 function Emergency({
   emergency,
+  pets,
 }: {
   emergency: NonNullable<CaregiverBookingResponse['emergency']>;
+  pets: string;
 }) {
   const vet = [emergency.vetName, emergency.vetPhone && formatPhone(emergency.vetPhone)]
     .filter(Boolean)
@@ -273,7 +277,7 @@ function Emergency({
           { label: 'Veterinario', value: vet },
           {
             label: 'Monto preautorizado',
-            value: `${formatMoney(emergency.preauthorizedCents)}${emergency.clinicConsent ? '. Autoriza llevarla a una clínica.' : ''}`,
+            value: `${formatMoney(emergency.preauthorizedCents)}${emergency.clinicConsent ? `. Autoriza llevar a ${pets} a una clínica.` : ''}`,
           },
         ]}
       />

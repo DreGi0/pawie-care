@@ -49,7 +49,7 @@ export function CaregiverBookingRow({ booking, when, divider = false }: Caregive
         <Text variant="caption" color="inkMuted">
           {when}, {booking.district.name}
         </Text>
-        {notes.length > 0 && <Text variant="caption">{notes.join(' · ')}</Text>}
+        {notes.length > 0 && <Text variant="caption">{notes.join(', ')}</Text>}
         <Text variant="caption" color={booking.status === 'REQUESTED' ? 'ink' : 'inkMuted'}>
           {status}
         </Text>
