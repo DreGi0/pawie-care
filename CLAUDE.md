@@ -17,8 +17,8 @@ Los documentos de negocio del equipo (Buyer, Promesa, Vehículo, Pricing y la ho
 
 ## Estado actual
 
-- El código implementa las **reglas v0.4 más las etapas 6, D, 9a, métricas, 7 y 8**: niveles del cuidador, precio por nivel del cuidador, tarifa de 15% y comisión de 0%, primer servicio sin tarifa, filtros de búsqueda, el design system Placas, el alta del cuidador (modo cuidador, documentos, curso de bienvenida, perfil y precios), el reporte del piloto (`metrics:report`, todavía sin crecimiento) la ficha completa de la mascota (rutina, horarios de comida y medicinas, celo y MascotaPerfil) y el paseo, solo para perros y sin la ruta GPS (etapa 10). El cuidador todavía no recibe solicitudes (9b).
-- Lo que falta para la v0.6 está en **[docs/plan-v0.6.md](docs/plan-v0.6.md)**, en este orden: 9b, base de la 11, 10, eventos de la 11, 12a y 12b.
+- El código implementa las **reglas v0.4 más las etapas 6, D, 9a, métricas, 7, 8 y 9b**: niveles del cuidador, precio por nivel del cuidador, tarifa de 15% y comisión de 0%, primer servicio sin tarifa, filtros de búsqueda, el design system Placas, el alta del cuidador (modo cuidador, documentos, curso de bienvenida, perfil y precios), el reporte del piloto (`metrics:report`, todavía sin crecimiento) la ficha completa de la mascota (rutina, horarios de comida y medicinas, celo y MascotaPerfil), el paseo, solo para perros y sin la ruta GPS (etapa 10), y las solicitudes, la agenda y las ganancias del cuidador, sin avisos push (eventos de la 11).
+- Lo que falta para la v0.6 está en **[docs/plan-v0.6.md](docs/plan-v0.6.md)**, en este orden: base de la 11, 10, eventos de la 11, 12a y 12b.
 - Si el código contradice las reglas v0.6, no es un bug que haya que respetar: es trabajo pendiente de una etapa. Revisa el plan antes de "arreglarlo" fuera de su etapa.
 
 ## Cómo trabajar una tarea

@@ -67,6 +67,7 @@ export default function RootLayout() {
           <Stack.Screen name="cuidador/curso" />
           <Stack.Screen name="cuidador/perfil" />
           <Stack.Screen name="cuidador/precios" />
+          <Stack.Screen name="cuidador/reservas/[id]" />
         </Stack.Protected>
         <Stack.Protected
           guard={session === 'signedOut'}

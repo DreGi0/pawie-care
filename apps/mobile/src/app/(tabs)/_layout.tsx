@@ -14,8 +14,7 @@ function tabIcon(name: IconName) {
   };
 }
 
-// RN-CTA-06: the tabs follow the account's mode. Cuenta is in both; Agenda and Ganancias join
-// the caregiver's tabs in stage 9b.
+// RN-CTA-06: the tabs follow the account's mode. Cuenta is in both.
 export default function TabsLayout() {
   const mode = useMode();
   const bookings = useBookingsList({ query: { enabled: mode === 'OWNER' } });
@@ -47,6 +46,11 @@ export default function TabsLayout() {
       </Tabs.Protected>
       <Tabs.Protected guard={mode === 'CAREGIVER'} redirectTo={HOME.OWNER}>
         <Tabs.Screen name="inicio" options={{ title: 'Inicio', tabBarIcon: tabIcon('house') }} />
+        <Tabs.Screen name="agenda" options={{ title: 'Agenda', tabBarIcon: tabIcon('calendar') }} />
+        <Tabs.Screen
+          name="ganancias"
+          options={{ title: 'Ganancias', tabBarIcon: tabIcon('wallet') }}
+        />
       </Tabs.Protected>
       <Tabs.Screen name="cuenta" options={{ title: 'Cuenta', tabBarIcon: tabIcon('user') }} />
     </Tabs>

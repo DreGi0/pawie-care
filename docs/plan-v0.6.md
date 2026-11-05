@@ -17,7 +17,7 @@ Este plan lleva el código a las [reglas v0.6](reglas-de-negocio.md). Cada etapa
 
 ## 1. Brecha entre el código y la v0.6
 
-Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las certificaciones ya siguen las reglas (etapa 6), el cuidador se da de alta desde la app (etapa 9a), el reporte del piloto sale con un script (métricas), la ficha de la mascota está completa (etapa 7) y el paseo es el tercer servicio (etapa 8).
+Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las certificaciones ya siguen las reglas (etapa 6), el cuidador se da de alta desde la app (etapa 9a), el reporte del piloto sale con un script (métricas), la ficha de la mascota está completa (etapa 7), el paseo es el tercer servicio (etapa 8) y el cuidador responde solicitudes y ve su agenda y sus ganancias (etapa 9b).
 
 | Área                     | Hoy en el código                                                           | Falta para la v0.6                                                                   | Etapa            |
 | ------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------- |
@@ -26,7 +26,7 @@ Los precios por nivel del cuidador, los niveles, los filtros de búsqueda y las 
 | Métricas del piloto      | Script `metrics:report` (métricas, hecha)                                  | Crecimiento (RN-MET-06), que necesita los referidos                                  | Eventos de la 11 |
 | Ficha                    | Ficha completa y MascotaPerfil (7, hecha)                                  | Nada                                                                                 | 7                |
 | Servicios                | Paseo, visita y pernocta (8, hecha)                                        | Nada                                                                                 | 8                |
-| Solicitudes del cuidador | La máquina de estados permite aceptar y rechazar, pero no hay endpoints    | Solicitudes, aceptar o rechazar, agenda y ganancias                                  | 9b               |
+| Solicitudes del cuidador | Solicitudes, aceptar o rechazar, agenda y ganancias (9b, hecha)            | Nada                                                                                 | 9b               |
 | Ejecución                | Estados `IN_PROGRESS` a `CLOSED` sin transiciones                          | Check-in, tareas, fotos, ruta, check-out, cierre a las 48 h, pago simulado y reseñas | 10               |
 | Avisos e integraciones   | Nada                                                                       | Push (base y eventos), agregar al calendario y compartir el perfil                   | 11               |
 | Referidos                | Nada                                                                       | Código de cada cuidador, campo en el registro y quién refirió a cada dueño           | Eventos de la 11 |
@@ -162,7 +162,7 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 **App:**
 
 - Activar el modo cuidador desde Cuenta.
-- Pestañas del cuidador: Inicio y Cuenta. Agenda y Ganancias llegan en la 9b.
+- Pestañas del cuidador: Inicio y Cuenta. Agenda y Ganancias llegaron en la 9b.
 - Alta: documentos y curso, con el estado de cada paso.
 - Perfil: foto, descripción, habilidades, distritos, horario semanal, Reserva inmediata y pausa.
 - Precios con la calculadora: el rango y el sugerido de su nivel, el sugerido del siguiente nivel ("En Pro, tu paseo sugerido sube de $6.50 a $11") y lo que recibe. Ningún texto dice "recibes el 100%".
@@ -291,6 +291,18 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 - La dirección exacta y los datos de emergencia vienen desde `CONFIRMED` (RN-CTA-04, que ahora nombra también los datos de emergencia).
 - `POST /v1/bookings/:id/accept` y `/reject` responden 404 si la reserva es de otro cuidador, y 409 `BOOKING_NOT_REQUESTED` si ya no está `REQUESTED` o si su plazo pasó, aunque todavía no haya vencido.
 - `GET /v1/caregivers/me/earnings`: por cobrar (reservas confirmadas o en retención), pagado (0 hasta la etapa 10) y el total del mes en curso, hora de El Salvador, según el inicio de cada servicio.
+
+**App (hecha):**
+
+- Pestañas del cuidador: Inicio, Agenda, Ganancias y Cuenta.
+- CuiInicio lista las solicitudes, la que vence primero arriba, con "En celo" o "Especial", el plazo y lo que va a ganar. Mientras está abierta vuelve a preguntar cada 30 s, porque los avisos llegan en "eventos de la 11".
+- CuiSolicitud muestra lo que va a ganar en grande, el servicio, el distrito, las instrucciones del dueño y la ficha de cada mascota para esas fechas. "Medicamentos que toma" sale solo en Salud, con la nota "Lo informa el dueño. Solo das las medicinas que están en las tareas del servicio." Aceptar es el botón primario y Rechazar pide confirmación. Desde `CONFIRMED` suma la dirección exacta y los datos de emergencia.
+- CuiAgenda agrupa por día cada paseo, visita o noche que no ha terminado, incluidas las reservas que esperan el pago. Una que vence sale sola.
+- CuiGanancias muestra el total del mes, por cobrar, pagado y la lista de lo que tiene por cobrar.
+- Esperando, del dueño, cambia sola cuando el cuidador responde.
+- Se probó en el emulador con la cuenta de demo y `andrea@example.com`: el dueño pide una visita para Toby y Luna, que está en celo, y Andrea ve $12.00, el `caregiver_payout_cents` de la reserva, y la acepta. El pago se marcó a mano en la base local, porque en local no hay llaves de Wompi.
+
+**La etapa 9b está hecha.**
 
 **API:**
 

@@ -13,6 +13,7 @@ import {
   formatLongDay,
   formatLongDayTime,
   formatMinute,
+  formatMonth,
   formatMoney,
   formatPhone,
   formatRange,
@@ -116,4 +117,9 @@ test('shows Salvadoran phones in groups of four', () => {
   assert.equal(formatPhone('+50322220000'), '+503 2222 0000');
   assert.equal(formatPhone('+503 2222 0000'), '+503 2222 0000');
   assert.equal(formatPhone('+15551234567'), '+15551234567');
+});
+
+test('names the month of the earnings', () => {
+  assert.equal(formatMonth('2026-11'), 'Noviembre');
+  assert.equal(formatMonth('2027-01'), 'Enero');
 });

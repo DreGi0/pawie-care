@@ -26,14 +26,15 @@ import { StepBar } from '@/components/StepBar';
 import { Status } from '@/components/Status';
 import { Text } from '@/components/Text';
 import { errorMessage } from '@/lib/api';
-import { firstName, joinNames, serviceKind, serviceShortName, statusTag } from '@/lib/bookings';
 import {
-  formatDay,
-  formatDeadline,
-  formatLongDayTime,
-  formatMoney,
-  formatRange,
-} from '@/lib/format';
+  firstName,
+  formatWhen,
+  joinNames,
+  serviceKind,
+  serviceShortName,
+  statusTag,
+} from '@/lib/bookings';
+import { formatDay, formatDeadline, formatLongDayTime, formatMoney } from '@/lib/format';
 import { colors, space } from '@/theme/tokens';
 
 // Where the API sends the owner back after paying in Wompi (docs/arquitectura.md §6).
@@ -105,13 +106,6 @@ function bookingSteps(booking: BookingResponse): string[] {
 
 function petNames(booking: BookingResponse): string {
   return joinNames(booking.pets.map((pet) => pet.name));
-}
-
-/** "Lun 19 oct, de 9:00 a 10:00", or "Noche del Lun 19 oct" for an overnight stay. */
-function when(booking: BookingResponse): string {
-  return booking.serviceCode === 'OVERNIGHT_STAY'
-    ? `Noche del ${formatDay(booking.startsAt)}`
-    : formatRange(booking.startsAt, booking.endsAt);
 }
 
 function Waiting({ booking }: { booking: BookingResponse }) {
@@ -210,7 +204,7 @@ function Pay({ booking, onPaid }: { booking: BookingResponse; onPaid: () => void
           <Text variant="bodyStrong">
             {name} aceptó cuidar a {petNames(booking)}
           </Text>
-          <Text variant="caption">{when(booking)}</Text>
+          <Text variant="caption">{formatWhen(booking)}</Text>
         </View>
       </Animated.View>
 
@@ -369,7 +363,7 @@ function Summary({ booking, children }: { booking: BookingResponse; children: Re
         </View>
       </SummaryRow>
       <SummaryRow icon="calendar">
-        <Text>{when(booking)}</Text>
+        <Text>{formatWhen(booking)}</Text>
       </SummaryRow>
       {children}
     </Card>
