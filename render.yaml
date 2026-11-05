@@ -7,6 +7,7 @@ services:
     name: pawie-api
     runtime: node
     plan: free
+    region: ohio
     autoDeploy: false
     # Node comes from .node-version. The dev dependencies (Nest CLI, Prisma) are needed to build.
     buildCommand: >-
@@ -62,6 +63,7 @@ services:
 keyValue:
   - name: pawie-redis
     plan: free
+    region: ohio
     # BullMQ needs Redis to never evict its keys
     maxmemoryPolicy: noeviction
     # Internal connections only: the API reaches it from inside Render
