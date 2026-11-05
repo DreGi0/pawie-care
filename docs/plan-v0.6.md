@@ -410,7 +410,14 @@ Lo de la etapa 10 y la 11 se decide al llegar a ellas; aquí solo queda anotado 
 1. **App web:** sesión, archivos, marco, confirmaciones, retorno del pago (con el contrato regenerado) y la revisión de las pantallas.
 2. **Publicación:** `render.yaml`, el job de deploy, el seed del cuidador, el workflow de aprobación y los docs.
 
-**Resultado del spike de Neon:** pendiente (2026-11-04). No se corrió porque falta la variable de entorno `NEON_DIRECT_URL` en el shell de desarrollo (la URL directa de Neon, sin `-pooler`). Para correrlo: `docker run --rm postgres:18 psql "$NEON_DIRECT_URL" -c "CREATE EXTENSION IF NOT EXISTS btree_gist; SELECT version(), uuidv7();"` y después `prisma migrate deploy` con esa URL como `DATABASE_URL`, sin guardarla en ningún archivo.
+**Resultado del spike de Neon (2026-11-05): pasó, la etapa se desbloquea.** Se corrió contra una base vacía de Neon, con la URL directa (sin `-pooler`) solo como variable de entorno del proceso:
+
+- **PostgreSQL 18.6.** `uuidv7()` funciona y `CREATE EXTENSION btree_gist` da la versión 1.8.
+- **Migraciones:** `prisma migrate deploy` aplicó las 7 sin errores, y quedaron 33 tablas. Están los 35 `CHECK`, la exclusión `booking_slots_no_overlap` (RN-CUI-15), los 3 índices parciales y `payments_one_approved_per_booking_key`.
+- **Driver de la API (`pg`):** conecta con la URL tal como la da Neon (`sslmode=require&channel_binding=require`) en ~1,1 s. `pg` avisa que `sslmode=require` hoy equivale a `verify-full` y que va a cambiar de significado en `pg` 9: en la URL de la demo se escribe `sslmode=verify-full` para que no cambie.
+- **Arranque en frío:** no se midió. La base ya estaba activa por las consultas anteriores del mismo spike, así que el 1,1 s no es el peor caso. Queda `connect_timeout=15` como se planeó.
+- **Estado:** la base de Neon queda con el esquema aplicado y sin datos. El seed lo corre el job `deploy` (o a mano) cuando se publique.
+- **Pendiente de revisar al desplegar:** que la URL del pooler (`DATABASE_URL`) funcione con el adaptador de Prisma, porque Prisma con PgBouncer en modo transacción tiene límites (no se probó aquí: el spike usó solo la directa).
 
 **Terminado cuando:**
 
@@ -555,17 +562,17 @@ Lo de la etapa 10 y la 11 se decide al llegar a ellas; aquí solo queda anotado 
 
 Las que bloquean una etapa están marcadas.
 
-| Decisión                              | Etapa                               | Valor provisional                                                                    |
-| ------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------ |
-| Comisión al cuidador: 0% o 10%        | 9a y 9b                             | 0% (RN-PRE-04)                                                                       |
-| Rangos de visita y pernocta por nivel | 6                                   | Los de RN-PRE-01                                                                     |
-| Umbrales de los niveles               | 6                                   | Los de RN-NIV-02                                                                     |
-| Documentos exactos de antecedentes    | 9a                                  | DUI por los dos lados, selfie y antecedentes o solvencia                             |
-| Contenido del curso de bienvenida     | 9a                                  | 4 módulos de ejemplo marcados `TODO(contenido)`; el texto final lo escribe el equipo |
-| URL para compartir el perfil          | Eventos de la 11                    | `https://pawieapp.com`                                                               |
-| Clave de Google Maps para Android     | 10 (**bloquea** el mapa en Android) | Ninguno                                                                              |
-| Base de la demo: Neon con PG 18       | Demo pública (**bloquea**)          | Neon, si el spike confirma PostgreSQL 18 y `btree_gist`                              |
-| Tarjeta para R2 y Render              | Demo pública                        | Se confirma al crear las cuentas                                                     |
-| Mantener despierta la API con un ping | Demo pública                        | Sí, cada 10 minutos (opcional)                                                       |
-| Número de WhatsApp Business           | 12a                                 | Un número de prueba en el seed                                                       |
-| Contenido del asistente               | 12a (**bloquea**)                   | Ninguno: lo escribe el equipo                                                        |
+| Decisión                              | Etapa                               | Valor provisional                                                                      |
+| ------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------- |
+| Comisión al cuidador: 0% o 10%        | 9a y 9b                             | 0% (RN-PRE-04)                                                                         |
+| Rangos de visita y pernocta por nivel | 6                                   | Los de RN-PRE-01                                                                       |
+| Umbrales de los niveles               | 6                                   | Los de RN-NIV-02                                                                       |
+| Documentos exactos de antecedentes    | 9a                                  | DUI por los dos lados, selfie y antecedentes o solvencia                               |
+| Contenido del curso de bienvenida     | 9a                                  | 4 módulos de ejemplo marcados `TODO(contenido)`; el texto final lo escribe el equipo   |
+| URL para compartir el perfil          | Eventos de la 11                    | `https://pawieapp.com`                                                                 |
+| Clave de Google Maps para Android     | 10 (**bloquea** el mapa en Android) | Ninguno                                                                                |
+| Base de la demo: Neon con PG 18       | Demo pública                        | Neon. El spike del 2026-11-05 confirmó PostgreSQL 18.6, `btree_gist` y las migraciones |
+| Tarjeta para R2 y Render              | Demo pública                        | Se confirma al crear las cuentas                                                       |
+| Mantener despierta la API con un ping | Demo pública                        | Sí, cada 10 minutos (opcional)                                                         |
+| Número de WhatsApp Business           | 12a                                 | Un número de prueba en el seed                                                         |
+| Contenido del asistente               | 12a (**bloquea**)                   | Ninguno: lo escribe el equipo                                                          |
