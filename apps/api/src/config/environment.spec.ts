@@ -89,6 +89,15 @@ describe('validateEnvironment', () => {
     );
   });
 
+  it('treats an empty demo caregiver password as not set', () => {
+    expect(
+      validateEnvironment({ ...REQUIRED, DEMO_CAREGIVER_PASSWORD: '' }).DEMO_CAREGIVER_PASSWORD,
+    ).toBeUndefined();
+    expect(() => validateEnvironment({ ...REQUIRED, DEMO_CAREGIVER_PASSWORD: 'corta' })).toThrow(
+      /DEMO_CAREGIVER_PASSWORD/,
+    );
+  });
+
   it('takes a Salvadoran phone for the demo caregivers, or none', () => {
     expect(
       validateEnvironment({ ...REQUIRED, DEMO_CAREGIVER_PHONE: '' }).DEMO_CAREGIVER_PHONE,

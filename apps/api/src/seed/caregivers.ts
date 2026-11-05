@@ -16,6 +16,11 @@ export interface DemoCaregiver {
   birthDate: string;
   bio: string;
   /**
+   * The one demo caregiver who can sign in, with DEMO_CAREGIVER_PASSWORD. The others have
+   * no password.
+   */
+  signsIn?: true;
+  /**
    * Months since the caregiver got each certification, fewer than its validity so it is
    * valid today. With the ratings and the completed services, they set the level
    * (RN-NIV-02): the comment above each caregiver says which one it is built for.
@@ -62,7 +67,7 @@ const { LARGE_DOGS, CATS, PUPPIES, SENIOR_PETS, DIFFICULT_BEHAVIOR } = Caregiver
  * They mix the four profiles (⭐, vet student, both and neither). Gabriela, Diego and
  * Sofía don't do overnight stays, and Andrea, María José and Sofía don't do walks
  * (RN-SER-05). They cover the four levels (RN-NIV-02, with the initial requirements):
- * Valeria is Súper Cuidador; Carlos, Gabriela and Ricardo are Pro; Sofía is Nuevo; the
+ * Valeria is Súper Cuidador and the one who signs in (`signsIn`); Carlos, Gabriela and Ricardo are Pro; Sofía is Nuevo; the
  * rest are Confiable. Emails use example.com, a reserved domain.
  */
 export const DEMO_CAREGIVERS: DemoCaregiver[] = [
@@ -71,6 +76,7 @@ export const DEMO_CAREGIVERS: DemoCaregiver[] = [
     firstName: 'Valeria',
     lastName: 'Martínez',
     birthDate: '2002-04-11',
+    signsIn: true,
     bio: 'Estudiante de último año de Medicina Veterinaria. Me especializo en perros mayores y en recuperaciones post-operatorias.',
     certifications: { SPECIAL_CARE: 5, FIRST_AID: 3, CATS: 2 },
     skills: [SENIOR_PETS, CATS],

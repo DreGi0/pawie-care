@@ -121,10 +121,11 @@ Next.js 16 (App Router, React 19), Tailwind CSS 4 y shadcn/ui, con el mismo `pac
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Entorno local        | Docker Compose con PostgreSQL 18, Redis 8, Mailpit (para ver los correos) y SeaweedFS 4.48 como almacenamiento compatible con S3. SeaweedFS corre en modo `weed mini`, que crea la llave de acceso y el bucket. Se eligió porque MinIO archivó su edición comunitaria en 2026 |
 | Webhooks en local    | Túnel con cloudflared, para que Wompi pueda llegar a la máquina de quien desarrolla                                                                                                                                                                                           |
-| Backend de la demo   | Railway o Render, con la API, PostgreSQL y Redis administrados                                                                                                                                                                                                                |
-| Archivos             | Cloudflare R2 (compatible con S3)                                                                                                                                                                                                                                             |
+| Backend de la demo   | Render (API, plan gratis) con Neon (PostgreSQL 18) y Render Key Value (Redis). La API, la base y Redis se duermen o se reinician según el plan; ver el plan v0.6, etapa Demo pública                                                                                          |
+| Archivos             | Cloudflare R2 (compatible con S3). En la demo, el bucket `pawie-demo-uploads` borra las subidas a los 7 días; el seed guarda lo suyo en `seed/`                                                                                                                               |
+| App web de la demo   | Cloudflare Pages, con el build de `expo export -p web` y `EXPO_PUBLIC_DEMO=true`                                                                                                                                                                                              |
 | Correo               | Resend                                                                                                                                                                                                                                                                        |
-| Integración continua | GitHub Actions: lint, revisión de tipos, pruebas y build                                                                                                                                                                                                                      |
+| Integración continua | GitHub Actions: lint, revisión de tipos, pruebas y build. Un push a `main` con el CI en verde publica la demo (job `deploy`, Environment `demo`)                                                                                                                              |
 
 ## 4. Decisiones de arquitectura
 
@@ -235,10 +236,10 @@ Confirmada contra la [documentación de Wompi El Salvador](https://docs.wompi.sv
 
 ## 7. Entornos y demo
 
-| Entorno | Backend                                                 | Clientes                                                                                                         |
-| ------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Local   | Docker Compose, con túnel cloudflared para los webhooks | Emulador de Android: la API está en `http://10.0.2.2:<puerto>`. Simulador de iOS: en `http://localhost:<puerto>` |
-| Demo    | Railway o Render, con URL pública                       | La app en los emuladores apunta a la API desplegada                                                              |
+| Entorno | Backend                                                                            | Clientes                                                                                                         |
+| ------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Local   | Docker Compose, con túnel cloudflared para los webhooks                            | Emulador de Android: la API está en `http://10.0.2.2:<puerto>`. Simulador de iOS: en `http://localhost:<puerto>` |
+| Demo    | Render, Neon, Render Key Value y R2, con URL pública. Se publica sola desde `main` | La web en Cloudflare Pages; la app en los emuladores también puede apuntar a la API desplegada                   |
 
 - **¿Por qué desplegar el backend para la demo?** Wompi necesita una URL pública para enviar webhooks, y así quien prueba en Android (Windows) y quien prueba en iOS (Mac) ven los mismos datos.
 - **Android:** emulador de Android Studio en Windows, con `npx expo run:android` para la development build.

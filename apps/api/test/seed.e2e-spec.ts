@@ -15,6 +15,7 @@ import { storageForTests } from './storage.js';
 const NOW = new Date('2026-10-17T18:00:00Z');
 const TODAY = new Date('2026-10-17');
 const DEMO_OWNER_PASSWORD = 'contraseña-de-la-demo';
+const DEMO_CAREGIVER_PASSWORD = 'contraseña-del-cuidador';
 const DEMO_CAREGIVER_PHONE = '+503 2200 0000';
 const PHOTO = Buffer.from('una imagen genérica');
 
@@ -42,6 +43,7 @@ describe('seed', () => {
     const options = {
       now: NOW,
       demoOwnerPassword: DEMO_OWNER_PASSWORD,
+      demoCaregiverPassword: DEMO_CAREGIVER_PASSWORD,
       demoCaregiverPhone: DEMO_CAREGIVER_PHONE,
       media: { storage, directory: await mediaDirectory() },
     };
@@ -126,6 +128,21 @@ describe('seed', () => {
     expect(owner.addresses).toMatchObject([{ label: 'Casa', district: { slug: 'san-salvador' } }]);
   });
 
+  it('lets one approved demo caregiver sign in with DEMO_CAREGIVER_PASSWORD (RN-CUI-03)', async () => {
+    const withPassword = (await caregivers()).filter(({ user }) => user.passwordHash !== null);
+
+    expect(secondRun.demoCaregiver).toBe('valeria.martinez@example.com');
+    expect(withPassword).toHaveLength(1);
+    expect(withPassword[0]).toMatchObject({
+      status: 'APPROVED',
+      user: { email: 'valeria.martinez@example.com', roles: ['CAREGIVER'] },
+    });
+    expect(withPassword[0].welcomeCoursePassedAt).not.toBeNull();
+    expect(
+      await verifyPassword(DEMO_CAREGIVER_PASSWORD, withPassword[0].user.passwordHash ?? ''),
+    ).toBe(true);
+  });
+
   it('gives the demo caregivers the phone of DEMO_CAREGIVER_PHONE (RN-CTA-04)', async () => {
     const phones = (await caregivers()).map(({ user }) => user.phone);
 
@@ -139,7 +156,7 @@ describe('seed', () => {
   // some 320 queries one after another (the settings with their history, ten caregivers,
   // the catalog and the course), and each one waits longer.
   it(
-    'skips the demo owner and the caregivers phone when their variables are not set',
+    'skips the demo owner, the caregiver password and the phone when their variables are not set',
     { timeout: 30_000 },
     async () => {
       const empty = await createTestDatabase();
@@ -148,7 +165,12 @@ describe('seed', () => {
           now: NOW,
         });
 
-        expect(summary).toMatchObject({ demoOwner: null, caregiverPhone: null });
+        expect(summary).toMatchObject({
+          demoOwner: null,
+          demoCaregiver: null,
+          caregiverPhone: null,
+        });
+        expect(await empty.prisma.user.count({ where: { passwordHash: { not: null } } })).toBe(0);
         expect(await empty.prisma.user.count({ where: { email: 'demo@example.com' } })).toBe(0);
         expect(await empty.prisma.user.count({ where: { phone: { not: null } } })).toBe(0);
       } finally {
@@ -264,7 +286,7 @@ describe('seed', () => {
     expect(await db.prisma.setting.count()).toBe(SETTING_KEYS.length);
   });
 
-  it('loads about ten approved caregivers with instant booking and the welcome course, who cannot sign in', async () => {
+  it('loads about ten approved caregivers with instant booking and the welcome course, and only Valeria can sign in', async () => {
     const all = await caregivers();
 
     expect(all.length).toBeGreaterThanOrEqual(8);
@@ -276,7 +298,7 @@ describe('seed', () => {
       });
       expect(welcomeCoursePassedAt).not.toBeNull();
       expect(user.roles).toEqual(['CAREGIVER']);
-      expect(user.passwordHash).toBeNull();
+      expect(user.passwordHash === null).toBe(user.email !== 'valeria.martinez@example.com');
     }
   });
 
