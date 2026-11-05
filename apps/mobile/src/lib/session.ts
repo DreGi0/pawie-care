@@ -1,8 +1,9 @@
 import { ApiError, authLogout, type AppMode, type AuthSession } from '@pawie/api-client';
 import { useSyncExternalStore } from 'react';
 
-import { apiBaseUrl } from './config';
+import { apiBaseUrl, isDemo } from './config';
 import { deleteRefreshToken, readRefreshToken, writeRefreshToken } from './session-storage';
+import { wakeServer } from './wake-server';
 
 // The access token lives in memory only. The refresh token goes to the phone's secure
 // storage (Keychain or Keystore), so the session survives closing the app. Where it lives is
@@ -76,8 +77,36 @@ export async function signOut(): Promise<void> {
   if (token) authLogout({ refreshToken: token }).catch(() => {});
 }
 
+/** The public demo's API wakes up before the session is restored (wake-server.ts). */
+export type Wake = 'none' | 'waking' | 'unreachable';
+let wake: Wake = 'none';
+
+export function useWake(): Wake {
+  return useSyncExternalStore(subscribeSession, () => wake);
+}
+
+function setWake(next: Wake) {
+  wake = next;
+  listeners.forEach((listener) => listener());
+}
+
+/** "Reintentar" after the server stayed unreachable. */
+export function retryStartup(): void {
+  setWake('waking');
+  void restoreSession();
+}
+
 /** At startup: trades the stored refresh token for a new access token. */
 export async function restoreSession(): Promise<void> {
+  if (isDemo) {
+    // Render's free plan sleeps; customFetch gives up at 15 s, which is less than it takes.
+    const awake = await wakeServer({ baseUrl: apiBaseUrl, onSlow: () => setWake('waking') });
+    if (awake === 'unreachable') {
+      setWake('unreachable');
+      return;
+    }
+    setWake('none');
+  }
   try {
     refreshToken = await readRefreshToken();
     if (refreshToken) await renew();
