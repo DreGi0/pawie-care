@@ -69,9 +69,16 @@ test('wakeServer: a request that never answers ends as unreachable at the deadli
   assert.equal(await wakeServer({ ...fast, fetch }), 'unreachable');
 });
 
-test('wakeServer: a network error is unreachable right away', async () => {
+test('wakeServer: a network error and then a 200 is ok', async () => {
+  const fetch = fakeFetch(['network-error', 200]);
+
+  assert.equal(await wakeServer({ ...fast, fetch }), 'ok');
+  assert.equal(fetch.calls.length, 2);
+});
+
+test('wakeServer: a lasting network error ends as unreachable at the deadline', async () => {
   const fetch = fakeFetch(['network-error']);
 
-  assert.equal(await wakeServer({ ...fast, timeoutMs: 1000, fetch }), 'unreachable');
-  assert.equal(fetch.calls.length, 1);
+  assert.equal(await wakeServer({ ...fast, fetch }), 'unreachable');
+  assert.ok(fetch.calls.length > 1);
 });

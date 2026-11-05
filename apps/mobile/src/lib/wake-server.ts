@@ -22,7 +22,9 @@ export type WakeOptions = {
  *
  * Any status below 502 means the server is up, even a 401. A 502, 503 or 504 is asked again
  * every few seconds until the deadline: the proxy of Render and our API (Redis down) answer
- * the same, so a lasting 503 ends as unreachable. A network error is unreachable right away.
+ * the same, so a lasting 503 ends as unreachable. A network error is asked again the same way,
+ * because in a browser the proxy's 502 or 503 has no CORS headers and reaches fetch as one.
+ * Only the deadline ends as unreachable.
  */
 export async function wakeServer({
   baseUrl,
@@ -36,14 +38,17 @@ export async function wakeServer({
   const slowTimer = setTimeout(() => onSlow?.(), slowAfterMs);
   try {
     while (!deadline.aborted) {
-      const response = await doFetch(`${baseUrl.replace(/\/+$/, '')}/v1/health`, {
-        signal: deadline,
-      });
-      if (response.status < 502) return 'ok';
+      try {
+        const response = await doFetch(`${baseUrl.replace(/\/+$/, '')}/v1/health`, {
+          signal: deadline,
+        });
+        if (response.status < 502) return 'ok';
+      } catch {
+        // A network error counts as a 502: in a browser, the proxy's 502 or 503 has no CORS
+        // headers, so fetch throws instead of returning the status.
+      }
       await pause(retryEveryMs, deadline);
     }
-    return 'unreachable';
-  } catch {
     return 'unreachable';
   } finally {
     clearTimeout(slowTimer);
@@ -52,6 +57,8 @@ export async function wakeServer({
 
 function pause(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
+    // An abort that already happened never fires its event again.
+    if (signal.aborted) return resolve();
     const timer = setTimeout(done, ms);
     signal.addEventListener('abort', done, { once: true });
     function done() {
