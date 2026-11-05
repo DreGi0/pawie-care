@@ -21,26 +21,27 @@ Las variables de entorno se validan al arrancar, en [src/config/environment.ts](
 
 Las tres de Wompi van juntas: si falta una, la API no arranca. Sin ninguna, los pagos quedan apagados y el resto funciona igual.
 
-| Variable                                                | Para qué                                                                                                              | Por defecto   |
-| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `NODE_ENV`                                              | `development`, `test` o `production`. En `development` los logs son legibles                                          | `development` |
-| `PORT`                                                  | Puerto HTTP                                                                                                           | `3000`        |
-| `DATABASE_URL`                                          | Conexión con PostgreSQL                                                                                               | Obligatoria   |
-| `CORS_ORIGINS`                                          | Orígenes del navegador permitidos, separados por comas. La app nativa no usa CORS                                     | Ninguno       |
-| `LOG_LEVEL`                                             | Nivel de los logs de pino                                                                                             | `info`        |
-| `TRUST_PROXY`                                           | Cantidad de proxies delante de la API (1 en Railway o Render)                                                         | `0`           |
-| `JWT_ACCESS_SECRET`                                     | Firma los tokens de acceso. Mínimo 32 caracteres, y uno distinto en cada entorno desplegado                           | Obligatoria   |
-| `JWT_ACCESS_TTL_SECONDS`                                | Duración del token de acceso, en segundos                                                                             | `900`         |
-| `REFRESH_TOKEN_TTL_DAYS`                                | Duración del refresh token, en días                                                                                   | `30`          |
-| `REDIS_URL`                                             | Redis de las colas de BullMQ: los plazos de las reservas y la limpieza                                                | Obligatoria   |
-| `DEMO_OWNER_PASSWORD`                                   | Contraseña del dueño de demo que crea el seed. Sin ella, el seed no lo crea                                           | Ninguna       |
-| `DEMO_CAREGIVER_PHONE`                                  | Un teléfono del equipo que el seed les pone a los cuidadores de demo. Sin él, no tienen teléfono                      | Ninguno       |
-| `S3_ENDPOINT`                                           | Almacenamiento compatible con S3: el SeaweedFS de `docker-compose.yml` en local y Cloudflare R2 en la demo desplegada | Obligatoria   |
-| `S3_PUBLIC_ENDPOINT`                                    | Host de las URLs firmadas que usan las apps. En el emulador de Android es `http://10.0.2.2:8333`                      | `S3_ENDPOINT` |
-| `S3_REGION`                                             | Región. R2 usa `auto` y SeaweedFS acepta cualquiera                                                                   | `auto`        |
-| `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Bucket privado y su llave de acceso                                                                                   | Obligatorias  |
-| `WOMPI_APP_ID`, `WOMPI_API_SECRET`                      | App ID y API Secret del negocio en Wompi. El secreto también firma los webhooks                                       | Ninguno       |
-| `PUBLIC_API_URL`                                        | URL HTTPS pública de la API, a la que Wompi manda el webhook y devuelve al dueño. En local, el túnel de cloudflared   | Ninguna       |
+| Variable                                                | Para qué                                                                                                                                                                                | Por defecto   |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `NODE_ENV`                                              | `development`, `test` o `production`. En `development` los logs son legibles                                                                                                            | `development` |
+| `PORT`                                                  | Puerto HTTP                                                                                                                                                                             | `3000`        |
+| `DATABASE_URL`                                          | Conexión con PostgreSQL                                                                                                                                                                 | Obligatoria   |
+| `CORS_ORIGINS`                                          | Orígenes del navegador permitidos, separados por comas. La app nativa no usa CORS                                                                                                       | Ninguno       |
+| `LOG_LEVEL`                                             | Nivel de los logs de pino                                                                                                                                                               | `info`        |
+| `TRUST_PROXY`                                           | Cantidad de proxies delante de la API (1 en Railway o Render)                                                                                                                           | `0`           |
+| `JWT_ACCESS_SECRET`                                     | Firma los tokens de acceso. Mínimo 32 caracteres, y uno distinto en cada entorno desplegado                                                                                             | Obligatoria   |
+| `JWT_ACCESS_TTL_SECONDS`                                | Duración del token de acceso, en segundos                                                                                                                                               | `900`         |
+| `REFRESH_TOKEN_TTL_DAYS`                                | Duración del refresh token, en días                                                                                                                                                     | `30`          |
+| `REDIS_URL`                                             | Redis de las colas de BullMQ: los plazos de las reservas y la limpieza                                                                                                                  | Obligatoria   |
+| `DEMO_OWNER_PASSWORD`                                   | Contraseña del dueño de demo que crea el seed. Sin ella, el seed no lo crea                                                                                                             | Ninguna       |
+| `DEMO_CAREGIVER_PHONE`                                  | Un teléfono del equipo que el seed les pone a los cuidadores de demo. Sin él, no tienen teléfono                                                                                        | Ninguno       |
+| `S3_ENDPOINT`                                           | Almacenamiento compatible con S3: el SeaweedFS de `docker-compose.yml` en local y Cloudflare R2 en la demo desplegada                                                                   | Obligatoria   |
+| `S3_PUBLIC_ENDPOINT`                                    | Host de las URLs firmadas que usan las apps. En el emulador de Android es `http://10.0.2.2:8333`                                                                                        | `S3_ENDPOINT` |
+| `S3_REGION`                                             | Región. R2 usa `auto` y SeaweedFS acepta cualquiera                                                                                                                                     | `auto`        |
+| `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Bucket privado y su llave de acceso                                                                                                                                                     | Obligatorias  |
+| `WOMPI_APP_ID`, `WOMPI_API_SECRET`                      | App ID y API Secret del negocio en Wompi. El secreto también firma los webhooks                                                                                                         | Ninguno       |
+| `PUBLIC_API_URL`                                        | URL HTTPS pública de la API, a la que Wompi manda el webhook y devuelve al dueño. En local, el túnel de cloudflared                                                                     | Ninguna       |
+| `PUBLIC_WEB_URL`                                        | URL de la app web (la demo pública). El dueño que paga desde el navegador vuelve a `<URL>/payment/result`. Sin ella, pagar desde la web responde 503. En local, `http://localhost:8081` | Ninguna       |
 
 ## Convenciones
 
@@ -254,7 +255,7 @@ La respuesta trae `responseDueAt` mientras está `REQUESTED` y `paymentDueAt` mi
    - Si ya hay un pago `PENDING`, devuelve el mismo enlace, también a dos toques a la vez.
 2. **El dueño paga:** la app abre la página con `WebBrowser.openAuthSessionAsync(checkoutUrl, 'pawie://payment/result')`.
 3. **Wompi avisa:** manda el webhook a `POST /v1/payments/webhook`, que confirma la reserva (ver abajo).
-4. **El dueño vuelve a la app:** Wompi lo manda a `GET /v1/payments/return`, que responde 302 a `pawie://payment/result?bookingId=…&paymentId=…`. Esa ruta no cambia nada.
+4. **El dueño vuelve a la app:** Wompi lo manda a `GET /v1/payments/return`, que responde 302 a `pawie://payment/result?bookingId=…&paymentId=…`. Esa ruta no cambia nada. Si el pago se pidió desde la web (`POST /v1/bookings/:id/payments?client=web`), el enlace usa `GET /v1/payments/return/web` (sin query, porque Wompi agrega la suya) y esa ruta responde 302 a `<PUBLIC_WEB_URL>/payment/result?bookingId=…&paymentId=…`; la app web navega a la página de pago en la misma pestaña.
 5. **La app espera la confirmación:** consulta `GET /v1/bookings/:id` hasta que la reserva está `CONFIRMED`. Su campo `payment` dice en qué va el pago:
 
 | `payment.status` | Qué significa                                                                                                             |

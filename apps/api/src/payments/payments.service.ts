@@ -15,16 +15,20 @@ import type { WompiSettings } from '../config/environment.js';
 import { BookingStatus, PaymentProvider, PaymentStatus } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { toBookingPayment } from './booking-payment.js';
-import type { BookingPayment } from './payments.dto.js';
+import { type BookingPayment, PaymentClient } from './payments.dto.js';
 import { type WompiApi, WompiClient, WompiError } from './wompi.client.js';
 import { WOMPI_SETTINGS } from './wompi-settings.js';
 
 /** Routes Wompi calls, under the API's public URL (PUBLIC_API_URL). */
 export const PAYMENT_WEBHOOK_PATH = 'payments/webhook';
 export const PAYMENT_RETURN_PATH = 'payments/return';
+/** The web's own return route: no query, because Wompi adds its parameters to the URL it gets. */
+export const PAYMENT_WEB_RETURN_PATH = `${PAYMENT_RETURN_PATH}/web`;
 
 /** The app's screen after paying. expo-web-browser closes the payment page when it gets here. */
 export const APP_PAYMENT_RESULT_URL = 'pawie://payment/result';
+/** The same screen in the web build, which has no `pawie://`; it lives under PUBLIC_WEB_URL. */
+export const WEB_PAYMENT_RESULT_PATH = '/payment/result';
 
 /**
  * Creating the link holds a lock on the booking while it calls Wompi, which can take a
@@ -57,9 +61,14 @@ export class PaymentsService implements OnModuleInit {
    * while it waits for payment (RN-RES-07). While a link is pending, paying again
    * returns the same one: it takes a single payment and expires with the deadline.
    */
-  async start(ownerId: string, bookingId: string): Promise<BookingPayment> {
+  async start(
+    ownerId: string,
+    bookingId: string,
+    client: PaymentClient = PaymentClient.APP,
+  ): Promise<BookingPayment> {
     const { settings } = this;
-    if (!settings) {
+    // Paying from the web needs the web's URL to come back to.
+    if (!settings || (client === PaymentClient.WEB && !settings.publicWebUrl)) {
       throw new ServiceUnavailableException({
         errorCode: 'PAYMENTS_UNAVAILABLE',
         message: 'Los pagos no están disponibles en este momento. Intenta de nuevo más tarde.',
@@ -109,7 +118,10 @@ export class PaymentsService implements OnModuleInit {
             reference: payment.id,
             amountCents: payment.amountCents,
             productName,
-            redirectUrl: `${settings.publicApiUrl}/v1/${PAYMENT_RETURN_PATH}`,
+            // The link keeps this URL for good, with no query of ours: Wompi adds its own.
+            redirectUrl: `${settings.publicApiUrl}/v1/${
+              client === PaymentClient.WEB ? PAYMENT_WEB_RETURN_PATH : PAYMENT_RETURN_PATH
+            }`,
             webhookUrl: `${settings.publicApiUrl}/v1/${PAYMENT_WEBHOOK_PATH}`,
             expiresAt: dueAt,
           });
@@ -140,7 +152,10 @@ export class PaymentsService implements OnModuleInit {
    * when the reference is one of ours. It changes nothing: only the webhook confirms a
    * booking (RN-PAG-02), so the app waits for it by reading the booking.
    */
-  async appReturnUrl(reference: string | undefined): Promise<string> {
+  async appReturnUrl(
+    reference: string | undefined,
+    client: PaymentClient = PaymentClient.APP,
+  ): Promise<string> {
     const payment =
       reference && isUUID(reference)
         ? await this.prisma.payment.findUnique({
@@ -148,7 +163,8 @@ export class PaymentsService implements OnModuleInit {
             select: { id: true, bookingId: true },
           })
         : null;
-    const url = new URL(APP_PAYMENT_RESULT_URL);
+    const webUrl = client === PaymentClient.WEB ? this.settings?.publicWebUrl : null;
+    const url = new URL(webUrl ? `${webUrl}${WEB_PAYMENT_RESULT_PATH}` : APP_PAYMENT_RESULT_URL);
     if (payment) {
       url.searchParams.set('bookingId', payment.bookingId);
       url.searchParams.set('paymentId', payment.id);

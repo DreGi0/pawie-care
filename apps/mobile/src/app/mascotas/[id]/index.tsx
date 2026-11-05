@@ -8,11 +8,12 @@ import {
 } from '@pawie/api-client';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
+import { useDialogs } from '@/components/ConfirmDialog';
 import { Icon } from '@/components/Icon';
 import { IconButton } from '@/components/IconButton';
 import { PetLoader } from '@/components/PetLoader';
@@ -32,6 +33,7 @@ export default function PetProfileScreen() {
 
 function PetProfile({ pet }: { pet: PetDetail }) {
   const catalog = useCatalogGet();
+  const { confirm, notice } = useDialogs();
   const removeVaccination = usePetsRemoveVaccination();
   const taskName = (need: CareNeedResponse) =>
     catalog.data?.careTasks.find(({ code }) => code === need.task)?.name ?? '';
@@ -62,22 +64,23 @@ function PetProfile({ pet }: { pet: PetDetail }) {
     { label: 'Medicamentos que toma', value: pet.medications },
   ];
 
-  const confirmRemoveVaccination = (vaccination: VaccinationResponse) =>
-    Alert.alert(`¿Borrar ${vaccination.name}?`, 'La vacuna sale de su ficha.', [
-      { text: 'Cancelar', style: 'cancel' },
+  const confirmRemoveVaccination = async (vaccination: VaccinationResponse) => {
+    const confirmed = await confirm({
+      title: `¿Borrar ${vaccination.name}?`,
+      message: 'La vacuna sale de su ficha.',
+      cancelLabel: 'Cancelar',
+      confirmLabel: 'Borrar',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    removeVaccination.mutate(
+      { petId: pet.id, vaccinationId: vaccination.id },
       {
-        text: 'Borrar',
-        style: 'destructive',
-        onPress: () =>
-          removeVaccination.mutate(
-            { petId: pet.id, vaccinationId: vaccination.id },
-            {
-              onSuccess: () => petChanged(pet.id),
-              onError: (error) => Alert.alert('No pudimos borrarla', errorMessage(error)),
-            },
-          ),
+        onSuccess: () => petChanged(pet.id),
+        onError: (error) => void notice('No pudimos borrarla', errorMessage(error)),
       },
-    ]);
+    );
+  };
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>

@@ -2612,7 +2612,7 @@
     },
     "/v1/bookings/{bookingId}/payments": {
       "post": {
-        "description": "RN-PAG-02: crea el enlace de pago de Wompi por el total de la reserva, que la app abre con expo-web-browser. Solo el dueño, mientras la reserva está PENDING_PAYMENT y antes de `paymentDueAt` (RN-RES-07). Si ya hay un enlace pendiente, devuelve el mismo: acepta un solo pago y vence con el plazo. La reserva se confirma cuando llega el aviso de Wompi, no cuando el dueño vuelve a la app.",
+        "description": "RN-PAG-02: crea el enlace de pago de Wompi por el total de la reserva, que la app abre con expo-web-browser (la web de la demo navega a él en la misma pestaña, con `client=web`). Solo el dueño, mientras la reserva está PENDING_PAYMENT y antes de `paymentDueAt` (RN-RES-07). Si ya hay un enlace pendiente, devuelve el mismo: acepta un solo pago y vence con el plazo. La reserva se confirma cuando llega el aviso de Wompi, no cuando el dueño vuelve a la app.",
         "operationId": "Payments_start",
         "parameters": [
           {
@@ -2621,6 +2621,15 @@
             "in": "path",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "client",
+            "required": false,
+            "in": "query",
+            "description": "`app`: Wompi devuelve al dueño a la app móvil (`pawie://`). `web`: lo devuelve a la app web de la demo, cuya URL debe estar configurada en la API.",
+            "schema": {
+              "$ref": "#/components/schemas/PaymentClient"
             }
           }
         ],
@@ -2666,7 +2675,7 @@
             }
           },
           "503": {
-            "description": "`PAYMENTS_UNAVAILABLE`: la API no tiene configurado Wompi.",
+            "description": "`PAYMENTS_UNAVAILABLE`: la API no tiene configurado Wompi, o se pidió `client=web` y no tiene la URL de la web (`PUBLIC_WEB_URL`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -6427,6 +6436,13 @@
           "bio",
           "districts",
           "prices"
+        ]
+      },
+      "PaymentClient": {
+        "type": "string",
+        "enum": [
+          "app",
+          "web"
         ]
       },
       "CourseQuestionResponse": {

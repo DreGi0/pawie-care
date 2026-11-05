@@ -113,8 +113,12 @@ describe('payments (RN-PAG)', () => {
           .expect(201);
         return body as BookingBody;
       },
-      pay: (bookingId: string) =>
-        api.http().post(`/v1/bookings/${bookingId}/payments`).auth(token, { type: 'bearer' }),
+      pay: (bookingId: string, client?: string) =>
+        api
+          .http()
+          .post(`/v1/bookings/${bookingId}/payments`)
+          .query(client ? { client } : {})
+          .auth(token, { type: 'bearer' }),
       get: async (bookingId: string) =>
         (
           await api
@@ -194,6 +198,26 @@ describe('payments (RN-PAG)', () => {
         createdAt: payment.createdAt.toISOString(),
       });
       expect((await daniela.get(booking.id)).payment).toEqual(body);
+    });
+
+    it('asks Wompi to come back through the web redirect when paying from the web (RN-PAG-02)', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+
+      const { body } = await daniela.pay(booking.id, 'web').expect(200);
+
+      expect(wompi.linkOf(body.id)).toMatchObject({
+        redirectUrl: 'https://api.pawie.test/v1/payments/return/web',
+      });
+    });
+
+    it('rejects a client that does not exist', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+
+      const { body } = await daniela.pay(booking.id, 'desktop').expect(400);
+
+      expect(body.details).toBeDefined();
     });
 
     it('returns the same link while it is pending, even to two taps at once', async () => {
@@ -621,6 +645,28 @@ describe('payments (RN-PAG)', () => {
       expect(await bookingRow(booking.id)).toEqual(before);
     });
 
+    it('sends the owner to the web build when the link was made for it (RN-PAG-02)', async () => {
+      const daniela = await owner();
+      const booking = await daniela.book();
+      const { body } = await daniela.pay(booking.id, 'web').expect(200);
+
+      const { headers } = await api
+        .http()
+        .get('/v1/payments/return/web')
+        .query({ identificadorEnlaceComercio: body.id, idTransaccion: randomUUID() })
+        .expect(302);
+
+      expect(headers.location).toBe(
+        `https://pawie.pages.test/payment/result?bookingId=${booking.id}&paymentId=${body.id}`,
+      );
+    });
+
+    it('sends the web owner to the result screen even when the payment is unknown', async () => {
+      const { headers } = await api.http().get('/v1/payments/return/web').expect(302);
+
+      expect(headers.location).toBe('https://pawie.pages.test/payment/result');
+    });
+
     it('still opens the app when the payment is unknown', async () => {
       for (const query of [
         {},
@@ -630,6 +676,34 @@ describe('payments (RN-PAG)', () => {
         const { headers } = await api.http().get('/v1/payments/return').query(query).expect(302);
         expect(headers.location).toBe('pawie://payment/result');
       }
+    });
+  });
+
+  describe('without the web URL', () => {
+    const noWeb = useApi(() => db, {
+      override: (builder) =>
+        builder.overrideProvider(WOMPI_SETTINGS).useValue({
+          appId: 'test-app-id',
+          apiSecret: 'secret',
+          publicApiUrl: 'https://api.pawie.test',
+          publicWebUrl: null,
+        }),
+    });
+
+    it('does not make a web link it could not come back from', async () => {
+      const user = await createUser(db.prisma);
+      const token = await noWeb.tokenFor(user);
+
+      const { body } = await noWeb
+        .http()
+        .post(`/v1/bookings/${randomUUID()}/payments`)
+        .query({ client: 'web' })
+        .auth(token, { type: 'bearer' })
+        .expect(503);
+
+      expect(body).toMatchObject({ errorCode: 'PAYMENTS_UNAVAILABLE' });
+      const { headers } = await noWeb.http().get('/v1/payments/return/web').expect(302);
+      expect(headers.location).toBe('pawie://payment/result');
     });
   });
 

@@ -8,6 +8,7 @@ const SETTINGS: WompiSettings = {
   appId: 'the-app-id',
   apiSecret: 'the-api-secret',
   publicApiUrl: 'https://api.pawie.test',
+  publicWebUrl: null,
 };
 
 const LINK_REQUEST = {

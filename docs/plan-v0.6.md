@@ -334,7 +334,7 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 
 **Alcance:**
 
-1. **App web** con el mismo código de Expo (`expo export -p web`), sin tocar el comportamiento en iOS y Android. Las diferencias van en archivos por plataforma (`session.web.ts`, `files.web.ts`), no en `if` repartidos.
+1. **App web** con el mismo código de Expo (`expo export -p web`), sin tocar el comportamiento en iOS y Android. Las diferencias van en archivos por plataforma (`session-storage.web.ts`, `files.web.ts`, `checkout.web.ts`, `Frame.web.tsx`), no en `if` repartidos.
 2. **Backend gratis:** API, PostgreSQL, Redis y almacenamiento compatible con S3.
 3. **Seed** con el dueño de demo y una cuenta de cuidador lista.
 4. **Publicación automática** solo desde `main` y con el CI en verde.
@@ -342,14 +342,14 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 
 **App web:**
 
-- **Sesión (decisión confirmada el 2026-11-04):** `session.web.ts` guarda el refresh token en `localStorage`, porque `expo-secure-store` no existe en web. Es una excepción a arquitectura §4.4, documentada ahí con su motivo: la API (Render) y la web (Pages) están en dominios distintos, así que las cookies `httpOnly` serían de terceros y los navegadores las bloquean. Condiciones:
-  - La rama de `localStorage` solo existe en el build web de la demo. Se exige con `EXPO_PUBLIC_DEMO=true`: sin esa variable, `session.web.ts` se niega a guardar el token. No toca el móvil ni una web de producción.
+- **Sesión (decisión confirmada el 2026-11-04):** `session-storage.web.ts` guarda el refresh token (`session.ts` conserva la lógica de la sesión y solo cambia dónde se guarda) en `localStorage`, porque `expo-secure-store` no existe en web. Es una excepción a arquitectura §4.4, documentada ahí con su motivo: la API (Render) y la web (Pages) están en dominios distintos, así que las cookies `httpOnly` serían de terceros y los navegadores las bloquean. Condiciones:
+  - La rama de `localStorage` solo existe en el build web de la demo. Se exige con `EXPO_PUBLIC_DEMO=true`: sin esa variable, `session-storage.web.ts` se niega a guardar el token. No toca el móvil ni una web de producción.
   - Vida corta: el access token ya dura 15 minutos y la demo pone `REFRESH_TOKEN_TTL_DAYS=1`.
   - La base de la demo no guarda datos ni secretos reales.
 - **Subida de archivos:** `files.web.ts` usa `fetch(uri).blob()`, porque la clase `File` de `expo-file-system` no existe en web. Los límites siguen firmados en la URL (arquitectura §4.11).
 - **Marco:** en pantallas de más de 430 px, la app se centra en una columna de 430 px sobre un fondo neutro. Los modales y las hojas (`Sheet`) se dibujan fuera de esa columna en web, así que hay que acotarlos también.
 - **Confirmaciones:** `Alert.alert` con botones no hace nada en `react-native-web`. Hoy lo usan cancelar la reserva, rechazar la solicitud y borrar un horario, una vacuna o una tarea. Se reemplaza por un componente propio de confirmación, el mismo en las tres plataformas.
-- **Pago con Wompi de prueba:** en web no hay `openAuthSessionAsync` con retorno a `pawie://`. La app navega en la misma pestaña al enlace de pago, y `GET /v1/payments/return` redirige a `<web>/payment/result` cuando el pago se pidió desde la web (parámetro `client=web` en el enlace; cambia el contrato, hay que regenerarlo). El móvil sigue igual.
+- **Pago con Wompi de prueba:** en web no hay `openAuthSessionAsync` con retorno a `pawie://`. La app navega en la misma pestaña al enlace de pago, y `GET /v1/payments/return` redirige a `<web>/payment/result` cuando el pago se pidió desde la web (`?client=web` al crear el enlace, que cambia el contrato y obliga a regenerarlo; el enlace usa la ruta propia `GET /v1/payments/return/web`, sin query, porque Wompi agrega sus parámetros a la URL). El móvil sigue igual.
 - **Alta del cuidador con archivos:** `expo-document-picker` y `expo-image-picker` funcionan en web con un selector de archivos. "Tomar foto" se oculta en web (ver la tabla de abajo). La pantalla de documentos avisa en la demo: "No subas documentos reales" (decisión confirmada el 2026-11-04). El aviso sale solo con `EXPO_PUBLIC_DEMO=true`. Además, el bucket de R2 borra lo que se sube a los 7 días (ver "Backend gratis").
 - **Revisión de punta a punta** en Chrome de escritorio y en un celular: registro, login, búsqueda, ficha del cuidador, reserva, pago, y el alta del cuidador con sus documentos.
 
@@ -357,10 +357,10 @@ Dirección **Placas**; detalle en [docs/design/README.md](design/README.md#desig
 
 | Función                                              | Web                                                                           | Propuesta                                                                                |
 | ---------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `expo-secure-store`                                  | No existe                                                                     | `localStorage` en `session.web.ts` (hecho en esta etapa)                                 |
+| `expo-secure-store`                                  | No existe                                                                     | `localStorage` en `session-storage.web.ts` (hecho en esta etapa)                         |
 | `File` de `expo-file-system` (subidas)               | No existe                                                                     | `files.web.ts` (esta etapa)                                                              |
 | `Alert.alert` con botones                            | No hace nada                                                                  | Componente de confirmación propio (esta etapa)                                           |
-| Volver a la app desde Wompi (`pawie://`)             | No aplica                                                                     | `client=web` (esta etapa)                                                                |
+| Volver a la app desde Wompi (`pawie://`)             | No aplica                                                                     | `client=web` y `/v1/payments/return/web` (esta etapa)                                    |
 | Cámara (`launchCameraAsync`, en documentos del alta) | En escritorio abre el selector de archivos; el permiso de cámara no es fiable | Ocultar "Tomar foto" en web; queda "Elegir archivo"                                      |
 | Mapa de la ruta del paseo (etapa 10)                 | `react-native-maps` no tiene web                                              | En web, resumen sin mapa: distancia, duración y hora de inicio y fin. Lo decide la 10    |
 | Check-in y check-out con ubicación (etapa 10)        | El navegador pide permiso y en escritorio la ubicación es imprecisa           | Solo se hacen desde el móvil; la web del cuidador los muestra deshabilitados             |

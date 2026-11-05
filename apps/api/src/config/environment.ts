@@ -157,6 +157,18 @@ export class Environment {
   @ValidateIf(paymentsConfigured)
   @IsUrl({ protocols: ['https'], require_tld: false, require_protocol: true })
   PUBLIC_API_URL?: string;
+
+  /**
+   * URL of the web build of the app (the public demo), where the payment return sends the
+   * owner who paid from the browser. Without it, paying from the web is off. It is not one
+   * of the Wompi variables: the mobile app doesn't need it.
+   */
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.replace(/\/+$/, '') || undefined : value,
+  )
+  @IsOptional()
+  @IsUrl({ protocols: ['http', 'https'], require_tld: false, require_protocol: true })
+  PUBLIC_WEB_URL?: string;
 }
 
 /** Whether any Wompi variable is set, which makes all of them required. */
@@ -172,15 +184,25 @@ export interface WompiSettings {
   apiSecret: string;
   /** Without a trailing slash. */
   publicApiUrl: string;
+  /** Without a trailing slash; null when paying from the web is off. */
+  publicWebUrl: string | null;
 }
 
 /** The Wompi settings, or null when payments are off. */
 export function wompiSettings(
-  environment: Pick<Environment, 'WOMPI_APP_ID' | 'WOMPI_API_SECRET' | 'PUBLIC_API_URL'>,
+  environment: Pick<
+    Environment,
+    'WOMPI_APP_ID' | 'WOMPI_API_SECRET' | 'PUBLIC_API_URL' | 'PUBLIC_WEB_URL'
+  >,
 ): WompiSettings | null {
-  const { WOMPI_APP_ID, WOMPI_API_SECRET, PUBLIC_API_URL } = environment;
+  const { WOMPI_APP_ID, WOMPI_API_SECRET, PUBLIC_API_URL, PUBLIC_WEB_URL } = environment;
   return WOMPI_APP_ID && WOMPI_API_SECRET && PUBLIC_API_URL
-    ? { appId: WOMPI_APP_ID, apiSecret: WOMPI_API_SECRET, publicApiUrl: PUBLIC_API_URL }
+    ? {
+        appId: WOMPI_APP_ID,
+        apiSecret: WOMPI_API_SECRET,
+        publicApiUrl: PUBLIC_API_URL,
+        publicWebUrl: PUBLIC_WEB_URL ?? null,
+      }
     : null;
 }
 

@@ -8,9 +8,8 @@ import {
 } from '@pawie/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useState, type ReactNode } from 'react';
-import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,6 +17,7 @@ import { CaregiverPhoto } from '@/components/CaregiverPhoto';
 import { Banner } from '@/components/Banner';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { useDialogs } from '@/components/ConfirmDialog';
 import { Icon, type IconName } from '@/components/Icon';
 import { IconButton } from '@/components/IconButton';
 import { Nimbus } from '@/components/Nimbus';
@@ -26,6 +26,7 @@ import { StepBar } from '@/components/StepBar';
 import { Status } from '@/components/Status';
 import { Text } from '@/components/Text';
 import { errorMessage } from '@/lib/api';
+import { openCheckout, paymentClient } from '@/lib/checkout';
 import {
   firstName,
   formatWhen,
@@ -37,8 +38,6 @@ import {
 import { formatDay, formatDeadline, formatLongDayTime, formatMoney } from '@/lib/format';
 import { colors, space } from '@/theme/tokens';
 
-// Where the API sends the owner back after paying in Wompi (docs/arquitectura.md §6).
-const PAYMENT_RETURN_URL = 'pawie://payment/result';
 // While someone else has to act (the caregiver answers, Wompi confirms), ask again this often.
 const POLL_MS = 5000;
 
@@ -111,6 +110,7 @@ function petNames(booking: BookingResponse): string {
 function Waiting({ booking }: { booking: BookingResponse }) {
   const name = firstName(booking.caregiver.displayName);
   const cancel = useCancel(booking.id);
+  const confirmCancel = useConfirmCancel();
 
   return (
     <>
@@ -164,16 +164,19 @@ function Pay({ booking, onPaid }: { booking: BookingResponse; onPaid: () => void
   const name = firstName(booking.caregiver.displayName);
   const pay = usePaymentsStart();
   const cancel = useCancel(booking.id);
-  const [returned, setReturned] = useState(false);
+  const confirmCancel = useConfirmCancel();
+  // Back from Wompi on the web the app starts over, and /payment/result says so with ?returned=1.
+  const { returned: returnedParam } = useLocalSearchParams<{ returned?: string }>();
+  const [returned, setReturned] = useState(returnedParam === '1');
   const confirming = returned && booking.payment?.status === 'PENDING';
 
   const startPayment = () =>
     pay.mutate(
-      { bookingId: booking.id },
+      { bookingId: booking.id, params: paymentClient ? { client: paymentClient } : undefined },
       {
         onSuccess: async (payment) => {
           if (!payment.checkoutUrl) return;
-          await WebBrowser.openAuthSessionAsync(payment.checkoutUrl, PAYMENT_RETURN_URL);
+          await openCheckout(payment.checkoutUrl);
           // Wompi confirms with a webhook, not with the return: until then, this keeps asking.
           setReturned(true);
           onPaid();
@@ -388,11 +391,18 @@ function SummaryRow({
 }
 
 /** Cancelling can't be undone, so it asks first. */
-function confirmCancel(run: () => void) {
-  Alert.alert('¿Cancelar la reserva?', 'No te cobramos nada, y el horario queda libre.', [
-    { text: 'No, seguir', style: 'cancel' },
-    { text: 'Sí, cancelar', style: 'destructive', onPress: run },
-  ]);
+function useConfirmCancel() {
+  const { confirm } = useDialogs();
+  return async (run: () => void) => {
+    const confirmed = await confirm({
+      title: '¿Cancelar la reserva?',
+      message: 'No te cobramos nada, y el horario queda libre.',
+      cancelLabel: 'No, seguir',
+      confirmLabel: 'Sí, cancelar',
+      destructive: true,
+    });
+    if (confirmed) run();
+  };
 }
 
 function useCancel(bookingId: string) {

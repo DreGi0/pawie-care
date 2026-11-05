@@ -1,15 +1,14 @@
 import { ApiError, authLogout, type AppMode, type AuthSession } from '@pawie/api-client';
-import * as SecureStore from 'expo-secure-store';
 import { useSyncExternalStore } from 'react';
 
 import { apiBaseUrl } from './config';
+import { deleteRefreshToken, readRefreshToken, writeRefreshToken } from './session-storage';
 
 // The access token lives in memory only. The refresh token goes to the phone's secure
-// storage (Keychain or Keystore), so the session survives closing the app.
+// storage (Keychain or Keystore), so the session survives closing the app. Where it lives is
+// in session-storage.ts, with a web version for the public demo.
 
 export type SessionStatus = 'loading' | 'signedIn' | 'signedOut';
-
-const REFRESH_TOKEN_KEY = 'pawie.refreshToken';
 // Renew this long before the access token expires, so no request leaves with a stale one.
 const EXPIRY_MARGIN_MS = 30_000;
 
@@ -80,7 +79,7 @@ export async function signOut(): Promise<void> {
 /** At startup: trades the stored refresh token for a new access token. */
 export async function restoreSession(): Promise<void> {
   try {
-    refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+    refreshToken = await readRefreshToken();
     if (refreshToken) await renew();
   } catch {
     // The API is unreachable: keep the refresh token and renew on the next request.
@@ -131,11 +130,12 @@ async function requestRenewal(): Promise<string | null> {
 }
 
 async function keep(session: AuthSession) {
+  // First, so a storage that refuses the token (web outside the demo) leaves no session behind.
+  await writeRefreshToken(session.refreshToken);
   accessToken = session.accessToken;
   accessTokenExpiresAt = Date.now() + session.expiresIn * 1000;
   refreshToken = session.refreshToken;
   mode = session.user.mode;
-  await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, session.refreshToken);
 }
 
 async function forget() {
@@ -143,6 +143,6 @@ async function forget() {
   accessTokenExpiresAt = 0;
   refreshToken = null;
   mode = 'OWNER';
-  await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+  await deleteRefreshToken();
   setStatus('signedOut');
 }

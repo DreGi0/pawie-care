@@ -75,7 +75,11 @@ Para que las fotos carguen en el emulador Android, configura `S3_PUBLIC_ENDPOINT
 
 Para entrar, usa el dueño de demo del seed: `demo@example.com`, con la contraseña de `DEMO_OWNER_PASSWORD` (en local, `pawie-demo-local`). Tiene tres mascotas: Toby, Nala y Rocky.
 
-- **Sesión:** está en `src/lib/session.ts`. El refresh token se guarda en `expo-secure-store`, así que la sesión sigue al cerrar la app. Una cuenta nueva pasa primero por el onboarding (mascota y dirección).
+- **Sesión:** está en `src/lib/session.ts`. El refresh token se guarda en `expo-secure-store`, así que la sesión sigue al cerrar la app. Dónde se guarda está en `src/lib/session-storage.ts`; en la web de la demo, `session-storage.web.ts` usa `localStorage` y solo lo hace con `EXPO_PUBLIC_DEMO=true` (arquitectura §4.4). Una cuenta nueva pasa primero por el onboarding (mascota y dirección).
+- **Web:** la misma app corre en el navegador (`expo start --web`, o `expo export -p web` para el build). Lo que cambia va en archivos por plataforma: `session-storage.web.ts`, `files.web.ts` (las subidas leen el archivo con `fetch(uri).blob()`), `checkout.web.ts` (el pago navega en la misma pestaña, con `client=web`) y `Frame.web.tsx` (columna de 430 px). Para probarla en local:
+  - Arranca con `EXPO_PUBLIC_DEMO=true`; sin esa variable, la web se niega a guardar la sesión.
+  - En `apps/api/.env`, `CORS_ORIGINS` y `PUBLIC_WEB_URL` con la URL de la web (`http://localhost:8081`).
+  - Las confirmaciones (`useDialogs` en `src/components/ConfirmDialog.tsx`) reemplazan a `Alert.alert`, que no hace nada en web con botones.
 - **Datos:** los hooks de `@pawie/api-client` funcionan dentro del `QueryClientProvider` de `src/app/_layout.tsx`. La configuración está en `src/lib/api.ts`.
 - **Búsqueda:** `src/lib/search.ts` guarda lo que se busca (mascotas, servicio, día, hora y distrito). Buscar lo cambia, y Perfil y Reservar lo leen; los resultados se comparten por la caché de TanStack Query.
 - **Fechas:** se muestran y se envían en la hora de San Salvador con `src/lib/format.ts`, sin importar la zona del teléfono.
@@ -92,7 +96,7 @@ Para entrar, usa el dueño de demo del seed: `demo@example.com`, con la contrase
 | `cuidadores/[id]`                            | Perfil del cuidador                                      |
 | `reservar`                                   | Paso 1: revisar y enviar la solicitud                    |
 | `reservas/[id]`                              | Pasos 2 y 3 y la visita: esperando, pagar y confirmada   |
-| `payment/result`                             | Vuelta desde Wompi (`pawie://payment/result`)            |
+| `payment/result`                             | Vuelta desde Wompi (`pawie://payment/result`, o la web)  |
 | `mascotas/nueva`, `direcciones/nueva`        | Agregar una mascota o una dirección                      |
 
 `reservas/[id]` cambia según el estado de la reserva y vuelve a preguntar cada 5 segundos mientras espera al cuidador o la confirmación de Wompi.

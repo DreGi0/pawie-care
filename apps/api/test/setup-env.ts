@@ -18,3 +18,4 @@ process.env.S3_SECRET_ACCESS_KEY = TEST_S3.secretAccessKey;
 process.env.WOMPI_APP_ID = 'test-app-id';
 process.env.WOMPI_API_SECRET = TEST_WOMPI_API_SECRET;
 process.env.PUBLIC_API_URL = 'https://api.pawie.test';
+process.env.PUBLIC_WEB_URL = 'https://pawie.pages.test';

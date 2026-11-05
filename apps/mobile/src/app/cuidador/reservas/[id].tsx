@@ -10,12 +10,13 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatar';
 import { Banner } from '@/components/Banner';
+import { useDialogs } from '@/components/ConfirmDialog';
 import { BottomBar } from '@/components/BottomBar';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -71,6 +72,7 @@ export default function CaregiverBookingScreen() {
 }
 
 function BookingDetail({ booking }: { booking: CaregiverBookingResponse }) {
+  const { confirm } = useDialogs();
   const accept = useBookingsAccept();
   const reject = useBookingsReject();
   const owner = firstName(booking.owner.displayName);
@@ -80,23 +82,18 @@ function BookingDetail({ booking }: { booking: CaregiverBookingResponse }) {
 
   const onAccept = () =>
     accept.mutate({ bookingId: booking.id }, { onSuccess: caregiverBookingChanged });
-  const onReject = () =>
-    Alert.alert(
-      '¿Rechazar la solicitud?',
-      `${owner} verá que no puedes, y el horario queda libre.`,
-      [
-        { text: 'No, volver', style: 'cancel' },
-        {
-          text: 'Sí, rechazar',
-          style: 'destructive',
-          onPress: () =>
-            reject.mutate(
-              { bookingId: booking.id, data: {} },
-              { onSuccess: caregiverBookingChanged },
-            ),
-        },
-      ],
-    );
+  const onReject = async () => {
+    const confirmed = await confirm({
+      title: '¿Rechazar la solicitud?',
+      message: `${owner} verá que no puedes, y el horario queda libre.`,
+      cancelLabel: 'No, volver',
+      confirmLabel: 'Sí, rechazar',
+      destructive: true,
+    });
+    if (confirmed) {
+      reject.mutate({ bookingId: booking.id, data: {} }, { onSuccess: caregiverBookingChanged });
+    }
+  };
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>

@@ -13,5 +13,6 @@ export const wompiSettingsProvider: FactoryProvider<WompiSettings | null> = {
       WOMPI_APP_ID: config.get('WOMPI_APP_ID', { infer: true }),
       WOMPI_API_SECRET: config.get('WOMPI_API_SECRET', { infer: true }),
       PUBLIC_API_URL: config.get('PUBLIC_API_URL', { infer: true }),
+      PUBLIC_WEB_URL: config.get('PUBLIC_WEB_URL', { infer: true }),
     }),
 };

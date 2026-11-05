@@ -14,12 +14,13 @@ import * as DocumentPicker from 'expo-document-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { z } from 'zod';
 
 import { Banner } from '@/components/Banner';
 import { BottomBar } from '@/components/BottomBar';
 import { Button } from '@/components/Button';
+import { useDialogs } from '@/components/ConfirmDialog';
 import { Chip } from '@/components/Chip';
 import { FormInput } from '@/components/FormInput';
 import { FormScreen } from '@/components/FormScreen';
@@ -130,6 +131,7 @@ function TaskForm({
   const addInstruction = usePetsAddVetInstruction();
   const add = usePetsAddCareNeed();
   const replace = usePetsReplaceCareNeed();
+  const { confirm, notice } = useDialogs();
   const remove = usePetsRemoveCareNeed();
   const save = careNeedId ? replace : add;
   const need = pet.careNeeds.find(({ id }) => id === careNeedId);
@@ -210,30 +212,28 @@ function TaskForm({
     else add.mutate({ petId: pet.id, data }, { onSuccess: done });
   });
 
-  const confirmRemove = () =>
-    Alert.alert(
-      '¿Borrar esta tarea?',
-      doses > 0
-        ? doses === 1
-          ? 'También se borra su horario de medicina.'
-          : `También se borran sus ${doses} horarios de medicina.`
-        : undefined,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Borrar',
-          style: 'destructive',
-          onPress: () =>
-            remove.mutate(
-              { petId: pet.id, careNeedId: careNeedId! },
-              {
-                onSuccess: done,
-                onError: (error) => Alert.alert('No pudimos borrarla', errorMessage(error)),
-              },
-            ),
-        },
-      ],
+  const confirmRemove = async () => {
+    const confirmed = await confirm({
+      title: '¿Borrar esta tarea?',
+      message:
+        doses > 0
+          ? doses === 1
+            ? 'También se borra su horario de medicina.'
+            : `También se borran sus ${doses} horarios de medicina.`
+          : undefined,
+      cancelLabel: 'Cancelar',
+      confirmLabel: 'Borrar',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    remove.mutate(
+      { petId: pet.id, careNeedId: careNeedId! },
+      {
+        onSuccess: done,
+        onError: (error) => void notice('No pudimos borrarla', errorMessage(error)),
+      },
     );
+  };
 
   const error = addInstruction.error ?? save.error;
 

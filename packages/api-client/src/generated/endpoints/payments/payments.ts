@@ -13,26 +13,39 @@ import type {
   UseMutationResult,
 } from '@tanstack/react-query';
 
-import type { BookingPayment, ErrorResponse } from '../../model';
+import type { BookingPayment, ErrorResponse, PaymentsStartParams } from '../../model';
 
 import { customFetch } from '../../../fetcher';
 import type { ErrorType } from '../../../fetcher';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
-export const getPaymentsStartUrl = (bookingId: string) => {
-  return `/v1/bookings/${bookingId}/payments`;
+export const getPaymentsStartUrl = (bookingId: string, params?: PaymentsStartParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/bookings/${bookingId}/payments?${stringifiedParams}`
+    : `/v1/bookings/${bookingId}/payments`;
 };
 
 /**
- * RN-PAG-02: crea el enlace de pago de Wompi por el total de la reserva, que la app abre con expo-web-browser. Solo el dueño, mientras la reserva está PENDING_PAYMENT y antes de `paymentDueAt` (RN-RES-07). Si ya hay un enlace pendiente, devuelve el mismo: acepta un solo pago y vence con el plazo. La reserva se confirma cuando llega el aviso de Wompi, no cuando el dueño vuelve a la app.
+ * RN-PAG-02: crea el enlace de pago de Wompi por el total de la reserva, que la app abre con expo-web-browser (la web de la demo navega a él en la misma pestaña, con `client=web`). Solo el dueño, mientras la reserva está PENDING_PAYMENT y antes de `paymentDueAt` (RN-RES-07). Si ya hay un enlace pendiente, devuelve el mismo: acepta un solo pago y vence con el plazo. La reserva se confirma cuando llega el aviso de Wompi, no cuando el dueño vuelve a la app.
  * @summary Pagar una reserva
  */
 export const paymentsStart = async (
   bookingId: string,
+  params?: PaymentsStartParams,
   options?: Parameters<typeof customFetch>[1],
 ): Promise<BookingPayment> => {
-  return customFetch<BookingPayment>(getPaymentsStartUrl(bookingId), {
+  return customFetch<BookingPayment>(getPaymentsStartUrl(bookingId, params), {
     ...options,
     method: 'POST',
   });
@@ -68,9 +81,9 @@ export const getPaymentsStartMutationOptions = <
     Awaited<ReturnType<typeof paymentsStart>>,
     PaymentsStartMutationVariables
   > = (props) => {
-    const { bookingId } = props ?? {};
+    const { bookingId, params } = props ?? {};
 
-    return paymentsStart(bookingId, requestOptions);
+    return paymentsStart(bookingId, params, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -79,7 +92,7 @@ export const getPaymentsStartMutationOptions = <
 export type PaymentsStartMutationResult = NonNullable<Awaited<ReturnType<typeof paymentsStart>>>;
 
 export type PaymentsStartMutationError = ErrorType<ErrorResponse>;
-export type PaymentsStartMutationVariables = { bookingId: string };
+export type PaymentsStartMutationVariables = { bookingId: string; params?: PaymentsStartParams };
 
 /**
  * @summary Pagar una reserva
