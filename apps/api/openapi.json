@@ -1959,6 +1959,278 @@
         ]
       }
     },
+    "/v1/bookings/{bookingId}/accept": {
+      "post": {
+        "description": "RN-RES-11. Solo el cuidador de la reserva. Pasa de REQUESTED a PENDING_PAYMENT, con el plazo de pago del dueño (RN-RES-07).",
+        "operationId": "Bookings_accept",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverBookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`BOOKING_NOT_FOUND`: no existe o es de otro cuidador.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`BOOKING_NOT_REQUESTED`: ya se respondió, se canceló o venció su plazo (RN-RES-06). `BOOKING_STATUS_CHANGED`: cambió mientras tanto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Aceptar una solicitud",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/v1/bookings/{bookingId}/reject": {
+      "post": {
+        "description": "RN-RES-11. Solo el cuidador de la reserva. Pasa de REQUESTED a REJECTED y libera el horario.",
+        "operationId": "Bookings_reject",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectBookingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverBookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`BOOKING_NOT_FOUND`: no existe o es de otro cuidador.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`BOOKING_NOT_REQUESTED` o `BOOKING_STATUS_CHANGED`, como al aceptar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rechazar una solicitud",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/v1/caregivers/me/bookings": {
+      "get": {
+        "description": "RN-RES-11. Primero las solicitudes, la que vence primero arriba (RN-RES-06); después el resto, por inicio. La dirección exacta y los datos de emergencia aparecen desde CONFIRMED (RN-CTA-04).",
+        "operationId": "CaregiverBookings_list",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Solo las reservas en estos estados. Sin él, todas.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/BookingStatus"
+              }
+            }
+          },
+          {
+            "name": "upcoming",
+            "required": false,
+            "in": "query",
+            "description": "Solo las que todavía no terminan, para la agenda.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CaregiverBookingResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CAREGIVER_PROFILE_NOT_FOUND`: la cuenta no ha activado el modo cuidador.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mis reservas como cuidador",
+        "tags": [
+          "caregivers"
+        ]
+      }
+    },
+    "/v1/caregivers/me/bookings/{bookingId}": {
+      "get": {
+        "description": "RN-RES-11: las mascotas con su ficha para esas fechas, celo y Especial, el servicio, los tramos, el distrito y lo que va a ganar.",
+        "operationId": "CaregiverBookings_get",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverBookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`BOOKING_NOT_FOUND`: no existe o es de otro cuidador.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver una reserva como cuidador",
+        "tags": [
+          "caregivers"
+        ]
+      }
+    },
+    "/v1/caregivers/me/earnings": {
+      "get": {
+        "description": "RN-PAG-10: por cobrar, pagado y el total del mes en curso, hora de El Salvador. Pagado es 0 hasta que existan los pagos al cuidador.",
+        "operationId": "CaregiverBookings_earnings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaregiverEarningsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`CAREGIVER_PROFILE_NOT_FOUND`: la cuenta no ha activado el modo cuidador.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mis ganancias",
+        "tags": [
+          "caregivers"
+        ]
+      }
+    },
     "/v1/caregivers/me": {
       "post": {
         "description": "RN-CTA-06. Crea el perfil de cuidador en `PENDING_APPROVAL`, con todos los servicios al precio sugerido (RN-CUI-17), y la cuenta queda en modo cuidador.",
@@ -4676,6 +4948,482 @@
             "description": "Por qué cancela el dueño."
           }
         }
+      },
+      "CaregiverBookingOwner": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "example": "Ana P."
+          }
+        },
+        "required": [
+          "displayName"
+        ]
+      },
+      "CaregiverBookingAddress": {
+        "type": "object",
+        "properties": {
+          "street": {
+            "type": "string",
+            "example": "Pasaje Las Mascotas 12, Residencial Pawie"
+          },
+          "details": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "street",
+          "details"
+        ]
+      },
+      "CaregiverBookingSlot": {
+        "type": "object",
+        "properties": {
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "serviceCode",
+          "startsAt",
+          "endsAt"
+        ]
+      },
+      "CaregiverBookingEarnings": {
+        "type": "object",
+        "properties": {
+          "subtotalCents": {
+            "type": "integer",
+            "example": 1300,
+            "description": "Lo que cobra el cuidador: la suma de los tramos."
+          },
+          "commissionBp": {
+            "type": "integer",
+            "example": 0,
+            "description": "RN-PRE-04, en puntos básicos."
+          },
+          "commissionCents": {
+            "type": "integer",
+            "example": 0
+          },
+          "payoutCents": {
+            "type": "integer",
+            "example": 1300,
+            "description": "Lo que va a ganar: el subtotal menos la comisión. La app muestra este monto."
+          }
+        },
+        "required": [
+          "subtotalCents",
+          "commissionBp",
+          "commissionCents",
+          "payoutCents"
+        ]
+      },
+      "BookingPetProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "species": {
+            "$ref": "#/components/schemas/SpeciesOption"
+          },
+          "breed": {
+            "type": "string",
+            "nullable": true
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "birthDateIsApproximate": {
+            "type": "boolean"
+          },
+          "sex": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PetSex"
+              }
+            ]
+          },
+          "weightGrams": {
+            "type": "integer",
+            "nullable": true
+          },
+          "isSterilized": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "temperament": {
+            "type": "string",
+            "nullable": true
+          },
+          "handlingNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "foodDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "foodPortion": {
+            "type": "string",
+            "nullable": true
+          },
+          "allowedTreats": {
+            "type": "string",
+            "nullable": true
+          },
+          "dailyRoutine": {
+            "type": "string",
+            "nullable": true
+          },
+          "vetName": {
+            "type": "string",
+            "nullable": true
+          },
+          "vetClinic": {
+            "type": "string",
+            "nullable": true
+          },
+          "vetPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "healthConditions": {
+            "type": "string",
+            "nullable": true
+          },
+          "medications": {
+            "type": "string",
+            "nullable": true,
+            "description": "Solo informa: nunca se muestra como instrucción ni como tarea del cuidador."
+          },
+          "heatStartsOn": {
+            "type": "string",
+            "nullable": true,
+            "format": "date",
+            "description": "RN-MAS-11"
+          },
+          "heatEndsOn": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "photoFileId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL firmada que vence en 10 minutos."
+          },
+          "careLevel": {
+            "description": "RN-MAS-05: su nivel en las fechas de la reserva, guardado al reservar.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CareLevel"
+              }
+            ]
+          },
+          "inHeat": {
+            "type": "boolean",
+            "description": "RN-MAS-11: el celo cae en alguna fecha de la reserva."
+          },
+          "careNeeds": {
+            "description": "Las tareas de cuidado activas en las fechas de la reserva (RN-MAS-05).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CareNeedResponse"
+            }
+          },
+          "scheduleItems": {
+            "description": "Las comidas y las dosis de las tareas de Medicación activas en esas fechas, ordenadas por hora (RN-CUI-12).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleItemResponse"
+            }
+          },
+          "vetInstructions": {
+            "description": "RN-RES-03: las indicaciones del veterinario que se adjuntaron a la reserva.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VetInstructionResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "species",
+          "breed",
+          "birthDate",
+          "birthDateIsApproximate",
+          "sex",
+          "weightGrams",
+          "isSterilized",
+          "temperament",
+          "handlingNotes",
+          "foodDescription",
+          "foodPortion",
+          "allowedTreats",
+          "dailyRoutine",
+          "vetName",
+          "vetClinic",
+          "vetPhone",
+          "healthConditions",
+          "medications",
+          "heatStartsOn",
+          "heatEndsOn",
+          "photoFileId",
+          "photoUrl",
+          "careLevel",
+          "inHeat",
+          "careNeeds",
+          "scheduleItems",
+          "vetInstructions"
+        ]
+      },
+      "CaregiverBookingResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BookingStatus"
+              }
+            ]
+          },
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "careLevel": {
+            "description": "RN-MAS-06: Especial si alguna mascota lo es.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CareLevel"
+              }
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Inicio del primer tramo."
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fin del último tramo."
+          },
+          "responseDueAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "Mientras está SOLICITADA: hasta cuándo puede responder (RN-RES-06)."
+          },
+          "paymentDueAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "description": "Mientras está PENDIENTE DE PAGO: hasta cuándo puede pagar el dueño (RN-RES-07)."
+          },
+          "owner": {
+            "$ref": "#/components/schemas/CaregiverBookingOwner"
+          },
+          "district": {
+            "$ref": "#/components/schemas/DistrictOption"
+          },
+          "address": {
+            "nullable": true,
+            "description": "RN-CTA-04: la dirección exacta, solo desde que la reserva está CONFIRMED.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CaregiverBookingAddress"
+              }
+            ]
+          },
+          "emergency": {
+            "nullable": true,
+            "description": "RN-RES-04, RN-CTA-04: los datos de emergencia, solo desde CONFIRMED.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BookingEmergency"
+              }
+            ]
+          },
+          "instructions": {
+            "type": "string",
+            "nullable": true,
+            "description": "RN-RES-03: las instrucciones del dueño para este servicio."
+          },
+          "slots": {
+            "description": "Cada tramo, en orden.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaregiverBookingSlot"
+            }
+          },
+          "earnings": {
+            "$ref": "#/components/schemas/CaregiverBookingEarnings"
+          },
+          "pets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingPetProfile"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "serviceCode",
+          "careLevel",
+          "startsAt",
+          "endsAt",
+          "responseDueAt",
+          "paymentDueAt",
+          "owner",
+          "district",
+          "address",
+          "emergency",
+          "instructions",
+          "slots",
+          "earnings",
+          "pets",
+          "createdAt"
+        ]
+      },
+      "RejectBookingRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "example": "Ese día no estoy en la ciudad.",
+            "description": "Por qué rechaza el cuidador. El dueño no lo ve."
+          }
+        }
+      },
+      "PendingEarning": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BookingStatus"
+              }
+            ]
+          },
+          "serviceCode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceCode"
+              }
+            ]
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "petNames": {
+            "example": [
+              "Toby"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "payoutCents": {
+            "type": "integer",
+            "example": 1300
+          }
+        },
+        "required": [
+          "bookingId",
+          "status",
+          "serviceCode",
+          "startsAt",
+          "petNames",
+          "payoutCents"
+        ]
+      },
+      "CaregiverEarningsResponse": {
+        "type": "object",
+        "properties": {
+          "pendingCents": {
+            "type": "integer",
+            "example": 2600,
+            "description": "Por cobrar: lo que va a ganar con las reservas confirmadas o en retención (RN-PAG-03)."
+          },
+          "paidCents": {
+            "type": "integer",
+            "example": 0,
+            "description": "Pagado (simulado en la demo). Es 0 hasta que existan los pagos al cuidador."
+          },
+          "month": {
+            "type": "string",
+            "example": "2026-11",
+            "description": "El mes en curso, hora de El Salvador."
+          },
+          "monthTotalCents": {
+            "type": "integer",
+            "example": 2600,
+            "description": "Lo que gana con los servicios que empiezan en el mes, por cobrar o pagados. No cuenta las reservas que no se confirmaron."
+          },
+          "pending": {
+            "description": "Lo por cobrar, el servicio más próximo primero.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingEarning"
+            }
+          }
+        },
+        "required": [
+          "pendingCents",
+          "paidCents",
+          "month",
+          "monthTotalCents",
+          "pending"
+        ]
       },
       "CaregiverStatus": {
         "type": "string",

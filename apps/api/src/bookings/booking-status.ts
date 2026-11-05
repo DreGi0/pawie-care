@@ -86,8 +86,16 @@ export const CONFIRMED_STATUSES: readonly BookingStatus[] = [
 ];
 
 /**
- * RN-CTA-04: the caregiver's phone and the owner's address stay hidden from the other
- * side until the booking is confirmed.
+ * RN-PAG-10: the bookings the caregiver is still to be paid for, confirmed or held
+ * (RN-PAG-03). A CLOSED booking released its payout.
+ */
+export const PAYOUT_PENDING_STATUSES: readonly BookingStatus[] = CONFIRMED_STATUSES.filter(
+  (status) => status !== BookingStatus.CLOSED,
+);
+
+/**
+ * RN-CTA-04: the caregiver's phone, and the owner's address and emergency details, stay
+ * hidden from the other side until the booking is confirmed.
  */
 export function revealsContact(status: BookingStatus): boolean {
   return CONFIRMED_STATUSES.includes(status);

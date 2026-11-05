@@ -234,11 +234,11 @@ export class BookingsService {
   }
 
   /**
-   * The caregiver accepts a request, which then waits for payment (§8.2, RN-RES-07).
-   * Nothing calls it over HTTP until the caregiver panel exists (after the demo).
+   * RN-RES-11: the caregiver accepts a request, which then waits for payment (§8.2,
+   * RN-RES-07).
    */
   async accept(caregiverId: string, bookingId: string): Promise<Booking> {
-    const booking = await this.findOwn({ id: bookingId, caregiverId });
+    const booking = await this.findRequest(caregiverId, bookingId);
     const window = await this.settings.get('bookings.paymentWindowMinutes');
     const accepted = await this.stateMachine.transition(bookingId, {
       from: BookingStatus.REQUESTED,
@@ -250,9 +250,9 @@ export class BookingsService {
     return accepted;
   }
 
-  /** The caregiver rejects a request (§8.2), which frees the time. Like accept(), no route yet. */
+  /** RN-RES-11: the caregiver rejects a request (§8.2), which frees the time. */
   async reject(caregiverId: string, bookingId: string, reason?: string): Promise<Booking> {
-    await this.findOwn({ id: bookingId, caregiverId });
+    await this.findRequest(caregiverId, bookingId);
     return this.stateMachine.transition(bookingId, {
       from: BookingStatus.REQUESTED,
       to: BookingStatus.REJECTED,
@@ -303,6 +303,23 @@ export class BookingsService {
       prices: caregiver.prices,
       rates: ratesFrom(settings),
     });
+  }
+
+  /**
+   * A request of this caregiver that still waits for their answer. Past its deadline
+   * (RN-RES-06) it no longer does, even before the deadline job expires it.
+   */
+  private async findRequest(caregiverId: string, bookingId: string) {
+    const booking = await this.findOwn({ id: bookingId, caregiverId });
+    const overdue = booking.responseDueAt !== null && booking.responseDueAt <= this.clock.now();
+    if (booking.status !== BookingStatus.REQUESTED || overdue) {
+      throw new ConflictException({
+        errorCode: 'BOOKING_NOT_REQUESTED',
+        message: 'Esta solicitud ya no espera tu respuesta.',
+        details: { status: booking.status },
+      });
+    }
+    return booking;
   }
 
   private async findOwn(where: { id: string; ownerId?: string; caregiverId?: string }) {

@@ -119,7 +119,10 @@ export function planSlots(
 }
 
 /** The dates a service covers in El Salvador, both inclusive, as care levels use them (RN-MAS-05). */
-export function serviceDates(slots: readonly PlannedSlot[]): { from: Date; to: Date } {
+export function serviceDates(slots: readonly Pick<PlannedSlot, 'startsAt' | 'endsAt'>[]): {
+  from: Date;
+  to: Date;
+} {
   return {
     from: dateInElSalvador(slots[0].startsAt),
     // A slot that ends exactly at midnight doesn't reach the next day.

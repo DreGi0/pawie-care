@@ -29,6 +29,8 @@ import {
   QuoteBookingRequest,
 } from './bookings.dto.js';
 import { BookingsService } from './bookings.service.js';
+import { CaregiverBookingResponse, RejectBookingRequest } from './caregiver-bookings.dto.js';
+import { CaregiverBookingsService } from './caregiver-bookings.service.js';
 
 const bookingId = () => Param('bookingId', ParseUUIDPipe);
 
@@ -36,7 +38,10 @@ const bookingId = () => Param('bookingId', ParseUUIDPipe);
 @ApiBearerAuth()
 @Controller('bookings')
 export class BookingsController {
-  constructor(private readonly bookings: BookingsService) {}
+  constructor(
+    private readonly bookings: BookingsService,
+    private readonly caregiverBookings: CaregiverBookingsService,
+  ) {}
 
   @Post()
   @ApiOperation({
@@ -132,5 +137,55 @@ export class BookingsController {
     @Body() body: CancelBookingRequest,
   ): Promise<BookingResponse> {
     return this.bookings.cancel(user.id, id, body.reason);
+  }
+
+  @Post(':bookingId/accept')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Aceptar una solicitud',
+    description:
+      'RN-RES-11. Solo el cuidador de la reserva. Pasa de REQUESTED a PENDING_PAYMENT, con el plazo de pago del dueño (RN-RES-07).',
+  })
+  @ApiOkResponse({ type: CaregiverBookingResponse })
+  @ApiNotFoundResponse({
+    type: ErrorResponse,
+    description: '`BOOKING_NOT_FOUND`: no existe o es de otro cuidador.',
+  })
+  @ApiConflictResponse({
+    type: ErrorResponse,
+    description:
+      '`BOOKING_NOT_REQUESTED`: ya se respondió, se canceló o venció su plazo (RN-RES-06). `BOOKING_STATUS_CHANGED`: cambió mientras tanto.',
+  })
+  async accept(
+    @CurrentUser() user: AuthenticatedUser,
+    @bookingId() id: string,
+  ): Promise<CaregiverBookingResponse> {
+    await this.bookings.accept(user.id, id);
+    return this.caregiverBookings.get(user.id, id);
+  }
+
+  @Post(':bookingId/reject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Rechazar una solicitud',
+    description:
+      'RN-RES-11. Solo el cuidador de la reserva. Pasa de REQUESTED a REJECTED y libera el horario.',
+  })
+  @ApiOkResponse({ type: CaregiverBookingResponse })
+  @ApiNotFoundResponse({
+    type: ErrorResponse,
+    description: '`BOOKING_NOT_FOUND`: no existe o es de otro cuidador.',
+  })
+  @ApiConflictResponse({
+    type: ErrorResponse,
+    description: '`BOOKING_NOT_REQUESTED` o `BOOKING_STATUS_CHANGED`, como al aceptar.',
+  })
+  async reject(
+    @CurrentUser() user: AuthenticatedUser,
+    @bookingId() id: string,
+    @Body() body: RejectBookingRequest,
+  ): Promise<CaregiverBookingResponse> {
+    await this.bookings.reject(user.id, id, body.reason);
+    return this.caregiverBookings.get(user.id, id);
   }
 }
