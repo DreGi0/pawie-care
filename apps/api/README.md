@@ -255,7 +255,7 @@ La respuesta trae `responseDueAt` mientras está `REQUESTED` y `paymentDueAt` mi
    - Si ya hay un pago `PENDING`, devuelve el mismo enlace, también a dos toques a la vez.
 2. **El dueño paga:** la app abre la página con `WebBrowser.openAuthSessionAsync(checkoutUrl, 'pawie://payment/result')`.
 3. **Wompi avisa:** manda el webhook a `POST /v1/payments/webhook`, que confirma la reserva (ver abajo).
-4. **El dueño vuelve a la app:** Wompi lo manda a `GET /v1/payments/return`, que responde 302 a `pawie://payment/result?bookingId=…&paymentId=…`. Esa ruta no cambia nada. Si el pago se pidió desde la web (`POST /v1/bookings/:id/payments?client=web`), el enlace lleva `?client=web` y la ruta responde 302 a `<PUBLIC_WEB_URL>/payment/result?bookingId=…&paymentId=…`; la app web navega a la página de pago en la misma pestaña.
+4. **El dueño vuelve a la app:** Wompi lo manda a `GET /v1/payments/return`, que responde 302 a `pawie://payment/result?bookingId=…&paymentId=…`. Esa ruta no cambia nada. Si el pago se pidió desde la web (`POST /v1/bookings/:id/payments?client=web`), el enlace usa `GET /v1/payments/return/web` (sin query, porque Wompi agrega la suya) y esa ruta responde 302 a `<PUBLIC_WEB_URL>/payment/result?bookingId=…&paymentId=…`; la app web navega a la página de pago en la misma pestaña.
 5. **La app espera la confirmación:** consulta `GET /v1/bookings/:id` hasta que la reserva está `CONFIRMED`. Su campo `payment` dice en qué va el pago:
 
 | `payment.status` | Qué significa                                                                                                             |

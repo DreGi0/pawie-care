@@ -29,8 +29,13 @@ import { CurrentUser } from '../auth/current-user.decorator.js';
 import { Public } from '../auth/public.decorator.js';
 import { ErrorResponse } from '../common/errors/error-response.dto.js';
 import { PaymentWebhooks } from './payment-webhooks.js';
-import { BookingPayment, StartPaymentQuery } from './payments.dto.js';
-import { PAYMENT_RETURN_PATH, PAYMENT_WEBHOOK_PATH, PaymentsService } from './payments.service.js';
+import { BookingPayment, PaymentClient, StartPaymentQuery } from './payments.dto.js';
+import {
+  PAYMENT_RETURN_PATH,
+  PAYMENT_WEB_RETURN_PATH,
+  PAYMENT_WEBHOOK_PATH,
+  PaymentsService,
+} from './payments.service.js';
 
 @ApiTags('payments')
 @Controller()
@@ -57,9 +62,8 @@ export class PaymentsController {
 
   /**
    * Wompi sends the owner here after paying, and this sends them on to the app
-   * (pawie://payment/result), or to the web build when the link says `client=web`.
-   * It changes nothing (RN-PAG-02). Wompi adds its own parameters; only
-   * identificadorEnlaceComercio and client are read.
+   * (pawie://payment/result). It changes nothing (RN-PAG-02). Wompi adds its own
+   * parameters; only identificadorEnlaceComercio is read.
    */
   @Get(PAYMENT_RETURN_PATH)
   @Public()
@@ -67,10 +71,24 @@ export class PaymentsController {
   @ApiExcludeEndpoint()
   async returnToApp(
     @Query('identificadorEnlaceComercio') reference: string | undefined,
-    @Query('client') client: string | undefined,
+  ): Promise<{ url: string; statusCode: number }> {
+    return { url: await this.payments.appReturnUrl(reference), statusCode: HttpStatus.FOUND };
+  }
+
+  /**
+   * The same return for a payment asked from the web (`?client=web` when creating the
+   * link): it sends the owner to <PUBLIC_WEB_URL>/payment/result. It's its own route, with
+   * no query, so Wompi's parameters are the only ones in the URL.
+   */
+  @Get(PAYMENT_WEB_RETURN_PATH)
+  @Public()
+  @Redirect()
+  @ApiExcludeEndpoint()
+  async returnToWeb(
+    @Query('identificadorEnlaceComercio') reference: string | undefined,
   ): Promise<{ url: string; statusCode: number }> {
     return {
-      url: await this.payments.appReturnUrl(reference, client),
+      url: await this.payments.appReturnUrl(reference, PaymentClient.WEB),
       statusCode: HttpStatus.FOUND,
     };
   }

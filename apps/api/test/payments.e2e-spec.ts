@@ -207,7 +207,7 @@ describe('payments (RN-PAG)', () => {
       const { body } = await daniela.pay(booking.id, 'web').expect(200);
 
       expect(wompi.linkOf(body.id)).toMatchObject({
-        redirectUrl: 'https://api.pawie.test/v1/payments/return?client=web',
+        redirectUrl: 'https://api.pawie.test/v1/payments/return/web',
       });
     });
 
@@ -652,8 +652,8 @@ describe('payments (RN-PAG)', () => {
 
       const { headers } = await api
         .http()
-        .get('/v1/payments/return')
-        .query({ client: 'web', identificadorEnlaceComercio: body.id })
+        .get('/v1/payments/return/web')
+        .query({ identificadorEnlaceComercio: body.id, idTransaccion: randomUUID() })
         .expect(302);
 
       expect(headers.location).toBe(
@@ -662,11 +662,7 @@ describe('payments (RN-PAG)', () => {
     });
 
     it('sends the web owner to the result screen even when the payment is unknown', async () => {
-      const { headers } = await api
-        .http()
-        .get('/v1/payments/return')
-        .query({ client: 'web' })
-        .expect(302);
+      const { headers } = await api.http().get('/v1/payments/return/web').expect(302);
 
       expect(headers.location).toBe('https://pawie.pages.test/payment/result');
     });
@@ -706,11 +702,7 @@ describe('payments (RN-PAG)', () => {
         .expect(503);
 
       expect(body).toMatchObject({ errorCode: 'PAYMENTS_UNAVAILABLE' });
-      const { headers } = await noWeb
-        .http()
-        .get('/v1/payments/return')
-        .query({ client: 'web' })
-        .expect(302);
+      const { headers } = await noWeb.http().get('/v1/payments/return/web').expect(302);
       expect(headers.location).toBe('pawie://payment/result');
     });
   });
